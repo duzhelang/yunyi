@@ -1,0 +1,62 @@
+server:
+  ip: localhost
+  port: 9090
+  tomcat:
+    accesslog:
+      enabled: true
+      directory: ./logs
+      prefix: access
+      suffix: .log
+      pattern: "%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-Agent}i\""
+      file-date-format: yyyy-MM-dd
+      rename-on-rotate: true
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/dongfang?serverTimezone=GMT%2b8&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: "010125"
+  redis:
+    host: 127.0.0.1
+    port: 6379
+  servlet:
+    multipart:
+      max-file-size: 1500MB
+      max-request-size: 1500MB
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+base:
+  path: D:/Software-Cup121
+  python: D:\py\python.exe
+
+files:
+  upload:
+    path: ${base.path}/files/
+  pythonUpload:
+    path: ${base.path}/data/
+  pythonDownload:
+    path: ${base.path}/
+  JsonDownload:
+    path: ${base.path}/json/
+  pythonDataTestUpload:
+    path: ${base.path}/OnlinePredict/
+  pythonExe:
+    path: D:\py\python.exe
+  pythonTrainMain:
+    path: ${base.path}/python/train.py
+  pythonPredictMain:
+    path: ${base.path}/python/predict.py
+  pythonChatScript:
+    path: D:/Software-Cup121/python/diabetes_chat.py
+  pythonModelPath:
+    path: ${base.path}/diabetes_model.pth
+
+zhipu:
+  api:
+    key: e69d74009d1440f9ab08a5af89857b4f.EB0sB1EIRLiLgDaS

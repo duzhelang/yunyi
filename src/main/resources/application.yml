@@ -1,0 +1,105 @@
+server:
+  ip: localhost
+  port: 9090
+  tomcat:
+    accesslog:
+      enabled: true
+      directory: ./logs
+      prefix: access
+      suffix: .log
+      pattern: "%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-Agent}i\""
+      file-date-format: yyyy-MM-dd
+      rename-on-rotate: true
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/dongfang?serverTimezone=GMT%2b8&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: "010125"
+  redis:
+    host: 127.0.0.1
+    port: 6379
+  servlet:
+    multipart:
+      max-file-size: 1500MB
+      max-request-size: 1500MB
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+base:
+#  path: D:/Software-DZL125
+#  path: D:/参赛作品/Software-DZL125
+  path: ./
+  python: python
+
+files:
+  # 用户头像/文件上传目录
+  upload:
+    path: ${base.path}/files/
+  avatar:
+    path: ${files.upload.path}avatar/
+  common:
+    path: ${files.upload.path}common/
+  # Python数据上传
+  pythonUpload:
+    path: ${base.path}/data/
+  # Python文件下载
+  pythonDownload:
+    path: ${base.path}/
+  # Json文件下载
+  JsonDownload:
+    path: ${base.path}/json/
+  # 预测数据上传
+  pythonDataTestUpload:
+    path: ${base.path}/OnlinePredict/
+  # 绝对路径 → 相对路径
+  pythonExe:
+    path: python
+  # 训练脚本
+  pythonTrainMain:
+    path: ${base.path}/python/train.py
+  # 预测脚本
+  pythonPredictMain:
+    path: ${base.path}/python/predict.py
+  # 对话脚本（全相对路径）
+  pythonChatScript:
+    path: ${base.path}/python/diabetes_chat.py
+  # 模型文件路径（全相对路径）
+  pythonModelPath:
+    path: ${base.path}/diabetes_model.pth
+
+#files:
+#  upload:
+#    path: ${base.path}/files/
+#  pythonUpload:
+#    path: ${base.path}/data/
+#  pythonDownload:
+#    path: ${base.path}/
+#  JsonDownload:
+#    path: ${base.path}/json/
+#  pythonDataTestUpload:
+#    path: ${base.path}/OnlinePredict/
+#  pythonExe:
+#    path: D:\py\python.exe
+#  pythonTrainMain:
+#    path: ${base.path}/python/train.py
+#  pythonPredictMain:
+#    path: ${base.path}/python/predict.py
+#  pythonChatScript:
+#    path: D:/Software-Cup121/python/diabetes_chat.py
+#  pythonModelPath:
+#    path: ${base.path}/diabetes_model.pth
+
+zhipu:
+  api:
+    key: 1a0d9529e8b64c88bffb00cdfba77b44.3ZkEwG4Kvsanf6Qb
+
+kimi:
+  api:
+    url: https://api.moonshot.cn/v1
+    api-key: sk-Zu0VBmeEfK5MmoQuxeABHeUEK16pLM8By4pK3oEiLcBU7oeA

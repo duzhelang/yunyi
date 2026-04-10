@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cucn.springboot.mapper.TreatmentRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.cucn.springboot.entity.TreatmentRecord">
+        <id column="id" property="id"/>
+        <result column="patient_name" property="patientName"/>
+        <result column="id_card" property="idCard"/>
+        <result column="phone" property="phone"/>
+        <result column="gender" property="gender"/>
+        <result column="age" property="age"/>
+        <result column="blood_sugar" property="bloodSugar"/>
+        <result column="diagnosis_result" property="diagnosisResult"/>
+        <result column="treatment_plan" property="treatmentPlan"/>
+        <result column="doctor_name" property="doctorName"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 多条件动态查询 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT * FROM sys_treatment_record
+        <where>
+            <if test="query.patientName != null and query.patientName != ''">
+                AND patient_name LIKE CONCAT('%', #{query.patientName}, '%')
+            </if>
+            <if test="query.idCard != null and query.idCard != ''">
+                AND id_card = #{query.idCard}
+            </if>
+            <if test="query.phone != null and query.phone != ''">
+                AND phone = #{query.phone}
+            </if>
+            <if test="query.doctorName != null and query.doctorName != ''">
+                AND doctor_name LIKE CONCAT('%', #{query.doctorName}, '%')
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 单条新增 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_treatment_record (
+            patient_name, id_card, phone, gender, age, blood_sugar,
+            diagnosis_result, treatment_plan, doctor_name, remark
+        ) VALUES (
+                     #{patientName}, #{idCard}, #{phone}, #{gender}, #{age}, #{bloodSugar},
+                     #{diagnosisResult}, #{treatmentPlan}, #{doctorName}, #{remark}
+                 )
+    </insert>
+
+    <!-- 批量新增 -->
+    <insert id="batchInsert">
+        INSERT INTO sys_treatment_record (
+        patient_name, id_card, phone, gender, age, blood_sugar,
+        diagnosis_result, treatment_plan, doctor_name, remark
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.patientName}, #{item.idCard}, #{item.phone}, #{item.gender}, #{item.age}, #{item.bloodSugar},
+            #{item.diagnosisResult}, #{item.treatmentPlan}, #{item.doctorName}, #{item.remark}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 动态更新 -->
+    <update id="updateById">
+        UPDATE sys_treatment_record
+        <set>
+            <if test="patientName != null">patient_name = #{patientName},</if>
+            <if test="idCard != null">id_card = #{idCard},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="age != null">age = #{age},</if>
+            <if test="bloodSugar != null">blood_sugar = #{bloodSugar},</if>
+            <if test="diagnosisResult != null">diagnosis_result = #{diagnosisResult},</if>
+            <if test="treatmentPlan != null">treatment_plan = #{treatmentPlan},</if>
+            <if test="doctorName != null">doctor_name = #{doctorName},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID删除 -->
+    <delete id="deleteById">
+        DELETE FROM sys_treatment_record WHERE id = #{id}
+    </delete>
+
+    <!-- 身份证号去重查询 -->
+    <select id="selectByIdCard" resultMap="BaseResultMap">
+        SELECT * FROM sys_treatment_record WHERE id_card = #{idCard} LIMIT 1
+    </select>
+
+</mapper>
