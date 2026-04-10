@@ -11,7 +11,7 @@ import java.util.List;
  * </p>
  *
  * @author CUCN-cj
- * @since 2022-02-10
+ * @since 2026-03-22
  */
 public interface IRoleService extends IService<Role> {
 

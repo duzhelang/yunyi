@@ -8,7 +8,7 @@ import java.util.Collections;
 /**
  * mp代码生成?
  * by CUCN-cj
- * @since 2022-01-26
+ * @since 2026-03-26
  */
 public class CodeGenerator {
 

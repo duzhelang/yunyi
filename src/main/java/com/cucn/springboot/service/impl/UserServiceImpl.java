@@ -31,11 +31,11 @@ import static com.cucn.springboot.utils.TokenUtils.getCurrentUser;
 
 /**
  * <p>
- *  服务实现?
+ *  服务实现类
  * </p>
  *
  * @author CUCN-cj
- * @since 2022-01-26
+ * @since 2026-03-26
  */
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {

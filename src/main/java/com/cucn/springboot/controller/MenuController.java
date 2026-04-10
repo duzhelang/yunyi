@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * </p>
  *
  * @author CUCN-cj
- * @since 2022-02-10
+ * @since 2026-03-22
  */
 @RestController
 @RequestMapping("/menu")

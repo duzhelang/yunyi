@@ -17,11 +17,11 @@ import java.util.List;
 
 /**
  * <p>
- *  服务实现?
+ *  服务实现类
  * </p>
  *
  * @author CUCN-cj
- * @since 2022-02-10
+ * @since 2026-03-22
  */
 @Service
 public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements IRoleService {

@@ -14,7 +14,7 @@ import org.apache.ibatis.annotations.Update;
  * </p>
  *
  * @author CUCN-cj
- * @since 2022-01-26
+ * @since 2026-03-26
  */
 @Mapper
 public interface UserMapper extends BaseMapper<User> {

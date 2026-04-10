@@ -12,7 +12,7 @@ import org.apache.ibatis.annotations.Select;
  * </p>
  *
  * @author CUCN-cj
- * @since 2022-02-10
+ * @since 2026-03-22
  */
 @Mapper
 public interface RoleMapper extends BaseMapper<Role> {
