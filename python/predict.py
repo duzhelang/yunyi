@@ -18,8 +18,8 @@ import traceback
 # 【配置区域】请确保此处路径与 Java 配置一致
 # ==========================================
 # 注意：如果你的 Java 配置改了路径，这里也需要同步修改，或者最好由 Java 传入该路径
-OUTPUT_DIRECTORY = r'D:\Software-Cup121\json'
-
+# OUTPUT_DIRECTORY = r'D:\Software-DZL125\json'
+OUTPUT_DIRECTORY = os.path.join(os.getcwd(), 'json')
 # 定义和训练脚本一致的模型结构
 class DiabetesModel(nn.Module):
     def __init__(self, input_dim):

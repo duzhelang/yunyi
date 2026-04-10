@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.cfy</groupId>
-    <artifactId>Software-Cup</artifactId>
+    <artifactId>Software-CUCN</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>springboot</name>
-    <description>ybym2026</description>
+    <description>23dzl2026</description>
     <properties>
         <java.version>1.8</java.version>
     </properties>

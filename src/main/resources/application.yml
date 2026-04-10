@@ -35,6 +35,7 @@ base:
 #  path: D:/Software-DZL125
 #  path: D:/参赛作品/Software-DZL125
   path: ./
+#  path:  System.getProperty("user.dir")
   python: python
 
 files:
@@ -91,7 +92,7 @@ files:
 #  pythonPredictMain:
 #    path: ${base.path}/python/predict.py
 #  pythonChatScript:
-#    path: D:/Software-Cup121/python/diabetes_chat.py
+#    path: D:/Software-CUCN/python/diabetes_chat.py
 #  pythonModelPath:
 #    path: ${base.path}/diabetes_model.pth
 

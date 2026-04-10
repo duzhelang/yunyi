@@ -19,13 +19,11 @@ public class HealthProfileServiceImpl {
 
     @Autowired
     private HealthProfileMapper healthProfileMapper;
-
-    // ⚠️ 配置路径:请确保 D 盘有这个文件夹,或者代码会自动创建
-    // 建议:如果是 Linux/Mac,请改为 "/tmp/health-data" 或其他有效路?
-    private static final String BASE_DIR = "D:\\Software-Cup121\\data";
-    private static final String CSV_DIR = BASE_DIR + "\\csv_for_doctor";
-    private static final String UPLOAD_DIR = BASE_DIR + "\\uploads";
-
+    // 建议:如果是 Linux/Mac,请改为 "/tmp/health-data" 或其他有效路径
+//    private static final String BASE_DIR = "./data";
+    private static final String BASE_DIR = System.getProperty("user.dir") + "/data";
+    private static final String CSV_DIR = BASE_DIR + "/csv_for_doctor";
+    private static final String UPLOAD_DIR = BASE_DIR + "/uploads";
     /**
      * 保存档案到数据库
      */
@@ -35,7 +33,7 @@ public class HealthProfileServiceImpl {
                             String symptoms, MultipartFile file) throws IOException {
 
         HealthProfile profile = new HealthProfile();
-        // 设置大驼峰字?
+        // 设置大驼峰字
         profile.setPregnancies(pregnancies);
         profile.setGlucose(glucose);
         profile.setBloodPressure(bloodPressure);
@@ -46,8 +44,8 @@ public class HealthProfileServiceImpl {
         profile.setAge(age);
 
         profile.setSymptoms(symptoms);
-        profile.setUserId(1L); // TODO: 替换为当前登录用?ID
-        profile.setStatus("PENDING"); // ?初始状态:待诊?
+        profile.setUserId(1L); // TODO: 替换为当前登录用户ID
+        profile.setStatus("PENDING"); // 初始状态:待诊
         profile.setCreateTime(LocalDateTime.now());
 
         // 处理文件上传

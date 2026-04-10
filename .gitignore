@@ -1,7 +1,87 @@
-# ==================================
-# 🔥 系统 & IDE 配置缓存（强制忽略）
-# ==================================
-# IDEA 相关
+# 项目专项
+# AI 模型 & 权重文件
+*.h5
+*.pkl
+*.pb
+*.onnx
+*.pt
+*.pth
+*.bin
+*.ckpt
+*.model
+*.weights
+*.scaler
+*.encoder
+diabetes_model.pth
+
+# 数据集 & 业务数据
+data/
+datasets/
+raw_data/
+python/data/
+OnlinePredict/
+*.csv
+*.xlsx
+*.xls
+
+# JSON 输出/模拟数据
+json/
+mock/
+*.json
+
+# 文件上传 & 临时目录
+files/
+upload/
+tmp/
+temp/
+
+# 数据库备份
+*-backup.sql
+*-备用.sql
+*-copy.sql
+*.sql.bak
+*.sql.gz
+*.sql.zip
+
+# 项目专属临时文件
+work/
+work-Catalina/
+generated/
+tempfiles/
+
+# 静态资源过滤
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.svg
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.mp3
+!vue/src/assets/**/*
+!vue/public/**/*
+/vue/public/111.jpg
+/vue/public/1111.mp4
+
+# 环境配置文件
+application-dev.yml
+application-prod.yml
+application-local.yml
+*.local.yml
+.env
+.env.*
+.env.local
+
+# 其他专属
+*.git_old
+
+---
+
+# 基础通用
+# IDE 配置文件
 .idea/
 *.iml
 *.iws
@@ -9,19 +89,15 @@
 *.compiler
 *.codeStyles
 *.run
-
-# Eclipse / STS 相关
 .settings/
 .classpath
 .project
 .cproject
-
-# VS Code 相关
 .vscode/
 !.vscode/extensions.json
 !.vscode/settings.json
 
-# 操作系统垃圾文件
+# 系统垃圾文件
 .DS_Store
 .DS_Store?
 ._*
@@ -32,9 +108,7 @@ Thumbs.db
 Thumbs.db:encryptable
 desktop.ini
 
-# ==================================
-# 📝 日志文件（强制忽略）
-# ==================================
+# 日志文件
 *.log
 logs/
 **/logs/
@@ -43,491 +117,54 @@ catalina.out
 error_log
 access_log
 
-# ==================================
-# ☕ 后端 Java / Maven（强制忽略）
-# ==================================
-# Maven 编译输出
+# Java & Maven
 **/target/
 target/
 **/test-output/
 out/
-
-# Maven 包装器缓存
 .mvn/wrapper/maven-wrapper.jar
 !.mvn/wrapper/maven-wrapper.properties
-
-# 打包产物
 *.war
 *.jar
 !*-sources.jar
 !*-javadoc.jar
+*.class
+*.ear
 
-# 🔥 核心：文件上传/头像目录（本地保留，绝不推送到GitHub）
-files/
-**/files/
-upload/
-**/upload/
-tmp/
-temp/
-
-# 环境配置文件
-application-dev.yml
-application-prod.yml
-*.local.yml
-
-# ==================================
-# 🎨 前端 Vue / npm / yarn（强制忽略）
-# ==================================
-# 第三方依赖
+# 前端 Node/Vue
 node_modules/
 **/node_modules/
-
-# 构建打包产物
 dist/
 **/dist/
 build/
 **/build/
-
-# 构建缓存
 **/.cache/
 **/.vite/
 **/.nuxt/
-
-# 调试日志
+.parcel-cache/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
-# 依赖锁定文件（保留，保证环境一致）
-# package-lock.json
-# yarn.lock
-
-# ==================================
-# 🐍 Python AI 模型模块（强制忽略）
-# ==================================
-# 字节码缓存
-__pycache__/
-**/__pycache__/
-*.py[cod]
-*$py.class
-*.so
-
-# 虚拟环境
-venv/
-env/
-.venv/
-ENV/
-
-# 安装缓存
-*.egg-info/
-*.egg
-.pyre/
-.spyproject/
-.ipynb_checkpoints/
-
-# ==================================
-# 🤖 AI 大模型 & 权重文件（强制忽略）
-# ==================================
-*.h5
-*.pkl
-*.pb
-*.onnx
-*.pt
-*.pth
-*.bin
-*.ckpt
-*.model
-*.weights
-*.scaler
-*.encoder
-# 你的糖尿病模型文件
-diabetes_model.pth
-
-# ==================================
-# 📊 数据集 & 临时数据（强制忽略）
-# ==================================
-data/
-datasets/
-raw_data/
-python/data/
-OnlinePredict/
-
-# JSON 下载目录（本地生成，不推送）
-json/
-mock/
-
-# ==================================
-# 🗄️ 数据库备份文件（强制忽略）
-# ==================================
-*-backup.sql
-*-备用.sql
-*-copy.sql
-*.sql.bak
-*.sql.gz
-*.sql.zip
-
-# ==================================
-# 🖼️ 静态资源 & 媒体文件（智能过滤）
-# ==================================
-# 忽略自动生成的图片/视频（头像、上传文件）
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.bmp
-*.svg
-*.mp4
-*.avi
-*.mov
-*.mkv
-*.mp3
-
-# 排除大视频文件
-1111.mp4
-# 排除其他可能的大文件
-*.mp4
-*.zip
-*.tar.gz
-
-# ✅ 放行：前端源码素材（logo、图标、背景图）
-!/vue/src/assets/**/*
-!/vue/public/**/*
-
-# ✅ 放行：项目文档（答辩/开发必备）
-!*.md
-!*.docx
-!*.pdf
-!*.pptx
-!README.md
-
-# ==================================
-# 📦 压缩包 & 杂项（强制忽略）
-# ==================================
-*.zip
-*.rar
-*.7z
-*.tar
-*.gz
-*.bz2
-
-# ==================================
-# 🚀 项目专属（糖尿病诊断系统）
-# ==================================
-# Tomcat 部署缓存
-work/
-work-Catalina/
-
-# 系统生成的临时文件
-generated/
-tempfiles/
-
-
-############################
-# 🔹 通用
-############################
-.DS_Store
-Thumbs.db
-*.log
-*.tmp
-*.swp
-*.swo
-*.bak
-
-############################
-# 🔹 IDE（你用的是 IDEA + HBuilder）
-############################
-# IntelliJ IDEA
-.idea/
-*.iml
-out/
-
-# VSCode（如果以后用）
-.vscode/
-
-# HBuilder
-.project
-.settings
-
-############################
-# 🔹 Node / Vue 前端（未来用得到）
-############################
-node_modules/
-dist/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 pnpm-lock.yaml
 
-############################
-# 🔹 Spring Boot / Java
-############################
-target/
-*.class
-*.jar
-*.war
-*.ear
-
-# Maven
-.mvn/wrapper/maven-wrapper.jar
-
-############################
-# 🔹 环境配置（很重要）
-############################
-.env
-.env.*
-application-local.yml
-application-dev.yml
-
-############################
-# 🔹 上传/运行生成文件
-############################
-uploads/
-temp/
-logs/
-
-############################
-# 🔹 前端构建缓存
-############################
-.cache/
-.parcel-cache/
-
-############################
-# 🔹 系统文件
-############################
-*.pid
-*.seed
-*.lock
-
-############################
-# 🔹 压缩包
-############################
-*.zip
-*.tar
-*.gz
-*.rar
-
-############################
-# 🔹 图片（可选）
-############################
-# 如果你有大量素材不想上传可以打开
- *.psd
- *.ai
-
-# ==================================
-# 🚀 杜哲浪 云医项目 专属 .gitignore
-# 核心目标：不删本地文件，仅屏蔽推送，让推送体积从几百MB → 几MB
-# ==================================
-*.git_old
-# ==================================
-# 🔥 系统 & IDE 配置缓存（强制忽略，永不推送）
-# ==================================
-# IDEA 相关
-.idea/
-*.iml
-*.iws
-*.ipr
-*.compiler
-*.codeStyles
-*.run
-
-# VS Code 相关
-.vscode/
-!.vscode/extensions.json
-!.vscode/settings.json
-
-# Eclipse 相关
-.settings/
-.classpath
-.project
-.cproject
-
-# 操作系统垃圾文件
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-Thumbs.db:encryptable
-desktop.ini
-
-# ==================================
-# ☕ 后端 Java / SpringBoot / Maven（强制忽略）
-# ==================================
-# Maven 编译输出目录（最大的垃圾之一）
-target/
-**/target/
-out/
-**/out/
-test-output/
-**/test-output/
-
-# Maven 包装器缓存
-.mvn/wrapper/maven-wrapper.jar
-!.mvn/wrapper/maven-wrapper.properties
-
-# 编译产物 & 打包文件
-*.class
-*.jar
-*.war
-*.ear
-# 放行源码包/文档包（可选）
-!*-sources.jar
-!*-javadoc.jar
-
-# 日志文件
-*.log
-logs/
-**/logs/
-catalina.out
-error_log
-access_log
-
-# 本地环境配置文件（不推送）
-application-dev.yml
-application-prod.yml
-application-local.yml
-*.local.yml
-.env
-.env.local
-
-# ==================================
-# 🎨 前端 Vue / npm / yarn（强制忽略）
-# ==================================
-# 第三方依赖包（几百MB，绝对不推送）
-vue/node_modules/
-node_modules/
-**/node_modules/
-
-# 前端打包产物
-vue/dist/
-dist/
-**/dist/
-vue/build/
-build/
-**/build/
-
-# 构建缓存
-vue/.cache/
-**/.cache/
-**/.vite/
-**/.nuxt/
-
-# 调试日志
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# 依赖锁定文件（可选保留，保证团队环境一致）
-# package-lock.json
-# yarn.lock
-
-# ==================================
-# 🐍 Python / AI 模型模块（强制忽略）
-# ==================================
-# 字节码缓存
+# Python 基础缓存
 __pycache__/
 **/__pycache__/
 *.py[cod]
 *$py.class
 *.so
-
-# 虚拟环境（本地环境，不推送）
-python/venv/
 venv/
 env/
 .venv/
 ENV/
-**/venv/
-
-# 安装缓存
 *.egg-info/
 *.egg
-.install.cfg
 .pyre/
 .spyproject/
 .ipynb_checkpoints/
 
-# AI 模型/权重文件（体积巨大，不推送）
-*.h5
-*.pkl
-*.pb
-*.onnx
-*.pt
-*.pth
-*.bin
-*.ckpt
-*.model
-*.weights
-*.scaler
-*.encoder
-diabetes_model.pth
-
-# ==================================
-# 📊 项目专属大文件/数据集/上传文件（核心！解决推送失败）
-# ==================================
-# 数据集/CSV/Excel（根目录+子目录全屏蔽）
-data/
-**/data/
-OnlinePredict/
-**/OnlinePredict/
-*.csv
-**/*.csv
-*.xlsx
-**/*.xlsx
-*.xls
-**/*.xls
-
-# 上传文件/头像/临时目录（files文件夹全屏蔽，本地保留不推送）
-files/
-**/files/
-upload/
-**/upload/
-tmp/
-**/tmp/
-temp/
-**/temp/
-
-# JSON 临时数据/模拟数据（全屏蔽）
-json/
-**/json/
-mock/
-**/mock/
-*.json
-**/*.json
-
-# 图片/视频/媒体文件（除前端assets外全屏蔽）
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.bmp
-*.svg
-*.mp4
-*.avi
-*.mov
-*.mkv
-*.mp3
-# ✅ 放行前端Vue的静态资源（logo、图标、背景图，必须保留）
-!vue/src/assets/**/*
-!vue/public/**/*
-
-# ==================================
-# 🗄️ 数据库相关（强制忽略）
-# ==================================
-*-backup.sql
-*-备用.sql
-*-copy.sql
-*.sql.bak
-*.sql.gz
-*.sql.zip
-
-# ==================================
-# 📦 压缩包 & 杂项（强制忽略）
-# ==================================
+# 压缩包
 *.zip
 *.rar
 *.7z
@@ -536,38 +173,11 @@ mock/
 *.bz2
 *.iso
 
-# ==================================
-# ✨ 项目专属临时文件（强制忽略）
-# ==================================
-# Tomcat 部署缓存
-work/
-work-Catalina/
-
-# 系统生成的临时文件
-generated/
-tempfiles/
-
-# ==================================
-# ✅ 放行规则（确保核心源码被推送）
-# ==================================
-# 放行后端核心源码
-!src/main/java/**/*
-!src/main/resources/**/*.xml
-!src/main/resources/**/*.yml
-!src/main/resources/**/*.properties
-!pom.xml
-
-# 放行前端核心源码
-!vue/src/**/*.vue
-!vue/src/**/*.js
-!vue/src/**/*.css
-!vue/public/**/*
-!vue/package.json
-!vue/vue.config.js
-
-# 放行项目文档
-!README.md
-!*.md
-!*.docx
-!*.pdf
-!*.pptx
+# 通用临时文件
+*.tmp
+*.swp
+*.swo
+*.bak
+*.pid
+*.seed
+*.lock

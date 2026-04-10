@@ -23,12 +23,13 @@ public class HealthProfileController {
     @Autowired
     private HealthProfileServiceImpl healthProfileService;
 
-    // 从配置文件读取CSV根路径(适配Windows系统?
-    @Value("${file.csv.root-path:D:\\Software-Cup121\\data\\csv_for_doctor}")
+    // 从配置文件读取CSV根路径(适配Windows系统)
+//    @Value("${file.csv.root-path:D:\\Software-DZL125\\data\\csv_for_doctor}")
+    @Value("${file.csv.root-path:#{systemProperties['user.dir'] + '/data/csv_for_doctor'}}")
     private String csvRootPath;
 
     /**
-     * 1. 保存健康档案 (用户?
+     * 1. 保存健康档案 (用户)
      */
     @PostMapping("/save")
     public Result save(
@@ -56,7 +57,7 @@ public class HealthProfileController {
     }
 
     /**
-     * 2. 生成 CSV 并标记为"待诊断?(用户点击发?
+     * 2. 生成 CSV 并标记为"待诊断档案(用户点击发送)
      */
     @PostMapping("/send-to-doctor/{id}")
     public Result<String> sendToDiagnostician(@PathVariable Long id) {
