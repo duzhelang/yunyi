@@ -157,8 +157,6 @@ def main():
     required_columns = ['Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness',
                         'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age']
 
-    # 再次检查（防止大小写问题，可选：如果业务允许，可以转小写匹配）
-    # 这里保持严格匹配，但提示用户
     missing_cols = [col for col in required_columns if col not in test.columns]
 
     if missing_cols:
@@ -238,8 +236,8 @@ def main():
             host='127.0.0.1',
             port=3306,
             user='root',
-            password='123456', # ⚠️ 请确认密码是否正确
-            database='soft',
+            password='010125', # ⚠️ 请确认密码是否正确
+            database='dongfang',
             charset='utf8'
         )
         cursor = conn.cursor()
