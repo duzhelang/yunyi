@@ -241,7 +241,7 @@ export default {
         },
         series: [
           {
-            name: '风险分',
+            name: '风险分布',
             type: 'bar',
             barWidth: '40%',
             data: [score],

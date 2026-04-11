@@ -3,8 +3,8 @@
 		<!-- 1. 首屏 Hero Section -->
 		<div class="hero-section">
 			<div class="hero-content">
-				<div class="badge">PyTorch Deep Learning Powered</div>
-				<h1 class="hero-title">云医智护<br /><span class="highlight">糖尿病诊断系统</span></h1>
+				<div class="badge">由PyTorch 深度学习驱动</div>
+				<h1 class="hero-title">云&ensp;医&ensp;智&ensp;护<br /><span class="highlight">&emsp;&emsp;糖尿病诊断系统</span></h1>
 				<p class="hero-desc">
 					融合深度学习技术与医学特征工程,仅需 8 项基础生理指标,<br />
 					即可在毫秒级内完成高精度的患病风险预测.
@@ -225,7 +225,7 @@
 			<div class="footer-content">
 				<div class="footer-logo">
 					<i class="el-icon-s-medal"></i>
-					<span>PyTorch Diabetes Diagnosis</span>
+					<span>云医智护——全场景糖尿病健康服务一体化系统</span>
 				</div>
 				<p class="disclaimer">
 					免责声明:本系统仅为辅助诊断工具,基于算法模型生成预测结果,<br />
