@@ -1,14 +1,11 @@
 package com.cucn.springboot.controller;
 
 import cn.hutool.core.date.DateUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cucn.springboot.common.Constants;
 import com.cucn.springboot.common.Result;
-import com.cucn.springboot.entity.Files;
 import com.cucn.springboot.entity.OnlineDate;
-import com.cucn.springboot.mapper.FileMapper;
 import com.cucn.springboot.mapper.ResultMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,8 +25,8 @@ import java.util.List;
  * @Version: 1.0
  */
 @RestController
-@RequestMapping("/detilebord")
-public class DetilebordController {
+@RequestMapping("/detailbord")
+public class DetailbordController {
     @Value("${files.upload.path}")
     private String fileUploadPath;
 
@@ -86,9 +83,6 @@ public class DetilebordController {
 
     /**
      * 分页查询接口
-     * @param pageNum
-     * @param pageSize
-     * @param result
      * @return
      */
 
@@ -96,7 +90,7 @@ public class DetilebordController {
     public Result findPage(@PathVariable Integer id,
                            @RequestParam Integer pageNum,
                            @RequestParam Integer pageSize,
-                           @RequestParam(defaultValue = "") Integer result) {
+                           @RequestParam(defaultValue = "") String result) {
         //LambdaQueryWrapper<OnlineDate> queryWrapper = new LambdaQueryWrapper<>();
         QueryWrapper<OnlineDate> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("testfile_id",id);
@@ -104,8 +98,11 @@ public class DetilebordController {
         //queryWrapper.eq("is_delete", false);
         //queryWrapper.orderByDesc("id");
         //queryWrapper.like("label", label);
-       if (result!=null) {
-           queryWrapper.like("result", result);
+//       if (result!=null) {
+//           queryWrapper.like("result", result);
+//        }
+        if (!result.isEmpty()) {
+            queryWrapper.like("result", result);
         }
         return Result.success(resultMapper.selectPage(new Page<>(pageNum, pageSize), queryWrapper));
     }
@@ -123,7 +120,7 @@ public class DetilebordController {
     @GetMapping("/page")
     public Result findPage(@RequestParam Integer pageNum,
                            @RequestParam Integer pageSize,
-                           @RequestParam(defaultValue = "") Integer result) {
+                           @RequestParam(defaultValue = "") String result) {
         //LambdaQueryWrapper<OnlineDate> queryWrapper = new LambdaQueryWrapper<>();
         QueryWrapper<OnlineDate> queryWrapper = new QueryWrapper<>();
         //queryWrapper.eq("testfile_id",id);
@@ -131,9 +128,12 @@ public class DetilebordController {
         //queryWrapper.eq("is_delete", false);
         //queryWrapper.orderByDesc("id");
         //queryWrapper.like("label", label);
-        if (result!=null) {
+        if (!result.isEmpty()) {
             queryWrapper.like("result", result);
         }
+//        if (result!=null) {
+//            queryWrapper.like("result", result);
+//        }
         return Result.success(resultMapper.selectPage(new Page<>(pageNum, pageSize), queryWrapper));
     }
 }

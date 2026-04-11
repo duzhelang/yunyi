@@ -42,7 +42,7 @@
     import {serverIp} from "../../public/config";
 
     export default {
-        name: "Detilebord",
+        name: "Detailbord",
         data() {
             return {
                 serverIp: serverIp,
@@ -61,7 +61,7 @@
         methods: {
             load() {
               if (typeof(this.id) == "undefined"){
-                this.request.get("/detilebord/page/", {
+                this.request.get("/detailbord/page/", {
                   params: {
                     pageNum: this.pageNum,
                     pageSize: this.pageSize,
@@ -72,7 +72,7 @@
                   this.total = res.data.total
                 })
               }else {
-                this.request.get("/detilebord/page/"+this.id, {
+                this.request.get("/detailbord/page/"+this.id, {
                   params: {
                     pageNum: this.pageNum,
                     pageSize: this.pageSize,
