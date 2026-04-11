@@ -14,9 +14,9 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.Resource;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.annotation.Resource;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @RequestMapping("/file")
 public class FileController {
 
-    // 总目?
+    // 总目录
     @Value("${files.upload.path}")
     private String fileUploadPath;
 
@@ -35,7 +35,7 @@ public class FileController {
     @Value("${files.avatar.path}")
     private String avatarUploadPath;
 
-    // 普通文件目?
+    // 普通文件目录
     @Value("${files.common.path}")
     private String commonUploadPath;
 

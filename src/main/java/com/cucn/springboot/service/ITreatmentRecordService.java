@@ -3,7 +3,7 @@ package com.cucn.springboot.service;
 import com.cucn.springboot.entity.TreatmentRecord;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 
 /**

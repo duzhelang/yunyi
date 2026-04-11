@@ -1,16 +1,19 @@
 package com.cucn.springboot.controller;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
+import com.cucn.springboot.common.Result;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/diabetes")
-@Slf4j  // 替换System.out为日志框架
 public class DiabetesController {
+
+    private static final Logger log = LoggerFactory.getLogger(DiabetesController.class);
 
     @Value("${files.pythonExe.path}")
     private String pythonPath;
@@ -121,33 +124,5 @@ public class DiabetesController {
         }
     }
 
-    // 统一响应格式
-    public static class Result<T> {
-        private int code;
-        private String msg;
-        private T data;
 
-        public static <T> Result<T> success(T data) {
-            Result<T> result = new Result<>();
-            result.code = 200;
-            result.msg = "success";
-            result.data = data;
-            return result;
-        }
-
-        public static <T> Result<T> error(String msg) {
-            Result<T> result = new Result<>();
-            result.code = 500;
-            result.msg = msg;
-            return result;
-        }
-
-        // Getter和Setter
-        public int getCode() { return code; }
-        public void setCode(int code) { this.code = code; }
-        public String getMsg() { return msg; }
-        public void setMsg(String msg) { this.msg = msg; }
-        public T getData() { return data; }
-        public void setData(T data) { this.data = data; }
-    }
 }

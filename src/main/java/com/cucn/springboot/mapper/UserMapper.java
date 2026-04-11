@@ -4,10 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cucn.springboot.entity.User;
 import com.cucn.springboot.controller.dto.UserPasswordDTO;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Update;
-
 /**
  * <p>
  *  Mapper 接口
@@ -16,7 +14,6 @@ import org.apache.ibatis.annotations.Update;
  * @author CUCN-cj
  * @since 2026-03-26
  */
-@Mapper
 public interface UserMapper extends BaseMapper<User> {
 
     @Update("update sys_user set password = #{newPassword} where username = #{username} and password = #{password}")

@@ -5,21 +5,58 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Data;
 
 import java.util.Date;
 
-@Data
 @TableName("sys_result")
 public class OnlineDate {
     @TableId(type = IdType.AUTO)
     private Integer id;
     private Integer testid;
     private Integer result;
-    @ApiModelProperty("创建时间")
     @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
     private Date createTime;
     @TableField("testfile_id")
     private Integer testfileid;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public Integer getTestid() {
+        return testid;
+    }
+
+    public void setTestid(Integer testid) {
+        this.testid = testid;
+    }
+
+    public Integer getResult() {
+        return result;
+    }
+
+    public void setResult(Integer result) {
+        this.result = result;
+    }
+
+    public Date getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
+    }
+
+    public Integer getTestfileid() {
+        return testfileid;
+    }
+
+    public void setTestfileid(Integer testfileid) {
+        this.testfileid = testfileid;
+    }
+
 }

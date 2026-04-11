@@ -10,7 +10,7 @@ import com.cucn.springboot.common.Constants;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.List;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -89,4 +89,5 @@ public class MenuController {
     }
 
 }
+
 

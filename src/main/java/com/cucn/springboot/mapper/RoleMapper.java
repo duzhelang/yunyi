@@ -2,7 +2,6 @@ package com.cucn.springboot.mapper;
 
 import com.cucn.springboot.entity.Role;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
@@ -12,9 +11,8 @@ import org.apache.ibatis.annotations.Select;
  * </p>
  *
  * @author CUCN-cj
- * @since 2026-03-22
+ * @since 2026-04-11
  */
-@Mapper
 public interface RoleMapper extends BaseMapper<Role> {
 
     @Select("select id from sys_role where flag = #{flag}")

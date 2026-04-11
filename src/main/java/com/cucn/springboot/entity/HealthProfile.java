@@ -1,10 +1,8 @@
 package com.cucn.springboot.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import lombok.Data;
 import java.time.LocalDateTime;
 
-@Data
 @TableName("user_health_profiles")
 public class HealthProfile {
 
@@ -50,8 +48,145 @@ public class HealthProfile {
     private String diagnosisResult;  // 诊断员填写的最终结?
     private LocalDateTime diagnoseTime; // 诊断完成的时?
 
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public Integer getPregnancies() {
+        return Pregnancies;
+    }
+
+    public void setPregnancies(Integer pregnancies) {
+        Pregnancies = pregnancies;
+    }
+
+    public Double getGlucose() {
+        return Glucose;
+    }
+
+    public void setGlucose(Double glucose) {
+        Glucose = glucose;
+    }
+
+    public Integer getBloodPressure() {
+        return BloodPressure;
+    }
+
+    public void setBloodPressure(Integer bloodPressure) {
+        BloodPressure = bloodPressure;
+    }
+
+    public Integer getSkinThickness() {
+        return SkinThickness;
+    }
+
+    public void setSkinThickness(Integer skinThickness) {
+        SkinThickness = skinThickness;
+    }
+
+    public Double getInsulin() {
+        return Insulin;
+    }
+
+    public void setInsulin(Double insulin) {
+        Insulin = insulin;
+    }
+
+    public Double getBMI() {
+        return BMI;
+    }
+
+    public void setBMI(Double BMI) {
+        this.BMI = BMI;
+    }
+
+    public Double getDiabetesPedigreeFunction() {
+        return DiabetesPedigreeFunction;
+    }
+
+    public void setDiabetesPedigreeFunction(Double diabetesPedigreeFunction) {
+        DiabetesPedigreeFunction = diabetesPedigreeFunction;
+    }
+
+    public Integer getAge() {
+        return Age;
+    }
+
+    public void setAge(Integer age) {
+        Age = age;
+    }
+
+    public String getSymptoms() {
+        return symptoms;
+    }
+
+    public void setSymptoms(String symptoms) {
+        this.symptoms = symptoms;
+    }
+
+    public String getFileUrl() {
+        return fileUrl;
+    }
+
+    public void setFileUrl(String fileUrl) {
+        this.fileUrl = fileUrl;
+    }
+
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getCsvFilePath() {
+        return csvFilePath;
+    }
+
+    public void setCsvFilePath(String csvFilePath) {
+        this.csvFilePath = csvFilePath;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getDiagnosisResult() {
+        return diagnosisResult;
+    }
+
+    public void setDiagnosisResult(String diagnosisResult) {
+        this.diagnosisResult = diagnosisResult;
+    }
+
+    public LocalDateTime getDiagnoseTime() {
+        return diagnoseTime;
+    }
+
+    public void setDiagnoseTime(LocalDateTime diagnoseTime) {
+        this.diagnoseTime = diagnoseTime;
+    }
+
     public String getCsvFileName() {
 
         return "";
     }
+
 }

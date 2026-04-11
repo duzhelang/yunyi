@@ -1,7 +1,6 @@
 package com.cucn.springboot.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.cucn.springboot.entity.Files;
 import com.cucn.springboot.entity.OnlineDate;
 import org.apache.ibatis.annotations.Mapper;
 

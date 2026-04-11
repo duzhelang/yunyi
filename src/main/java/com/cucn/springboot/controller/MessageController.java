@@ -18,7 +18,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 
 /**
  * @BelongsProject: Software-CUCN
@@ -95,3 +95,4 @@ public class MessageController {
 
 
 }
+

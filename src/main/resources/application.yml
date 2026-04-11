@@ -11,15 +11,29 @@ server:
       file-date-format: yyyy-MM-dd
       rename-on-rotate: true
 
-spring:
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/dongfang?serverTimezone=GMT%2b8&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: "010125"
-  redis:
-    host: 127.0.0.1
-    port: 6379
+  spring:
+    # MySQL 数据库配置（保持不变，正确）
+    datasource:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://127.0.0.1:3306/dongfang?serverTimezone=GMT%2b8&useSSL=false&allowPublicKeyRetrieval=true
+      username: root
+      password: "010125"
+
+    # SpringBoot 3  Redis
+    data:
+      redis:
+        host: 127.0.0.1
+        port: 6379
+        database: 0
+        # password:
+        # lettuce 连接池
+        lettuce:
+          pool:
+            max-active: 8
+            max-wait: -1ms
+            max-idle: 8
+            min-idle: 0
+
   servlet:
     multipart:
       max-file-size: 1500MB
@@ -74,27 +88,6 @@ files:
   pythonModelPath:
     path: ${base.path}/diabetes_model.pth
 
-#files:
-#  upload:
-#    path: ${base.path}/files/
-#  pythonUpload:
-#    path: ${base.path}/data/
-#  pythonDownload:
-#    path: ${base.path}/
-#  JsonDownload:
-#    path: ${base.path}/json/
-#  pythonDataTestUpload:
-#    path: ${base.path}/OnlinePredict/
-#  pythonExe:
-#    path: D:\py\python.exe
-#  pythonTrainMain:
-#    path: ${base.path}/python/train.py
-#  pythonPredictMain:
-#    path: ${base.path}/python/predict.py
-#  pythonChatScript:
-#    path: D:/Software-CUCN/python/diabetes_chat.py
-#  pythonModelPath:
-#    path: ${base.path}/diabetes_model.pth
 
 zhipu:
   api:

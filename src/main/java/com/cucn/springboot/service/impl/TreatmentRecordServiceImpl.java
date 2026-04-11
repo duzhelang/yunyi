@@ -7,7 +7,7 @@ import com.cucn.springboot.service.ITreatmentRecordService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -18,7 +18,7 @@ public class TreatmentRecordServiceImpl implements ITreatmentRecordService {
 
     private final TreatmentRecordMapper treatmentRecordMapper;
 
-    // 构造器注入,和你现有Service实现类风格一?
+    // 构造器注入,和你现有Service实现类风格一致
     public TreatmentRecordServiceImpl(TreatmentRecordMapper treatmentRecordMapper) {
         this.treatmentRecordMapper = treatmentRecordMapper;
     }
@@ -58,7 +58,7 @@ public class TreatmentRecordServiceImpl implements ITreatmentRecordService {
             String fileName = URLEncoder.encode("诊疗档案导入模板", "UTF-8");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
 
-            // 生成空模?
+            // 生成空模板
             EasyExcel.write(response.getOutputStream(), TreatmentRecord.class)
                     .sheet("诊疗档案模板")
                     .doWrite(new ArrayList<>());
@@ -138,7 +138,7 @@ public class TreatmentRecordServiceImpl implements ITreatmentRecordService {
             String fileName = URLEncoder.encode("诊疗档案数据", "UTF-8");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
 
-            // 查询数据并导?
+            // 查询数据并导出
             List<TreatmentRecord> list = treatmentRecordMapper.selectList(query);
             EasyExcel.write(response.getOutputStream(), TreatmentRecord.class)
                     .sheet("诊疗档案数据")

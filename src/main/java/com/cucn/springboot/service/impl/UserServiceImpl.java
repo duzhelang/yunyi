@@ -23,7 +23,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cucn.springboot.utils.TokenUtils;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,7 +66,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             userDTO.setToken(token);
 
             String role = one.getRole(); // ROLE_ADMIN
-            // 设置用户的菜单列?
+            // 设置用户的菜单列表
             List<Menu> roleMenus = getRoleMenus(role);
             userDTO.setMenus(roleMenus);
             return userDTO;
@@ -146,7 +146,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     }
 
     /**
-     * 获取当前角色的菜单列?
+     * 获取当前角色的菜单列表
      * @param roleFlag
      * @return
      */
@@ -174,3 +174,4 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
 
 }
+

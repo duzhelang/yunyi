@@ -1,20 +1,46 @@
 package com.cucn.springboot.common;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 /**
  * 接口统一返回包装?
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Result<T> {  // 增加泛型支持,提高类型安全?
 
     private String code;
     private String msg;
     private T data;  // 使用泛型类型
+
+    public Result() {
+    }
+
+    public Result(String code, String msg, T data) {
+        this.code = code;
+        this.msg = msg;
+        this.data = data;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getMsg() {
+        return msg;
+    }
+
+    public void setMsg(String msg) {
+        this.msg = msg;
+    }
+
+    public T getData() {
+        return data;
+    }
+
+    public void setData(T data) {
+        this.data = data;
+    }
 
     /**
      * 成功返回(无数据?
@@ -57,4 +83,5 @@ public class Result<T> {  // 增加泛型支持,提高类型安全?
     public static <T> Result<T> error(String msg) {
         return new Result<>(Constants.CODE_500, msg, null);
     }
+
 }

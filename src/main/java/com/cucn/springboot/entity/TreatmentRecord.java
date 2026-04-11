@@ -3,16 +3,14 @@ package com.cucn.springboot.entity;
 import com.alibaba.excel.annotation.ExcelIgnore;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 import java.util.Date;
 
 /**
  * 诊疗档案实体类,映射数据库sys_treatment_record
  */
-@Data
 public class TreatmentRecord {
 
     @ExcelIgnore // Excel导入忽略主键
@@ -56,4 +54,109 @@ public class TreatmentRecord {
     @ExcelIgnore
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date updateTime;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getPatientName() {
+        return patientName;
+    }
+
+    public void setPatientName(String patientName) {
+        this.patientName = patientName;
+    }
+
+    public String getIdCard() {
+        return idCard;
+    }
+
+    public void setIdCard(String idCard) {
+        this.idCard = idCard;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    public BigDecimal getBloodSugar() {
+        return bloodSugar;
+    }
+
+    public void setBloodSugar(BigDecimal bloodSugar) {
+        this.bloodSugar = bloodSugar;
+    }
+
+    public String getDiagnosisResult() {
+        return diagnosisResult;
+    }
+
+    public void setDiagnosisResult(String diagnosisResult) {
+        this.diagnosisResult = diagnosisResult;
+    }
+
+    public String getTreatmentPlan() {
+        return treatmentPlan;
+    }
+
+    public void setTreatmentPlan(String treatmentPlan) {
+        this.treatmentPlan = treatmentPlan;
+    }
+
+    public String getDoctorName() {
+        return doctorName;
+    }
+
+    public void setDoctorName(String doctorName) {
+        this.doctorName = doctorName;
+    }
+
+    public String getRemark() {
+        return remark;
+    }
+
+    public void setRemark(String remark) {
+        this.remark = remark;
+    }
+
+    public Date getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+    }
+
 }

@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -80,7 +80,7 @@ public class pythonController {
         fileMapper.insert(saveFile);
 
         flushRedis(Constants.FILES_KEY);
-        return Result.success("文件上传成功,文件名:" + fileUUID);
+        return Result.success("文件上传成功,文件��?" + fileUUID);
     }
 
     @GetMapping("/getUrl/{url}")
@@ -120,7 +120,7 @@ public class pythonController {
         }
 
         try {
-            // [核心修改]参数为 4 个 (python 和脚本路径)
+            // [核心修改]参数为4个 (python 和脚本路径)
             // 0: python.exe
             // 1: train.py
             // 2: 输入 CSV
@@ -133,7 +133,7 @@ public class pythonController {
             });
 
             if (exitCode != 0) {
-                return Result.error("507", "训练失败,Python 返回码:" + exitCode);
+                return Result.error("507", "训练失败,Python 返回值" + exitCode);
             }
 
             // [核心修改]验证PyTorch 生成的三个文件
@@ -152,7 +152,7 @@ public class pythonController {
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return Result.error("509", "训练被中断:" + e.getMessage());
+            return Result.error("509", "训练被中断" + e.getMessage());
         }
 
         // 更新数据库,存储模型文件名
@@ -171,14 +171,14 @@ public class pythonController {
         // 从配置的下载目录读取
         File downloadFile = new File(propertyUtil.getPythonDownload(), pythonUrl);
 
-        // 如果直接在根目录没找到,尝试在子目录找(视具体保存逻辑而定,这里按配置根目录处理)
+        // 如果直接在根目录没找�?尝试在子目录�?视具体保存逻辑而定,这里按配置根目录处理)
         if (!downloadFile.exists()) {
-            // 尝试绝对路径查找(如?pythonUrl 存的是全名)
+            // 尝试绝对路径查找(�?pythonUrl 存的是全�?
             downloadFile = new File(pythonUrl);
         }
 
         if (!downloadFile.exists()) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, "文件不存在:" + pythonUrl);
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "文件不存�?" + pythonUrl);
             return;
         }
 

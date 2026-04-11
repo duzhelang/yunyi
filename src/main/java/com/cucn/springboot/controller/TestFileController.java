@@ -22,8 +22,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.URLEncoder;
 import java.nio.file.Files;
@@ -69,7 +69,7 @@ public class TestFileController {
 
         String uploadDir = propertyUtil.getPythonDataTestUpload();
         if (StrUtil.isBlank(uploadDir)) {
-            return Result.error("500", "服务器配置错误:上传路径未配置");
+            return Result.error("500", "服务器配置错误，上传路径未配置");
         }
 
         // 确保路径以分隔符结尾
@@ -85,7 +85,7 @@ public class TestFileController {
 
         String url;
         // 注意:file.getInputStream() 被消费后不能再次读取,这里先做MD5 再transferTo 是对的
-        // 问:SecureUtil.md5(InputStream) 会关闭流吗?Hutool 通常不会关闭,但为了安全最好重新获取或确保顺序
+        // 注意:SecureUtil.md5(InputStream) 会关闭流吗? Hutool 通常不会关闭,但为了安全最好重新获取或确保顺序
         // 这里保持你原有逻辑,假设Hutool 处理得当
         byte[] bytes = file.getBytes();
         String md5 = SecureUtil.md5(Arrays.toString(bytes));
@@ -135,7 +135,7 @@ public class TestFileController {
         }
 
         if (!ObjectUtil.isEmpty(testFiles.getEnable()) && "1".equals(testFiles.getEnable())) {
-            return Result.error("505", "已完成,请查看结果");
+            return Result.error("505", "已完成，请查看结果");
         }
 
         String csvDir = propertyUtil.getPythonDataTestUpload();
@@ -169,7 +169,7 @@ public class TestFileController {
 
         String jsonDir = propertyUtil.getJsonDownload();
         if (StrUtil.isBlank(jsonDir)) {
-            return Result.error("500", "服务器配置错误:JSON 下载路径未配置");
+            return Result.error("500", "服务器配置错误，JSON 下载路径未配置");
         }
         File jsonDirFile = new File(jsonDir);
         if (!jsonDirFile.exists()) {
@@ -237,8 +237,8 @@ public class TestFileController {
             }
 
             if (foundFile != null) {
-                System.out.println("🎉 找到了!文件位于:" + foundFile.getAbsolutePath());
-                System.out.println("   正在移动至正确目录..");
+                System.out.println("🎉 找到文件，文件位于:" + foundFile.getAbsolutePath());
+                System.out.println("   正在移动至正确目录.");
 
                 try {
                     if (!jsonDirFile.exists()) jsonDirFile.mkdirs();
@@ -258,18 +258,18 @@ public class TestFileController {
                 System.err.println("严重错误:全局搜索也未找到文件!" + jsonFileName);
                 // 列出 jsonDir 下的文件看看
                 if (jsonDirFile.exists()) {
-                    System.out.println("   配置目录下的文件有:");
+                    System.out.println("   配置目录下的文件列表:");
                     for (String f : jsonDirFile.list()) {
                         System.out.println("      - " + f);
                     }
                 }
-                return Result.error("510", "预测完成但文件丢失,请联系管理员检查后台日志!");
+                return Result.error("510", "预测完成但文件丢失，请联系管理员检查后台日志");
             }
         }
         // --- 搜索结束 ---
 
         if (foundFile == null || !foundFile.exists()) {
-            return Result.error("510", "文件最终确认失败!");
+            return Result.error("510", "文件最终确认失败");
         }
 
         System.out.println("确认文件已就绪:" + foundFile.getAbsolutePath());
@@ -280,7 +280,7 @@ public class TestFileController {
         flushRedis(Constants.FILES_KEY);
 
         long etime = System.currentTimeMillis();
-        System.out.println("预测全流程结束,耗时:" + (etime - stime) + "ms");
+        System.out.println("预测全流程结束，耗时:" + (etime - stime) + "ms");
         return Result.success();
     }
 
@@ -370,12 +370,12 @@ public class TestFileController {
     }
 
     /**
-     * ⬇️️⬇️️⬇️ 重点修改:下载接?(微调? ⬇️️⬇️️⬇️
+     * ⬇️️⬇️️⬇️ 重点修改:下载接口 (微调) ⬇️️⬇️️⬇️
      */
     @GetMapping("/{jsonUrl}")
     public void download(@PathVariable String jsonUrl, HttpServletResponse response) throws IOException {
-        System.out.println("========== [下载请求] 开?==========");
-        System.out.println("1. 接收到的文件名参数:[" + jsonUrl + "]");
+        System.out.println("========== [下载请求] 开始 ==========");
+        System.out.println("1. 接收到的文件名参数: [" + jsonUrl + "]");
 
         if (StrUtil.isBlank(jsonUrl)) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -384,12 +384,12 @@ public class TestFileController {
             return;
         }
 
-        // 1. 数据库校?
+        // 1. 数据库校验
         LambdaQueryWrapper<TestFiles> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(TestFiles::getJsonUrl, jsonUrl);
         TestFiles fileRecord = testFileMapper.selectOne(queryWrapper);
 
-        // 兼容:如果没查到且没后缀,尝试加 .json
+        // 兼容:如果没查到且没后缀,尝试补全.json
         if (ObjectUtil.isEmpty(fileRecord) && !jsonUrl.endsWith(".json")) {
             String tempUrl = jsonUrl + ".json";
             queryWrapper = new LambdaQueryWrapper<>();
@@ -397,7 +397,7 @@ public class TestFileController {
             fileRecord = testFileMapper.selectOne(queryWrapper);
             if(ObjectUtil.isNotEmpty(fileRecord)){
                 jsonUrl = tempUrl;
-                System.out.println("2. 自动补全后缀为:[" + jsonUrl + "]");
+                System.out.println("2. 自动补全后缀为: [" + jsonUrl + "]");
             }
         }
 
@@ -417,9 +417,9 @@ public class TestFileController {
             return;
         }
 
-        // 2. 获取并处理路?
+        // 2. 获取并处理路径
         String basePath = propertyUtil.getJsonDownload();
-        System.out.println("4. 读取配置路径:[" + basePath + "]");
+        System.out.println("4. 读取配置路径: [" + basePath + "]");
 
         if (StrUtil.isBlank(basePath)) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -427,14 +427,14 @@ public class TestFileController {
             return;
         }
 
-        // [关键]统一使用 File.separator 确保跨平台兼?
+        // [关键]统一使用 File.separator 确保跨平台兼容
         if (!basePath.endsWith("/") && !basePath.endsWith("\\")) {
             basePath += File.separator;
         }
-        System.out.println("5. 修正后基础路径:[" + basePath + "]");
+        System.out.println("5. 修正后基础路径: [" + basePath + "]");
 
         File targetFile = new File(basePath + jsonUrl);
-        System.out.println("6. 尝试访问绝对路径:[" + targetFile.getAbsolutePath() + "]");
+        System.out.println("6. 尝试访问绝对路径: [" + targetFile.getAbsolutePath() + "]");
         System.out.println("7. 文件是否存在? " + targetFile.exists());
 
         // 3. 容错:全局搜索
@@ -473,21 +473,21 @@ public class TestFileController {
         }
 
         if (!targetFile.exists()) {
-            System.out.println("⚠️ 最终确认:文件不存在!");
+            System.out.println("⚠️ 最终确认文件不存在");
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"code\":404,\"msg\":\"文件未在服务器找到,请查看控制台日志\"}");
+            response.getWriter().write("{\"code\":404,\"msg\":\"文件未在服务器找到，请查看控制台日志\"}");
             return;
         }
 
         // 4. 执行下载
-        System.out.println("📤 开始传输文件..");
+        System.out.println("📤 开始传输文件.");
         try (FileInputStream fis = new FileInputStream(targetFile);
              ServletOutputStream os = response.getOutputStream()) {
 
             response.setContentType("application/octet-stream");
 
-            // [关键]标准文件名编码方式,兼?Chrome/Firefox/Edge
+            // [关键]标准文件名编码方式，兼容 Chrome/Firefox/Edge
             String encodedFileName = URLEncoder.encode(jsonUrl, "UTF-8").replace("+", "%20");
             response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
 

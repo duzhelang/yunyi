@@ -4,8 +4,6 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import io.swagger.annotations.ApiModelProperty;
-import lombok.Data;
 
 import java.util.Date;
 
@@ -17,7 +15,6 @@ import java.util.Date;
  * @Description: TODO
  * @Version: 1.0
  */
-@Data
 @TableName("sys_message")
 public class Message {
 
@@ -30,7 +27,6 @@ public class Message {
 
     private String content;
 
-    @ApiModelProperty("创建时间")
     private Date createTime;
 
     private Integer sendUserId;
@@ -42,5 +38,77 @@ public class Message {
 
     @TableField("receive_user_name")
     private String receiveUserName;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public Date getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
+    }
+
+    public Integer getSendUserId() {
+        return sendUserId;
+    }
+
+    public void setSendUserId(Integer sendUserId) {
+        this.sendUserId = sendUserId;
+    }
+
+    public String getSendUserName() {
+        return sendUserName;
+    }
+
+    public void setSendUserName(String sendUserName) {
+        this.sendUserName = sendUserName;
+    }
+
+    public String getSendRealName() {
+        return sendRealName;
+    }
+
+    public void setSendRealName(String sendRealName) {
+        this.sendRealName = sendRealName;
+    }
+
+    public String getReceiveUserName() {
+        return receiveUserName;
+    }
+
+    public void setReceiveUserName(String receiveUserName) {
+        this.receiveUserName = receiveUserName;
+    }
 
 }
