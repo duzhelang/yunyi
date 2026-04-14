@@ -11,7 +11,7 @@ server:
       file-date-format: yyyy-MM-dd
       rename-on-rotate: true
 
-  spring:
+spring:
     # MySQL 数据库配置（保持不变，正确）
     datasource:
       driver-class-name: com.mysql.cj.jdbc.Driver
@@ -33,11 +33,10 @@ server:
             max-wait: -1ms
             max-idle: 8
             min-idle: 0
-
-  servlet:
-    multipart:
-      max-file-size: 1500MB
-      max-request-size: 1500MB
+    servlet:
+      multipart:
+        max-file-size: 1500MB
+        max-request-size: 1500MB
 
 mybatis:
   mapper-locations: classpath:mapper/*.xml
@@ -80,7 +79,7 @@ files:
     path: ${base.path}/python/train.py
   # 预测脚本
   pythonPredictMain:
-    path: ${base.path}/python/predict.py
+    path: /python/predict.py
   # 对话脚本（全相对路径）
   pythonChatScript:
     path: ${base.path}/python/diabetes_chat.py

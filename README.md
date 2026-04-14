@@ -37,7 +37,7 @@ Software-DZL125/
 │   ├── read_data.py       # 数据读取工具
 │   └── train.py           # 模型训练脚本
 ├── sql/                   # 数据库脚本
-│   └── Software-CUCN.sql  # 数据库初始化脚本
+│   └── Software-ODA.sql  # 数据库初始化脚本
 ├── src/                   # 后端代码
 │   ├── main/java/com/cucn/springboot/
 │   │   ├── Main/          # 主客户端
@@ -129,7 +129,7 @@ Software-DZL125/
 
 ### 后端部署
 1. 克隆项目
-2. 导入数据库：执行 `sql/Software-CUCN.sql`
+2. 导入数据库：执行 `sql/Software-ODA.sql`
 3. 修改配置：编辑 `src/main/resources/application.yml` 中的数据库连接信息
 4. 构建项目：`mvn clean package`
 5. 启动应用：`java -jar target/Software-CUCN-0.0.1-SNAPSHOT.jar`

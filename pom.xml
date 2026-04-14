@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.cfy</groupId>
-    <artifactId>Software-CUCN</artifactId>
+    <artifactId>Software-ODA</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>springboot</name>
     <description>23dzl2026</description>
@@ -36,9 +36,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
-
-
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
@@ -163,7 +160,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.cucn.springboot.SpringbootApplication</mainClass>
+                    <mainClass>com.oda.springboot.SpringbootApplication</mainClass>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
