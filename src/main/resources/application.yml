@@ -45,8 +45,7 @@ mybatis-plus:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 base:
-#  path: D:/Software-DZL125
-#  path: D:/参赛作品/Software-DZL125
+
   path: ./
 #  path:  System.getProperty("user.dir")
   python: python

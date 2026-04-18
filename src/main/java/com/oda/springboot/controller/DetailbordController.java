@@ -17,7 +17,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * @BelongsProject: Software-CUCN
+ * @BelongsProject: Software-ODA
  * @BelongsPackage: com.oda.springboot.controller
  * @Author: DZL-125  
  * @CreateTime: 2026-03-28  17:12
@@ -49,7 +49,6 @@ public class DetailbordController {
     @DeleteMapping("/{id}")
     public Result delete(@PathVariable Integer id) {
         resultMapper.deleteById(id);
-        flushRedis(Constants.FILES_KEY);
         return Result.success();
     }
 
@@ -86,54 +85,18 @@ public class DetailbordController {
      * @return
      */
 
-    @GetMapping("/page/{id}")
-    public Result findPage(@PathVariable Integer id,
-                           @RequestParam Integer pageNum,
-                           @RequestParam Integer pageSize,
-                           @RequestParam(defaultValue = "") String result) {
-        //LambdaQueryWrapper<OnlineDate> queryWrapper = new LambdaQueryWrapper<>();
-        QueryWrapper<OnlineDate> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("testfile_id",id);
-//        queryWrapper.eq(OnlineDate::getTestfileid,id);
-        //queryWrapper.eq("is_delete", false);
-        //queryWrapper.orderByDesc("id");
-        //queryWrapper.like("label", label);
-//       if (result!=null) {
-//           queryWrapper.like("result", result);
-//        }
-        if (!result.isEmpty()) {
-            queryWrapper.like("result", result);
-        }
-        return Result.success(resultMapper.selectPage(new Page<>(pageNum, pageSize), queryWrapper));
-    }
-
-    // 设置缓存
-    private void setCache(String key, String value) {
-        stringRedisTemplate.opsForValue().set(key, value);
-    }
-
-    // 删除缓存
-    private void flushRedis(String key) {
-        stringRedisTemplate.delete(key);
-    }
-
     @GetMapping("/page")
     public Result findPage(@RequestParam Integer pageNum,
                            @RequestParam Integer pageSize,
-                           @RequestParam(defaultValue = "") String result) {
-        //LambdaQueryWrapper<OnlineDate> queryWrapper = new LambdaQueryWrapper<>();
+                           @RequestParam(defaultValue = "") String result,
+                           @RequestParam(required = false) Integer id) {
         QueryWrapper<OnlineDate> queryWrapper = new QueryWrapper<>();
-        //queryWrapper.eq("testfile_id",id);
-//        queryWrapper.eq(OnlineDate::getTestfileid,id);
-        //queryWrapper.eq("is_delete", false);
-        //queryWrapper.orderByDesc("id");
-        //queryWrapper.like("label", label);
+        if (id != null) {
+            queryWrapper.eq("testfile_id", id);
+        }
         if (!result.isEmpty()) {
             queryWrapper.like("result", result);
         }
-//        if (result!=null) {
-//            queryWrapper.like("result", result);
-//        }
         return Result.success(resultMapper.selectPage(new Page<>(pageNum, pageSize), queryWrapper));
     }
 }

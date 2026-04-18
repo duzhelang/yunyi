@@ -11,7 +11,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  *  服务?
  * </p>
  *
- * @author CUCN-cj
+ * @author ODA-cj
  * @since 2026-03-26
  */
 public interface IUserService extends IService<User> {

@@ -27,7 +27,7 @@
 ## 项目结构
 
 ```
-Software-DZL125/
+Software-ODA125/
 ├── python/                # Python数据分析与预测模块
 │   ├── A10.ipynb          # Jupyter Notebook分析文件
 │   ├── A10.py             # 数据分析脚本
@@ -39,7 +39,7 @@ Software-DZL125/
 ├── sql/                   # 数据库脚本
 │   └── Software-ODA.sql  # 数据库初始化脚本
 ├── src/                   # 后端代码
-│   ├── main/java/com/cucn/springboot/
+│   ├── main/java/com/oda/springboot/
 │   │   ├── Main/          # 主客户端
 │   │   ├── common/        # 通用工具类
 │   │   ├── config/        # 配置类
@@ -132,7 +132,7 @@ Software-DZL125/
 2. 导入数据库：执行 `sql/Software-ODA.sql`
 3. 修改配置：编辑 `src/main/resources/application.yml` 中的数据库连接信息
 4. 构建项目：`mvn clean package`
-5. 启动应用：`java -jar target/Software-CUCN-0.0.1-SNAPSHOT.jar`
+5. 启动应用：`java -jar target/Software-ODA-0.0.1-YUNYI.jar`
 
 ### 前端部署
 1. 进入前端目录：`cd vue`

@@ -7,7 +7,7 @@ import java.util.Collections;
 
 /**
  * mp代码生成?
- * by CUCN-cj
+ * by ODA-cj
  * @since 2026-03-26
  */
 public class CodeGenerator {

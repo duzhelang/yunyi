@@ -6,7 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 
 
 /**
- * @BelongsProject: Software-CUCN
+ * @BelongsProject: Software-ODA
  * @BelongsPackage: com.oda.springboot.mapper
  * @Author: DZL-125  
  * @CreateTime: 2026-03-28  11:32

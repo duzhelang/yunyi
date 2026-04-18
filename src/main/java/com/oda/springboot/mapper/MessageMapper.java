@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.oda.springboot.entity.Message;
 
 /**
- * @BelongsProject: Software-CUCN
+ * @BelongsProject: Software-ODA
  * @BelongsPackage: com.oda.springboot.mapper
  * @Author: DZL-125  
  * @CreateTime: 2026-03-29  18:07

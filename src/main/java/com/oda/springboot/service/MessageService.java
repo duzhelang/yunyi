@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.oda.springboot.entity.Message;
 
 /**
- * @BelongsProject: Software-CUCN
+ * @BelongsProject: Software-ODA
  * @BelongsPackage: com.oda.springboot.service
  * @Author: DZL-125  
  * @CreateTime: 2026-03-29  15:45

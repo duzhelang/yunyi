@@ -23,7 +23,7 @@ public class HealthProfileController {
     private HealthProfileServiceImpl healthProfileService;
 
     // 从配置文件读取CSV根路径(适配Windows系统)
-//    @Value("${file.csv.root-path:D:\\Software-DZL125\\data\\csv_for_doctor}")
+//    @Value("${file.csv.root-path:D:\\Software-ODA125\\data\\csv_for_doctor}")
     @Value("${file.csv.root-path:#{systemProperties['user.dir'] + '/data/csv_for_doctor'}}")
     private String csvRootPath;
 

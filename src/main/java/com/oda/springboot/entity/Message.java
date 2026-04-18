@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
 
 /**
- * @BelongsProject: Software-CUCN
+ * @BelongsProject: Software-ODA
  * @BelongsPackage: com.oda.springboot.entity
  * @Author: DZL-125  
  * @CreateTime: 2026-03-29  01:01

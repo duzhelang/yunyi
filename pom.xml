@@ -10,9 +10,9 @@
     </parent>
     <groupId>com.cfy</groupId>
     <artifactId>Software-ODA</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1-YUNYI</version>
     <name>springboot</name>
-    <description>23dzl2026</description>
+    <description>23lang2026</description>
 
     <properties>
         <java.version>17</java.version>

@@ -101,10 +101,10 @@ router.beforeEach((to, from, next) => {
   if (!to.matched.length) {
     const storeMenus = localStorage.getItem("menus")
     if (storeMenus) {
-      next("/404")
+      return next("/404")
     } else {
       // 跳回登录页面
-      next("/login")
+      return next("/login")
     }
   } else {
     // 其他的情况都放行
