@@ -61,7 +61,7 @@
         methods: {
             load() {
               if (typeof(this.id) == "undefined"){
-                this.request.get("/detailbord/page/", {
+                this.request.get("/detailbord/page", {
                   params: {
                     pageNum: this.pageNum,
                     pageSize: this.pageSize,
