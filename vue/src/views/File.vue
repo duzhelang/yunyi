@@ -33,26 +33,20 @@
             <el-table-column prop="size" label="文件大小(kb)"></el-table-column>
             <el-table-column label="模型训练">
 
-                <template slot-scope="scope" >
+                <template v-slot="scope">
                     <el-button type="primary" @click="star(scope.row.url)" >模型训练
                     </el-button>
                 </template>
             </el-table-column>
             <el-table-column label="下载">
-                <template slot-scope="scope">
+                <template v-slot="scope">
                     <el-button type="primary" @click="download(scope.row.pythonurl)"
                                :disabled="scope.row.pythonurl==null">下载
                     </el-button>
                 </template>
             </el-table-column>
- <!--           <el-table-column label="启用">
-                <template slot-scope="scope">
-                    <el-switch v-model="scope.row.enable" active-color="#13ce66" inactive-color="#ccc"
-                               @change="changeEnable(scope.row)"></el-switch>
-                </template>
-            </el-table-column>-->
             <el-table-column label="操作" width="200" align="center">
-                <template slot-scope="scope">
+                <template v-slot="scope">
                     <el-popconfirm
                             class="ml-5"
                             confirm-button-text='确定'
@@ -86,6 +80,8 @@
 </template>
 <script>
     import {serverIp} from "../../public/config";
+    import request from "@/utils/request";
+    import { ElMessage } from "element-plus";
 
     export default {
         name: "File",
@@ -105,7 +101,7 @@
         },
         methods: {
             load() {
-                this.request.get("/file/page", {
+                request.get("/file/page", {
                     params: {
                         pageNum: this.pageNum,
                         pageSize: this.pageSize,
@@ -117,19 +113,19 @@
                 })
             },
             changeEnable(row) {
-                this.request.post("/file/update", row).then(res => {
+                request.post("/file/update", row).then(res => {
                     if (res.code === '200') {
-                        this.$message.success("操作成功")
+                        ElMessage.success("操作成功")
                     }
                 })
             },
             del(id) {
-                this.request.delete("/file/" + id).then(res => {
+                request.delete("/file/" + id).then(res => {
                     if (res.code === '200') {
-                        this.$message.success("删除成功")
+                        ElMessage.success("删除成功")
                         this.load()
                     } else {
-                        this.$message.error("删除失败")
+                        ElMessage.error("删除失败")
                     }
                 })
             },
@@ -138,13 +134,13 @@
                 this.multipleSelection = val
             },
             delBatch() {
-                let ids = this.multipleSelection.map(v => v.id)  // [{}, {}, {}] => [1,2,3]
-                this.request.post("/file/del/batch", ids).then(res => {
+                let ids = this.multipleSelection.map(v => v.id)
+                request.post("/file/del/batch", ids).then(res => {
                     if (res.code === '200') {
-                        this.$message.success("批量删除成功")
+                        ElMessage.success("批量删除成功")
                         this.load()
                     } else {
-                        this.$message.error("批量删除失败")
+                        ElMessage.error("批量删除失败")
                     }
                 })
             },
@@ -165,9 +161,9 @@
             handleFileUploadSuccess(res) {
                 console.log(res)
                 if (res.code === '302') {
-                    this.$message.error("只能上传excel")
+                    ElMessage.error("只能上传excel")
                 } else {
-                    this.$message.success("上传成功")
+                    ElMessage.success("上传成功")
                 }
                 this.load()
             },
@@ -178,26 +174,17 @@
             },
             star(url) {
               url = url.slice(29);
-               // const loading = this.$loading({
-               //     lock: true,
-               //     text: '模型训练中,请稍等',
-               //     spinner: 'el-icon-loading',
-               //     background: 'rgba(0, 0, 0, 0.7)'
-               // });
-              this.$message("模型训练中")
-                this.request.get("python/getUrl/" + url).then(res => {
+              ElMessage.info("模型训练中")
+                request.get("python/getUrl/" + url).then(res => {
                     if (res.code === '200') {
-                      //loading.close();
-                       this.load()
-                        this.$message.success("训练成功,请下载!")
+                        this.load()
+                        ElMessage.success("训练成功,请下载!")
                     } else if (res.code === '505') {
-                        //loading.close();
                         this.load()
-                        this.$message.success(res.msg)
+                        ElMessage.success(res.msg)
                     } else {
-                        //loading.close();
                         this.load()
-                        this.$message.error("训练失败,请重新训练")
+                        ElMessage.error("训练失败,请重新训练")
                     }
                 });
               this.load();

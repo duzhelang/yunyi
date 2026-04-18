@@ -318,7 +318,7 @@
 
 <script>
 import request from '@/utils/request'
-import { Message } from 'element-ui'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 export default {
   name: 'HealthProfileView',
@@ -369,10 +369,10 @@ export default {
       if (!this.form.Glucose) return
       if (val && this.form.Glucose < 30) {
         this.form.Glucose = parseFloat((this.form.Glucose * 18).toFixed(1))
-        Message.info(`已转换:${(this.form.Glucose/18).toFixed(1)} mmol/L → ${this.form.Glucose} mg/dL`)
+        ElMessage.info(`已转换:${(this.form.Glucose/18).toFixed(1)} mmol/L → ${this.form.Glucose} mg/dL`)
       } else if (!val && this.form.Glucose > 100) {
         this.form.Glucose = parseFloat((this.form.Glucose / 18).toFixed(1))
-        Message.info(`已还原单位`)
+        ElMessage.info(`已还原单位`)
       }
     },
 
@@ -383,7 +383,7 @@ export default {
 
     validateForm() {
       if (!this.form.Age || !this.form.Glucose || !this.form.BMI) {
-        Message.warning('请填写年龄、血糖和 BMI (身高体重) 等必填项')
+        ElMessage.warning('请填写年龄、血糖和 BMI (身高体重) 等必填项')
         this.inputFocused = true
         return false
       }
@@ -437,16 +437,16 @@ export default {
         }
 
         if (savedId !== null && savedId !== undefined && !isNaN(savedId) && savedId > 0) {
-          Message.success('档案保存成功 (ID: ' + savedId + ')')
+          ElMessage.success('档案保存成功 (ID: ' + savedId + ')')
           this.loadHistory()
           return savedId
         } else {
-          Message.error('保存成功但无法获取 ID')
+          ElMessage.error('保存成功但无法获取 ID')
           return null
         }
       } catch (error) {
         console.error(error)
-        Message.error('网络错误,保存失败')
+        ElMessage.error('网络错误,保存失败')
         return null
       } finally {
         this.saving = false
@@ -465,21 +465,21 @@ export default {
           if (!savedId) return
           targetId = savedId
         } catch (e) {
-          Message.error('保存过程出错')
-          return
-        } finally {
+        ElMessage.error('保存过程出错')
+        return
+      } finally {
           this.saving = false
         }
       }
 
       const finalId = Number(targetId)
       if (isNaN(finalId) || finalId <= 0) {
-        Message.error('系统错误:无效的档案 ID')
+        ElMessage.error('系统错误:无效的档案 ID')
         return
       }
 
       try {
-        await this.$confirm('确定要生成 CSV 并发送给诊断员吗?\n\nID: ' + finalId, '确认提交', {
+        await ElMessageBox.confirm('确定要生成 CSV 并发送给诊断员吗?\n\nID: ' + finalId, '确认提交', {
           confirmButtonText: '生成并发送',
           cancelButtonText: '取消',
           type: 'warning'
@@ -502,10 +502,10 @@ export default {
         }
 
         if (isSuccess) {
-          Message.success('✅ CSV 文件生成成功!已通知诊断员.')
+          ElMessage.success('✅ CSV 文件生成成功!已通知诊断员.')
           this.loadHistory()
         } else {
-          Message.warning((response && response.msg) || '提交完成')
+          ElMessage.warning((response && response.msg) || '提交完成')
           this.loadHistory()
         }
       } catch (error) {
@@ -517,7 +517,7 @@ export default {
         } else if (error.message) {
           errMsg = error.message
         }
-        Message.error('❌ 提交失败:' + errMsg)
+        ElMessage.error('❌ 提交失败:' + errMsg)
       } finally {
         this.submitting = false
         this.submittingId = null
@@ -543,7 +543,7 @@ export default {
         }
       } catch (e) {
         console.error('[History] 加载失败:', e)
-        Message.error('加载历史记录失败')
+        ElMessage.error('加载历史记录失败')
       } finally {
         this.loadingHistory = false
       }
@@ -563,7 +563,7 @@ export default {
 
       // 注意:后端列表接口通常不返回身高体重,所以这里无法自动回填 temp.height/weight
       // 需要用户手动重新输入以 recalculat BMI,或者提示用户
-      Message.info('已载入历史数据 (注意:身高体重需重新输入以重新计算 BMI)')
+      ElMessage.info('已载入历史数据 (注意:身高体重需重新输入以重新计算 BMI)')
       this.fileList = []
       this.form.file = null
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -584,7 +584,7 @@ export default {
       this.temp.weight = undefined
       this.fileList = []
       this.autoConvertGlucose = false
-      Message.info('表单已重置')
+      ElMessage.info('表单已重置')
     },
 
     getStatusType(status) {
@@ -621,8 +621,8 @@ export default {
 .section-title { font-size: 15px; font-weight: 600; color: #4a90e2; margin: 20px 0 15px 0; padding-left: 10px; border-left: 3px solid #4a90e2; }
 .ai-tip { font-size: 11px; color: #94a3b8; font-style: italic; }
 .unit-converter { margin: 10px 0 20px 150px; padding: 10px; background: #ecf5ff; border-radius: 8px; font-size: 13px; color: #4a90e2; }
-.focused-input >>> .el-input__inner, .focused-input >>> .el-input-number__decrease, .focused-input >>> .el-input-number__increase { border-color: #4a90e2 !important; box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.15) !important; }
-.is-error >>> .el-input__inner { border-color: #f56c6c !important; }
+.focused-input :deep(.el-input__inner), .focused-input :deep(.el-input-number__decrease), .focused-input :deep(.el-input-number__increase) { border-color: #4a90e2 !important; box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.15) !important; }
+.is-error :deep(.el-input__inner) { border-color: #f56c6c !important; }
 .input-area { display: flex; align-items: center; gap: 12px; }
 .send-btn { background: #4a90e2; border-color: #4a90e2; transition: all 0.2s; }
 .send-btn:hover:not(:disabled) { background: #357abd; transform: translateY(-1px); }

@@ -57,7 +57,7 @@
 
 <script>
 import request from '@/utils/request'
-import { Message } from 'element-ui'
+import { ElMessage } from 'element-plus'
 
 export default {
   name: 'DiabetesChat',
@@ -122,7 +122,7 @@ export default {
         console.error('请求异常:', error)
         const errorMsg = error.response?.data?.msg || '网络连接失败,请稍后重试'
         this.addBotMessage(errorMsg)
-        Message.error(errorMsg)
+        ElMessage.error(errorMsg)
       } finally {
         this.isLoading = false
         this.scrollToBottom()

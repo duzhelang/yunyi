@@ -33,14 +33,14 @@
       <el-table-column prop="path" label="路径"></el-table-column>
       <el-table-column prop="pagePath" label="页面路径"></el-table-column>
       <el-table-column label="图标" class-name="fontSize18" align="center" label-class-name="fontSize12">
-        <template slot-scope="scope">
+        <template v-slot="scope">
           <span :class="scope.row.icon" />
         </template>
       </el-table-column>
       <el-table-column prop="description" label="描述"></el-table-column>
       <el-table-column prop="sortNum" label="顺序"></el-table-column>
       <el-table-column label="操作"  width="300" align="center">
-        <template slot-scope="scope">
+        <template v-slot="scope">
           <el-button type="primary" @click="handleAdd(scope.row.id)" v-if="!scope.row.pid && !scope.row.path">新增子菜单 <i class="el-icon-plus"></i></el-button>
           <el-button type="success" @click="handleEdit(scope.row)">编辑 <i class="el-icon-edit"></i></el-button>
           <el-popconfirm
@@ -93,6 +93,8 @@
 
 <script>
 import {serverIp} from "../../public/config";
+import request from "@/utils/request";
+import { ElMessage } from "element-plus";
 
 export default {
   name: "Menu",
@@ -114,7 +116,7 @@ export default {
   },
   methods: {
     load() {
-      this.request.get("/menu", {
+      request.get("/menu", {
         params: {
           name: this.name,
         }
@@ -122,19 +124,18 @@ export default {
         this.tableData = res.data
       })
 
-      // 请求图标的数据
-      this.request.get("/menu/icons").then(res => {
+      request.get("/menu/icons").then(res => {
         this.options = res.data
       })
     },
     save() {
-      this.request.post("/menu", this.form).then(res => {
+      request.post("/menu", this.form).then(res => {
         if (res.code === '200') {
-          this.$message.success("保存成功")
+          ElMessage.success("保存成功")
           this.dialogFormVisible = false
           this.load()
         } else {
-          this.$message.error("保存失败")
+          ElMessage.error("保存失败")
         }
       })
     },
@@ -150,12 +151,12 @@ export default {
       this.dialogFormVisible = true
     },
     del(id) {
-      this.request.delete("/menu/" + id).then(res => {
+      request.delete("/menu/" + id).then(res => {
         if (res.code === '200') {
-          this.$message.success("删除成功")
+          ElMessage.success("删除成功")
           this.load()
         } else {
-          this.$message.error("删除失败")
+          ElMessage.error("删除失败")
         }
       })
     },
@@ -164,13 +165,13 @@ export default {
       this.multipleSelection = val
     },
     delBatch() {
-      let ids = this.multipleSelection.map(v => v.id)  // [{}, {}, {}] => [1,2,3]
-      this.request.post("/menu/del/batch", ids).then(res => {
+      let ids = this.multipleSelection.map(v => v.id)
+      request.post("/menu/del/batch", ids).then(res => {
         if (res.code === '200') {
-          this.$message.success("批量删除成功")
+          ElMessage.success("批量删除成功")
           this.load()
         } else {
-          this.$message.error("批量删除失败")
+          ElMessage.error("批量删除失败")
         }
       })
     },
@@ -192,7 +193,7 @@ export default {
       window.open(`http://${serverIp}:9090/role/export`)
     },
     handleExcelImportSuccess() {
-      this.$message.success("导入成功")
+      ElMessage.success("导入成功")
       this.load()
     }
   }

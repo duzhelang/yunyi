@@ -1,27 +1,25 @@
-import Vue from 'vue'
-import Vuex from 'vuex'
-import router, {resetRouter} from "@/router";
+import { defineStore } from 'pinia'
+import router, { resetRouter } from "@/router"
 
-Vue.use(Vuex)
-
-const store = new Vuex.Store({
-    state: {
-        currentPathName: ''
+export const useMainStore = defineStore('main', {
+  state: () => ({
+    currentPathName: ''
+  }),
+  getters: {
+    getCurrentPathName: (state) => state.currentPathName
+  },
+  actions: {
+    setPath() {
+      this.currentPathName = localStorage.getItem("currentPathName")
     },
-    mutations: {
-        setPath (state) {
-            state.currentPathName = localStorage.getItem("currentPathName")
-        },
-        logout() {
-            // 清空缓存
-            localStorage.removeItem("user")
-            localStorage.removeItem("menus")
-            router.push("/login")
+    logout() {
+      // 清空缓存
+      localStorage.removeItem("user")
+      localStorage.removeItem("menus")
+      router.push("/login")
 
-            // 重置路由
-            resetRouter()
-        }
+      // 重置路由
+      resetRouter()
     }
+  }
 })
-
-export default store

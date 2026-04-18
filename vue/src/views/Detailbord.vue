@@ -15,7 +15,7 @@
             <el-table-column prop="createTime" label="生成时间" ></el-table-column>
 
             <el-table-column label="操作" width="300" align="center">
-              <template slot-scope="scope" >
+              <template v-slot="scope">
                 <el-button type="primary" @click="goSend()" >故障报修
                 </el-button>
               </template>
@@ -39,7 +39,8 @@
 </template>
 
 <script>
-    import {serverIp} from "../../public/config";
+import {serverIp} from "../../public/config";
+import request from "@/utils/request";
 
     export default {
         name: "Detailbord",
@@ -61,7 +62,7 @@
         methods: {
             load() {
               if (typeof(this.id) == "undefined"){
-                this.request.get("/detailbord/page", {
+                request.get("/detailbord/page", {
                   params: {
                     pageNum: this.pageNum,
                     pageSize: this.pageSize,
@@ -72,7 +73,7 @@
                   this.total = res.data.total
                 })
               }else {
-                this.request.get("/detailbord/page/"+this.id, {
+                request.get("/detailbord/page/"+this.id, {
                   params: {
                     pageNum: this.pageNum,
                     pageSize: this.pageSize,

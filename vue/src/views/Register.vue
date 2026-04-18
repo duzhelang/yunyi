@@ -12,7 +12,7 @@
           <el-input
               placeholder="请输入账号"
               size="large"
-              prefix-icon="el-icon-user"
+              :prefix-icon="User"
               v-model="user.username"
               clearable
           ></el-input>
@@ -21,7 +21,7 @@
           <el-input
               placeholder="请输入密码"
               size="large"
-              prefix-icon="el-icon-lock"
+              :prefix-icon="Lock"
               show-password
               v-model="user.password"
               clearable
@@ -31,7 +31,7 @@
           <el-input
               placeholder="请确认密码"
               size="large"
-              prefix-icon="el-icon-lock"
+              :prefix-icon="Lock"
               show-password
               v-model="user.confirmPassword"
               clearable
@@ -61,10 +61,14 @@
 </template>
 
 <script>
+import request from "@/utils/request";
+import { ElMessage } from "element-plus";
+import { User, Lock } from '@element-plus/icons-vue';
+
 export default {
   name: "Register",
+  components: { User, Lock },
   data() {
-    // 自定义密码一致性校验规则
     const validateConfirmPassword = (rule, value, callback) => {
       if (!value) {
         return callback(new Error('请确认密码'));
@@ -97,22 +101,21 @@ export default {
     register() {
       this.$refs.userForm.validate((valid) => {
         if (valid) {
-          this.request.post("/user/register", this.user).then(res => {
+          request.post("/user/register", this.user).then(res => {
             if (res.code === '200') {
-              this.$message.success("注册成功,即将跳转到登录页");
-              // 注册成功后自动跳转登录页
+              ElMessage.success("注册成功,即将跳转到登录页");
               setTimeout(() => {
                 this.$router.push('/login');
               }, 1500);
             } else {
-              this.$message.error(res.msg);
+              ElMessage.error(res.msg);
             }
           }).catch(err => {
-            this.$message.error("网络异常,请稍后重试");
+            ElMessage.error("网络异常,请稍后重试");
             console.error("注册请求失败:", err);
           });
         } else {
-          this.$message.warning("请完善注册信息");
+          ElMessage.warning("请完善注册信息");
         }
       });
     }
@@ -219,36 +222,35 @@ export default {
   margin-bottom: 24px;
 }
 
-/* 表单样式 */
-.auth-form ::v-deep .el-input__inner {
+/* 表单样式 - Element Plus */
+.auth-form :deep(.el-input__wrapper) {
   border-radius: 14px;
   border: 1px solid #dce6f4;
   padding-left: 44px;
   transition: all 0.2s ease;
   font-size: 15px;
+  box-shadow: none;
 }
 
-.auth-form ::v-deep .el-input__inner:focus {
+.auth-form :deep(.el-input__wrapper.is-focus) {
   border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
-  outline: none;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1) !important;
 }
 
-.auth-form ::v-deep .el-input__prefix {
+.auth-form :deep(.el-input__prefix) {
   left: 14px;
-  /* color: #8da4c1; */
 }
 
-.auth-form ::v-deep .el-input__suffix {
+.auth-form :deep(.el-input__suffix) {
   right: 14px;
 }
 
-.auth-form ::v-deep .el-input--large .el-input__inner {
+.auth-form :deep(.el-input--large) {
   height: 52px;
 }
 
 /* 错误提示样式优化 */
-.auth-form ::v-deep .el-form-item__error {
+.auth-form :deep(.el-form-item__error) {
   color: #f56c6c;
   font-size: 12px;
   margin-top: 4px;

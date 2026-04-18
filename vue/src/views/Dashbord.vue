@@ -52,6 +52,8 @@
 
 <script>
 import * as echarts from 'echarts';
+import request from "@/utils/request";
+import { ElMessage } from "element-plus";
 
 export default {
   name: "VisualDiagnosis",
@@ -59,10 +61,9 @@ export default {
     return {
       loading: true,
       id: this.$route.query.id || this.$route.query.id1,
-      isPositive: false, // 是否患病
-      probability: 0,    // 概率值 0-100
+      isPositive: false,
+      probability: 0,
 
-      // 图表实例
       gaugeChart: null,
       radarChart: null,
       barChart: null
@@ -89,7 +90,7 @@ export default {
     this.loadData();
     window.addEventListener('resize', this.resizeCharts);
   },
-  beforeDestroy() {
+  beforeUnmount() {
     window.removeEventListener('resize', this.resizeCharts);
     [this.gaugeChart, this.radarChart, this.barChart].forEach(c => c && c.dispose());
   },
@@ -97,21 +98,16 @@ export default {
     loadData() {
       if (!this.id) { this.loading = false; return; }
 
-      // 1. 调用原有接口获取数据
       Promise.all([
-        this.request.get(`/DataTest/totle/${this.id}`),
-        this.request.get(`/DataTest/members/${this.id}`)
+        request.get(`/DataTest/totle/${this.id}`),
+        request.get(`/DataTest/members/${this.id}`)
       ]).then(([resTot, resMem]) => {
         const members = resMem.data || [0, 0];
-        // 判断是否患病 (members[1] 是患病人数)
         this.isPositive = members[1] > 0;
-
-        // 模拟概率值 (因为原接口只有 0/1 分类)
         this.probability = this.isPositive ? 94.5 : 12.3;
 
         this.loading = false;
 
-        // 2. 数据拿到后,延迟渲染图表 (确保 DOM 存在)
         this.$nextTick(() => {
           this.renderGauge();
           this.renderRadar();
@@ -119,7 +115,7 @@ export default {
         });
       }).catch(err => {
         console.error(err);
-        this.$message.error("数据加载失败");
+        ElMessage.error("数据加载失败");
         this.loading = false;
       });
     },

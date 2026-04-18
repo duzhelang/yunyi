@@ -3,7 +3,7 @@
     <el-form label-width="80px" size="small">
       <el-upload
           class="avatar-uploader"
-		  :action="'http://' + serverIp +':9090/file/upload/avatar'"
+	  :action="'http://' + serverIpValue +':9090/file/upload/avatar'"
           :show-file-list="false"
           :on-success="handleAvatarSuccess"
       >
@@ -33,54 +33,58 @@
   </el-card>
 </template>
 
-<script>
-import {serverIp} from "../../public/config";
+<script setup>
+import { ref, onMounted } from 'vue'
+import { serverIp } from "../../public/config"
+import { ElMessage } from 'element-plus'
+import request from '@/utils/request'
 
-export default {
-  name: "Person",
-  data() {
-    return {
-      serverIp: serverIp,
-	  form: {
-	          avatarUrl: ""
-	        },
-      // form: {},
-      user: localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : {}
-    }
-  },
-  created() {
-    this.getUser().then(res => {
-      console.log(res)
-      this.form = res
-    })
-  },
-  methods: {
-    async getUser() {
-      return (await this.request.get("/user/username/" + this.user.username)).data
-    },
-    saveUpdateUser() {
-      this.request.post("/user/saveUpdateUser", this.form).then(res => {
-        if (res.code === '200') {
-          this.$message.success("保存成功")
+// 定义 emit 事件
+const emit = defineEmits(['refreshUser'])
 
-          // 触发父级更新User的方法
-          this.$emit("refreshUser")
+// 响应式数据
+const serverIpValue = serverIp
+const form = ref({
+  avatarUrl: ""
+})
+const user = ref(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : {})
 
-          // 更新浏览器存储的用户信息
-          this.getUser().then(res => {
-            res.token = JSON.parse(localStorage.getItem("user")).token
-            localStorage.setItem("user", JSON.stringify(res))
-          })
+// 生命周期钩子
+onMounted(() => {
+  getUser().then(res => {
+    console.log(res)
+    form.value = res
+  })
+})
 
-        } else {
-          this.$message.error("保存失败")
-        }
+// 方法
+async function getUser() {
+  const response = await request.get("/user/username/" + user.value.username)
+  return response.data
+}
+
+function saveUpdateUser() {
+  request.post("/user/saveUpdateUser", form.value).then(res => {
+    if (res.code === '200') {
+      ElMessage.success("保存成功")
+
+      // 触发父级更新User的方法
+      emit("refreshUser")
+
+      // 更新浏览器存储的用户信息
+      getUser().then(res => {
+        res.token = JSON.parse(localStorage.getItem("user")).token
+        localStorage.setItem("user", JSON.stringify(res))
       })
-    },
-    handleAvatarSuccess(res) {
-      this.form.avatarUrl = res
+
+    } else {
+      ElMessage.error("保存失败")
     }
-  }
+  })
+}
+
+function handleAvatarSuccess(res) {
+  form.value.avatarUrl = res
 }
 </script>
 

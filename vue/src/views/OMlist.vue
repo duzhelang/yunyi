@@ -17,7 +17,7 @@
       <el-table-column prop="sendUserName" label="发送人"  width="100" />
       <el-table-column prop="receiveUserName" label="接收人"  show-overflow-tooltip />
       <el-table-column label="操作" width="300" align="center">
-        <template slot-scope="scope" >
+        <template v-slot="scope">
           <el-button type="primary" @click="goSend(scope.row.id)" >信息回复
           </el-button>
         </template>
@@ -42,6 +42,7 @@
 
 <script>
 import {serverIp} from "../../public/config";
+import request from "@/utils/request";
 
 export default {
   name: "OMlist",
@@ -61,7 +62,7 @@ export default {
   },
   methods: {
     load() {
-      this.request.get("/message/page", {
+      request.get("/message/page", {
         params: {
           pageNum: this.pageNum,
           pageSize: this.pageSize,

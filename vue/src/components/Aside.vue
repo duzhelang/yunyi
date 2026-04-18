@@ -10,61 +10,104 @@
 		<div v-for="item in menus" :key="item.id">
 			<div v-if="item.path">
 				<el-menu-item :index="item.path">
-					<i :class="item.icon || 'el-icon-menu'"></i>
-					<span slot="title">{{ item.name }}</span>
+					<el-icon v-if="item.icon">
+						<component :is="getIconComponent(item.icon)" />
+					</el-icon>
+					<el-icon v-else><Menu /></el-icon>
+					<template #title>{{ item.name }}</template>
 				</el-menu-item>
 			</div>
 			<div v-else-if="item.children && item.children.length">
-				<el-submenu :index="item.id + ''">
-					<template slot="title">
-						<i :class="item.icon || 'el-icon-menu'"></i>
-						<span slot="title">{{ item.name }}</span>
+				<el-sub-menu :index="item.id + ''">
+					<template #title>
+						<el-icon v-if="item.icon">
+							<component :is="getIconComponent(item.icon)" />
+						</el-icon>
+						<el-icon v-else><Menu /></el-icon>
+						{{ item.name }}
 					</template>
 					<div v-for="subItem in item.children" :key="subItem.id">
 						<el-menu-item :index="subItem.path">
-							<i :class="subItem.icon || 'el-icon-menu'"></i>
-							<span slot="title">{{ subItem.name }}</span>
+							<el-icon v-if="subItem.icon">
+								<component :is="getIconComponent(subItem.icon)" />
+							</el-icon>
+							<el-icon v-else><Menu /></el-icon>
+							<template #title>{{ subItem.name }}</template>
 						</el-menu-item>
 					</div>
-				</el-submenu>
+				</el-sub-menu>
 			</div>
 		</div>
 	</el-menu>
 </template>
 
 <script>
-	export default {
-		name: "Aside",
-		props: {
-			isCollapse: {
-				type: Boolean,
-				default: false
-			},
-			logoTextShow: {
-				type: Boolean,
-				default: true
-			}
+import { Menu, Coffee, Document, House, User, Grid, Upload, Download, Delete, Edit, Plus, Search, Message, ArrowDown, Loading, Check, Close, Top, Bottom, Warning } from '@element-plus/icons-vue';
+
+export default {
+	name: "Aside",
+	components: { Menu, Coffee, Document, House, User, Grid, Upload, Download, Delete, Edit, Plus, Search, Message, ArrowDown, Loading, Check, Close, Top, Bottom, Warning },
+	props: {
+		isCollapse: {
+			type: Boolean,
+			default: false
 		},
-		data() {
-			return {
-				menus: [],
-				opens: []
+		logoTextShow: {
+			type: Boolean,
+			default: true
+		}
+	},
+	data() {
+		return {
+			menus: [],
+			opens: []
+		}
+	},
+	methods: {
+		// 图标映射函数，将旧的 el-icon-* 格式转换为新的组件名
+		getIconComponent(iconName) {
+			const iconMap = {
+				'el-icon-coffee': 'Coffee',
+				'el-icon-document': 'Document',
+				'el-icon-house': 'House',
+				'el-icon-user': 'User',
+				'el-icon-s-grid': 'Grid',
+				'el-icon-upload': 'Upload',
+				'el-icon-upload2': 'Upload',
+				'el-icon-download': 'Download',
+				'el-icon-remove-outline': 'Delete',
+				'el-icon-edit': 'Edit',
+				'el-icon-plus': 'Plus',
+				'el-icon-circle-plus-outline': 'Plus',
+				'el-icon-search': 'Search',
+				'el-icon-message': 'Message',
+				'el-icon-arrow-down': 'ArrowDown',
+				'el-icon-loading': 'Loading',
+				'el-icon-question': 'Menu',
+				'el-icon-time': 'Menu',
+				'el-icon-circle-check': 'Check',
+				'el-icon-close': 'Close',
+				'el-icon-top': 'Top',
+				'el-icon-bottom': 'Bottom',
+				'el-icon-warning': 'Warning'
+			};
+			return iconMap[iconName] || 'Menu';
+		}
+	},
+	created() {
+		try {
+			const storedMenus = localStorage.getItem("menus");
+			if (storedMenus) {
+				this.menus = JSON.parse(storedMenus);
+				this.opens = this.menus.map(v => v.id + '');
 			}
-		},
-		created() {
-			try {
-				const storedMenus = localStorage.getItem("menus");
-				if (storedMenus) {
-					this.menus = JSON.parse(storedMenus);
-					this.opens = this.menus.map(v => v.id + '');
-				}
-			} catch (error) {
-				console.error('解析菜单数据失败:', error);
-				this.menus = [];
-				this.opens = [];
-			}
+		} catch (error) {
+			console.error('解析菜单数据失败:', error);
+			this.menus = [];
+			this.opens = [];
 		}
 	}
+}
 </script>
 
 <!-- 1. 移除scoped,让样式作用到菜单本身;2. 给.el-menu加固定样式 -->
@@ -101,7 +144,7 @@
 		background-color: #3d5a80 !important;
 	}
 
-	.el-submenu__title:hover {
+	.el-sub-menu__title:hover {
 		background-color: #3d5a80 !important;
 	}
 </style>
@@ -117,8 +160,8 @@
 		/* 清除默认内边距 */
 	}
 
-	/* 主内容区加左边距,避免被固定菜单遮挡 
-	 .el-main {
+	/* 主内容区加左边距,避免被固定菜单遮挡 */
+	/* .el-main {
 		margin-left: 200px !important;
 	} */
 </style>

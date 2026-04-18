@@ -36,6 +36,7 @@
 
 <script>
 import {serverIp} from "../../public/config";
+import request from "@/utils/request";
 
 export default {
   name: "List",
@@ -55,7 +56,7 @@ export default {
   },
   methods:{
     load() {
-      this.request.get("/message/page", {
+      request.get("/message/page", {
         params: {
           pageNum: this.pageNum,
           pageSize: this.pageSize,

@@ -26,6 +26,9 @@
 </template>
 
 <script>
+import request from "@/utils/request";
+import { ElMessage } from "element-plus";
+
 export default {
   name: "Send",
   data () {
@@ -68,7 +71,7 @@ export default {
   },
   methods:{
     load() {
-      this.request.get("/message/getUserName").then(res => {
+      request.get("/message/getUserName").then(res => {
         this.receiveUserNames = res.data
       })
 
@@ -80,12 +83,12 @@ export default {
       this.form.type=[]
     },
     submitForm(){
-      this.request.post("/message/send", this.form).then(res => {
+      request.post("/message/send", this.form).then(res => {
         if(res.code === '200') {
-          this.$message.success("发送成功")
+          ElMessage.success("发送成功")
           this.$router.push('/list');
         } else {
-          this.$message.error(res.msg)
+          ElMessage.error(res.msg)
         }
       })
     },

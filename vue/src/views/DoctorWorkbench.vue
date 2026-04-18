@@ -13,9 +13,8 @@
 
       <!-- 关键指标概览 -->
       <el-table-column label="患者关键指标" min-width="250">
-        <template slot-scope="scope">
+        <template v-slot="scope">
           <div class="patient-info">
-            <!-- 兼容大小写字段 -->
             <span><b>年龄:</b> {{ scope.row.Age || scope.row.age }}</span>
             <span><b>血糖:</b> <span style="color:#f56c6c">{{ scope.row.Glucose || scope.row.glucose }}</span></span>
             <span><b>BMI:</b> {{ scope.row.BMI || scope.row.bmi }}</span>
@@ -25,15 +24,14 @@
       </el-table-column>
 
       <el-table-column label="附件" width="100">
-        <template slot-scope="scope">
+        <template v-slot="scope">
           <span v-if="scope.row.fileUrl || scope.row.fileName">{{ scope.row.fileUrl || scope.row.fileName }}</span>
           <span v-else style="color:#999">无</span>
         </template>
       </el-table-column>
 
       <el-table-column label="操作" width="280" fixed="right">
-        <template slot-scope="scope">
-          <!-- 1. 下载 CSV 按钮 (最终稳定版) -->
+        <template v-slot="scope">
           <el-button
               size="mini"
               type="info"
@@ -43,7 +41,6 @@
               title="下载 CSV 去预测">
           </el-button>
 
-          <!-- 2. 填写诊断按钮 -->
           <el-button
               size="mini"
               type="primary"
@@ -90,7 +87,7 @@
 
 <script>
 import request from '@/utils/request'
-import { Message } from 'element-ui'
+import { ElMessage } from 'element-plus'
 
 export default {
   name: 'DoctorWorkbench',
@@ -147,12 +144,12 @@ export default {
         console.log(`✅ 加载完成,共 ${list.length} 条待办记录`)
 
         if (list.length === 0) {
-          Message.info('当前没有待诊断的患者')
+          ElMessage.info('当前没有待诊断的患者')
         }
 
       } catch (e) {
         console.error('❌ 加载列表异常:', e)
-        Message.error('加载列表失败,请检查后端服务是否启动')
+        ElMessage.error('加载列表失败,请检查后端服务是否启动')
         this.pendingList = [] // 清空防止旧数据残留
       } finally {
         this.loading = false
@@ -164,7 +161,7 @@ export default {
       console.log('🖱️ [点击下载] 接收到 ID:', id)
 
       if (!id) {
-        Message.error('错误:患者 ID 缺失')
+        ElMessage.error('错误:患者 ID 缺失')
         return
       }
 
@@ -194,7 +191,7 @@ export default {
         document.body.removeChild(link)
 
         console.log('✅ CSV文件下载触发成功,ID:', id)
-        Message.success('📥 CSV文件下载成功,请查看浏览器下载栏')
+        ElMessage.success('📥 CSV文件下载成功,请查看浏览器下载栏')
 
       } catch (error) {
         console.error('❌ 下载失败详情:', error)
@@ -222,7 +219,7 @@ export default {
           // 请求构建失败
           errorMsg += error.message
         }
-        Message.error(errorMsg)
+        ElMessage.error(errorMsg)
       }
     },
 
@@ -237,7 +234,7 @@ export default {
     // 提交结果
     async submitDiagnosis() {
       if (!this.form.result.trim()) {
-        Message.warning('请填写诊断结论')
+        ElMessage.warning('请填写诊断结论')
         return
       }
 
@@ -250,13 +247,13 @@ export default {
           result: this.form.result
         })
 
-        Message.success('✅ 诊断提交成功!')
+        ElMessage.success('✅ 诊断提交成功!')
         this.dialogVisible = false
         this.loadData() // 刷新列表
       } catch (e) {
         console.error('❌ 提交失败:', e)
         const msg = (e.response && e.response.data && e.response.data.msg) || (e.response && e.response.data && e.response.data.message) || e.message || '未知错误'
-        Message.error('提交失败:' + msg)
+        ElMessage.error('提交失败:' + msg)
       } finally {
         this.submitting = false
       }

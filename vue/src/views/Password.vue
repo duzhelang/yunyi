@@ -19,6 +19,9 @@
 </template>
 
 <script>
+import request from "@/utils/request";
+import { ElMessage } from "element-plus";
+
 export default {
   name: "Password",
   data() {
@@ -49,15 +52,15 @@ export default {
       this.$refs.pass.validate((valid) => {
         if (valid) {
           if (this.form.newPassword !== this.form.confirmPassword) {
-            this.$message.error("2次输入的新密码不相同")
+            ElMessage.error("2次输入的新密码不相同")
             return false
           }
-          this.request.post("/user/password", this.form).then(res => {
+          request.post("/user/password", this.form).then(res => {
             if (res.code === '200') {
-              this.$message.success("修改成功")
-              this.$store.commit("logout")
+              ElMessage.success("修改成功")
+              this.$router.push('/login')
             } else {
-              this.$message.error(res.msg)
+              ElMessage.error(res.msg)
             }
           })
         }

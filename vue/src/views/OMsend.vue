@@ -26,6 +26,9 @@
 </template>
 
 <script>
+import request from "@/utils/request";
+import { ElMessage } from "element-plus";
+
 export default {
   name: "OMsend",
   data () {
@@ -70,15 +73,15 @@ export default {
   },
   methods:{
     load() {
-      this.request.get("/message/getUserName").then(res => {
+      request.get("/message/getUserName").then(res => {
         this.receiveUserNames = res.data
       }),
-          this.request.get("/message/findById/" + this.id).then(res => {
-            this.form.title = res.data.title,
-            this.form.type = res.data.type,
-            this.form.content = res.data.content,
-            this.form.receiveUserName = res.data.receiveUserName
-          })
+      request.get("/message/findById/" + this.id).then(res => {
+        this.form.title = res.data.title,
+        this.form.type = res.data.type,
+        this.form.content = res.data.content,
+        this.form.receiveUserName = res.data.receiveUserName
+      })
     },
     resetForm () {
       this.$refs['form'].resetFields()
@@ -87,12 +90,12 @@ export default {
       this.form.type=[]
     },
     submitForm(){
-      this.request.post("/message/sendToUpdate", this.form).then(res => {
+      request.post("/message/sendToUpdate", this.form).then(res => {
         if(res.code === '200') {
-          this.$message.success("发送成功")
+          ElMessage.success("发送成功")
           this.$router.push('/OMlist');
         } else {
-          this.$message.error(res.msg)
+          ElMessage.error(res.msg)
         }
       })
     },

@@ -52,7 +52,7 @@
         <el-table-column prop="doctorName" label="负责医生" width="100"></el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="160"></el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
-          <template slot-scope="scope">
+          <template v-slot="scope">
             <el-button size="mini" type="primary" @click="handleEdit(scope.row)">编辑</el-button>
             <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
           </template>
@@ -142,8 +142,9 @@
 </template>
 
 <script>
-// 与项目统一导入服务器IP配置
 import {serverIp} from "../../public/config";
+import request from "@/utils/request";
+import { ElMessage, ElMessageBox } from "element-plus";
 
 export default {
   name: 'TreatmentRecord',
@@ -152,7 +153,6 @@ export default {
       serverIp: serverIp,
       loading: false,
       total: 0,
-      // 查询表单(新增分页参数)
       queryForm: {
         patientName: '',
         idCard: '',
@@ -161,13 +161,10 @@ export default {
         pageNum: 1,
         pageSize: 10
       },
-      // 表格数据
       tableData: [],
-      // 弹窗相关
       dialogVisible: false,
       dialogTitle: '新增诊疗档案',
       isEdit: false,
-      // 表单数据
       formData: {
         id: '',
         patientName: '',
@@ -182,7 +179,6 @@ export default {
         remark: '',
         createTime: ''
       },
-      // 表单校验规则
       formRules: {
         patientName: [{required: true, message: '患者姓名不能为空', trigger: 'blur'}],
         idCard: [{required: true, message: '身份证号不能为空', trigger: 'blur'}],
@@ -191,66 +187,53 @@ export default {
         diagnosisResult: [{required: true, message: '诊断结果不能为空', trigger: 'blur'}],
         treatmentPlan: [{required: true, message: '治疗方案不能为空', trigger: 'blur'}]
       },
-      // 上传请求头
       uploadHeaders: {
         'Authorization': localStorage.getItem('token') || ''
       },
-      // 防止重复请求的标志
       isRequesting: false,
-      // 防止重复提交的标志
       isSubmitting: false
     }
   },
-  // 修复调用时机,避免实例未初始化
   mounted() {
     this.getList();
   },
   methods: {
-    // ===================== 核心:查询列表(修复request空指针和重复请求) =====================
     async getList() {
-      // 防止重复请求
       if (this.isRequesting) {
         return;
       }
-      
-      // 空值兜底,彻底解决 Cannot read properties of undefined (reading 'get')
-      if (!this.request) {
-        this.$message.error('请求实例初始化失败,请刷新页面重试')
+
+      if (!request) {
+        ElMessage.error('请求实例初始化失败,请刷新页面重试')
         return
       }
-      
+
       this.isRequesting = true;
       this.loading = true;
-      
+
       try {
-        // 统一使用 this.request 与项目规范一致
-        const res = await this.request.get('/treatment-record/list', {params: this.queryForm});
-        // 后端返回的code是字符串类型,需要转换为字符串比较
+        const res = await request.get('/treatment-record/list', {params: this.queryForm});
         if (res.code === '200' || res.code === 200) {
           this.tableData = res.data.records;
           this.total = res.data.total;
         } else {
-          // 只在非重复请求时显示错误消息
           if (!this.isRequesting) {
-            this.$message.error(res.msg || '查询失败');
+            ElMessage.error(res.msg || '查询失败');
           }
         }
       } catch (error) {
         console.error("查询异常:", error)
-        // 只在非重复请求时显示错误消息
         if (!this.isRequesting) {
-          this.$message.error('查询失败');
+          ElMessage.error('查询失败');
         }
       } finally {
         this.loading = false;
-        // 延迟重置请求标志,防止快速重复点击
         setTimeout(() => {
           this.isRequesting = false;
         }, 300);
       }
     },
 
-    // 重置查询
     resetQuery() {
       this.queryForm = {
         patientName: '',
@@ -263,7 +246,6 @@ export default {
       this.getList();
     },
 
-    // 分页事件
     handleSizeChange(val) {
       this.queryForm.pageSize = val;
       this.getList();
@@ -273,7 +255,6 @@ export default {
       this.getList();
     },
 
-    // 新增
     handleAdd() {
       this.isEdit = false;
       this.dialogTitle = '新增诊疗档案';
@@ -296,7 +277,6 @@ export default {
       })
     },
 
-    // 编辑
     handleEdit(row) {
       this.isEdit = true;
       this.dialogTitle = '编辑诊疗档案';
@@ -304,38 +284,34 @@ export default {
       this.dialogVisible = true;
     },
 
-    // 提交表单
     submitForm() {
-      // 防止重复提交
       if (this.isSubmitting) {
         return;
       }
-      
+
       this.$refs.formData.validate(async (valid) => {
         if (!valid) return;
-        
+
         this.isSubmitting = true;
-        
+
         try {
           let res;
           if (this.isEdit) {
-            res = await this.request.post('/treatment-record/update', this.formData);
+            res = await request.post('/treatment-record/update', this.formData);
           } else {
-            res = await this.request.post('/treatment-record/add', this.formData);
+            res = await request.post('/treatment-record/add', this.formData);
           }
-          // 后端返回的code是字符串类型,需要转换为字符串比较
           if (res.code === '200' || res.code === 200) {
-            this.$message.success('操作成功');
+            ElMessage.success('操作成功');
             this.dialogVisible = false;
             this.getList();
           } else {
-            this.$message.error(res.msg || '操作失败');
+            ElMessage.error(res.msg || '操作失败');
           }
         } catch (error) {
-          this.$message.error('操作失败');
+          ElMessage.error('操作失败');
           console.error(error)
         } finally {
-          // 延迟重置提交标志
           setTimeout(() => {
             this.isSubmitting = false;
           }, 500);
@@ -343,47 +319,41 @@ export default {
       });
     },
 
-    // 删除
     handleDelete(row) {
-      this.$confirm('确定要删除该诊疗档案吗?', '提示', {
+      ElMessageBox.confirm('确定要删除该诊疗档案吗?', '提示', {
         type: 'warning'
       }).then(async () => {
         try {
-          const res = await this.request.delete(`/treatment-record/delete/${row.id}`);
-          // 后端返回的code是字符串类型,需要转换为字符串比较
+          const res = await request.delete(`/treatment-record/delete/${row.id}`);
           if (res.code === '200' || res.code === 200) {
-            this.$message.success('删除成功');
+            ElMessage.success('删除成功');
             this.getList();
           } else {
-            this.$message.error(res.msg || '删除失败');
+            ElMessage.error(res.msg || '删除失败');
           }
         } catch (error) {
-          this.$message.error('删除失败');
+          ElMessage.error('删除失败');
         }
       });
     },
 
-    // 下载模板(拼接完整后端地址)
     downloadTemplate() {
       window.open(`http://${serverIp}:9090/treatment-record/download-template`);
     },
 
-    // 导入成功回调
     handleImportSuccess(res) {
-      // 后端返回的code是字符串类型,需要转换为字符串比较
       if (res.code === '200' || res.code === 200) {
         const msgList = res.data;
-        this.$alert(msgList.join('\n'), '导入结果', {
+        ElMessageBox.alert(msgList.join('\n'), '导入结果', {
           confirmButtonText: '确定',
           type: msgList.length > 1 ? 'warning' : 'success'
         });
         this.getList();
       } else {
-        this.$message.error(res.msg || '导入失败');
+        ElMessage.error(res.msg || '导入失败');
       }
     },
 
-    // 导出数据
     handleExport() {
       let params = new URLSearchParams(this.queryForm).toString();
       window.open(`http://${serverIp}:9090/treatment-record/export?${params}`);

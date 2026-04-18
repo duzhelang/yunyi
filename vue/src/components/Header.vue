@@ -10,35 +10,44 @@
     </div>
     <el-dropdown style="width: 150px; cursor: pointer; text-align: right">
       <div style="display: inline-block">
-        <img :src="user.avatarUrl" alt=""
+        <img :src="user?.avatarUrl || ''" alt=""
              style="width: 30px; height: 30px; border-radius: 50%; position: relative; top: 10px; right: 5px">
-        <span>{{ user.nickname }}</span><i class="el-icon-arrow-down" style="margin-left: 5px"></i>
+        <span>{{ user?.nickname || '用户' }}</span>
+        <el-icon style="margin-left: 5px"><ArrowDown /></el-icon>
       </div>
-      <el-dropdown-menu slot="dropdown" style="width: 100px; text-align: center">
-        <el-dropdown-item style="font-size: 14px; padding: 5px 0">
-          <router-link to="/password">修改密码</router-link>
-        </el-dropdown-item>
-        <el-dropdown-item style="font-size: 14px; padding: 5px 0">
-          <router-link to="/person">个人信息</router-link>
-        </el-dropdown-item>
-        <el-dropdown-item style="font-size: 14px; padding: 5px 0">
-          <span style="text-decoration: none" @click="logout">退出</span>
-        </el-dropdown-item>
-      </el-dropdown-menu>
+      <template #dropdown>
+        <el-dropdown-menu style="width: 100px; text-align: center">
+          <el-dropdown-item style="font-size: 14px; padding: 5px 0">
+            <router-link to="/password">修改密码</router-link>
+          </el-dropdown-item>
+          <el-dropdown-item style="font-size: 14px; padding: 5px 0">
+            <router-link to="/person">个人信息</router-link>
+          </el-dropdown-item>
+          <el-dropdown-item style="font-size: 14px; padding: 5px 0">
+            <span style="text-decoration: none" @click="logout">退出</span>
+          </el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
     </el-dropdown>
   </div>
 </template>
 
 <script>
+import { useMainStore } from "@/store"
+import { ElMessage } from 'element-plus'
+import { ArrowDown } from '@element-plus/icons-vue'
+
 export default {
   name: "Header",
+  components: { ArrowDown },
   props: {
     collapseBtnClass: String,
     user: Object
   },
   computed: {
     currentPathName () {
-      return this.$store.state.currentPathName;　　//需要监听的数据
+      const store = useMainStore()
+      return store.getCurrentPathName
     }
   },
   data() {
@@ -48,12 +57,12 @@ export default {
   },
   methods: {
     collapse() {
-      // this.$parent.$parent.$parent.$parent.collapse()  // 通过4个 $parent 找到父组件,从而调用其折叠方法
       this.$emit("asideCollapse")
     },
     logout() {
-      this.$store.commit("logout")
-      this.$message.success("退出成功")
+      const store = useMainStore()
+      store.logout()
+      ElMessage.success("退出成功")
     }
   }
 }

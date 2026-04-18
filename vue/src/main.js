@@ -1,26 +1,27 @@
-import Vue from 'vue'
+import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-import store from './store'
-import ElementUI from 'element-ui';
-import 'element-ui/lib/theme-chalk/index.css';
+import { createPinia } from 'pinia'
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import './assets/gloable.css'
-import request from "@/utils/request";
+import request from "@/utils/request"
 
-// main.js全局注册
-// import mavonEditor from 'mavon-editor'
-// import 'mavon-editor/dist/css/index.css'
-// use
-// Vue.use(mavonEditor)
+const app = createApp(App)
 
-Vue.config.productionTip = false
+// 全局注册 Element Plus 所有图标
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component)
+}
 
-Vue.use(ElementUI, { size: "mini" });
+app.use(ElementPlus, {
+  locale: zhCn
+})
+app.use(router)
+app.use(createPinia())
 
-Vue.prototype.request=request
+app.config.globalProperties.$request = request
 
-new Vue({
-  router,
-  store,
-  render: h => h(App)
-}).$mount('#app')
+app.mount('#app')

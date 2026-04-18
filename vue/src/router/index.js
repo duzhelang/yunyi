@@ -1,8 +1,5 @@
-import Vue from 'vue'
-import VueRouter from 'vue-router'
-import store from "@/store";
-
-Vue.use(VueRouter)
+import { createRouter, createWebHistory } from 'vue-router'
+import { useMainStore } from "@/store"
 
 const routes = [
   {
@@ -19,23 +16,21 @@ const routes = [
     path: '/404',
     name: '404',
     component: () => import('../views/404.vue')
-  },
-
+  }
 ]
 
-const router = new VueRouter({
-  mode: 'history',
-  base: process.env.BASE_URL,
+const router = createRouter({
+  history: createWebHistory(),
   routes
 })
 
 // 提供一个重置路由的方法
 export const resetRouter = () => {
-  router.matcher = new VueRouter({
-    mode: 'history',
-    base: process.env.BASE_URL,
+  const newRouter = createRouter({
+    history: createWebHistory(),
     routes
   })
+  router.matcher = newRouter.matcher
 }
 
 // 注意:刷新页面会导致页面路由重置
@@ -44,8 +39,10 @@ export const setRoutes = () => {
   if (storeMenus) {
     try {
       // 获取当前的路由对象名称数组
-      const currentRouteNames = router.getRoutes().map(v => v.name)
-      if (!currentRouteNames.includes('Manage')) {
+      const hasManage = router.getRoutes().some(v => v.name === 'Manage')
+      if (hasManage) {
+        router.removeRoute('Manage')
+      }
         // 拼装动态路由
         const manageRoute = {
           path: '/',
@@ -81,7 +78,7 @@ export const setRoutes = () => {
         })
         // 动态添加到现在的路由对象中去
         router.addRoute(manageRoute)
-      }
+
     } catch (error) {
       console.error('动态路由设置失败:', error)
     }
@@ -91,23 +88,35 @@ export const setRoutes = () => {
 // 重置后重新设置路由
 setRoutes()
 
+let pendingPaths = new Set()
+
 router.beforeEach((to, from, next) => {
   if (to.name) {
-    localStorage.setItem("currentPathName", to.name)  // 设置当前的路由名称
-    store.commit("setPath")
+    localStorage.setItem("currentPathName", to.name)
+    const store = useMainStore()
+    store.setPath()
   }
 
-  // 未找到路由的情况
   if (!to.matched.length) {
     const storeMenus = localStorage.getItem("menus")
     if (storeMenus) {
-      return next("/404")
+      // 如果已经尝试过重建该路径，则直接去404，防止无限循环
+      if (pendingPaths.has(to.fullPath)) {
+        pendingPaths.delete(to.fullPath)
+        return next("/404")
+      }
+
+      pendingPaths.add(to.fullPath)
+      setRoutes()  // 重建动态路由
+
+      // 重新尝试导航到目标路径
+      return next(to.fullPath)
     } else {
-      // 跳回登录页面
       return next("/login")
     }
   } else {
-    // 其他的情况都放行
+    // 清理标记（可选）
+    pendingPaths.delete(to.fullPath)
     next()
   }
 })
