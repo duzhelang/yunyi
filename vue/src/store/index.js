@@ -13,12 +13,10 @@ export const useMainStore = defineStore('main', {
       this.currentPathName = localStorage.getItem("currentPathName")
     },
     logout() {
-      // 清空缓存
+      // 保持向后兼容
       localStorage.removeItem("user")
       localStorage.removeItem("menus")
       router.push("/login")
-
-      // 重置路由
       resetRouter()
     }
   }

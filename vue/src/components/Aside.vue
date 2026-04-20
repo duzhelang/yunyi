@@ -2,10 +2,9 @@
 	<el-menu :default-openeds="opens" style="min-height: 100%; overflow-x: hidden" background-color="#1e293b"
 		text-color="#fff" active-text-color="#ffd04b" :collapse-transition="false" :collapse="isCollapse" router
 		class="aside-menu" 		>
-		<div style="height: 60px; line-height: 60px; text-align: center">
-			<b style="color: white; margin-left: 5px" v-show="logoTextShow">云医智护--糖尿病诊断系统</b>
-			<br>
-			<b style="color: white; margin-left: 5px" v-show="logoTextShow">---糖尿病诊断系统</b>
+		<div class="sidebar-header" v-show="logoTextShow">
+			<div class="logo-title">云医智护</div>
+			<div class="logo-subtitle">糖尿病诊断系统</div>
 		</div>
 		<div v-for="item in menus" :key="item.id">
 			<div v-if="item.path">
@@ -42,6 +41,7 @@
 </template>
 
 <script>
+import { ref, onMounted } from 'vue'
 import { Menu, Coffee, Document, House, User, Grid, Upload, Download, Delete, Edit, Plus, Search, Message, ArrowDown, Loading, Check, Close, Top, Bottom, Warning } from '@element-plus/icons-vue';
 
 export default {
@@ -57,15 +57,12 @@ export default {
 			default: true
 		}
 	},
-	data() {
-		return {
-			menus: [],
-			opens: []
-		}
-	},
-	methods: {
+	setup(props) {
+		const menus = ref([])
+		const opens = ref([])
+
 		// 图标映射函数，将旧的 el-icon-* 格式转换为新的组件名
-		getIconComponent(iconName) {
+		const getIconComponent = (iconName) => {
 			const iconMap = {
 				'el-icon-coffee': 'Coffee',
 				'el-icon-document': 'Document',
@@ -93,18 +90,25 @@ export default {
 			};
 			return iconMap[iconName] || 'Menu';
 		}
-	},
-	created() {
-		try {
-			const storedMenus = localStorage.getItem("menus");
-			if (storedMenus) {
-				this.menus = JSON.parse(storedMenus);
-				this.opens = this.menus.map(v => v.id + '');
+
+		onMounted(() => {
+			try {
+				const storedMenus = localStorage.getItem("menus");
+				if (storedMenus) {
+					menus.value = JSON.parse(storedMenus);
+					opens.value = menus.value.map(v => v.id + '');
+				}
+			} catch (error) {
+				console.error('解析菜单数据失败:', error);
+				menus.value = [];
+				opens.value = [];
 			}
-		} catch (error) {
-			console.error('解析菜单数据失败:', error);
-			this.menus = [];
-			this.opens = [];
+		})
+
+		return {
+			menus,
+			opens,
+			getIconComponent
 		}
 	}
 }
@@ -146,6 +150,28 @@ export default {
 
 	.el-sub-menu__title:hover {
 		background-color: #3d5a80 !important;
+	}
+
+	/* 侧边栏标题样式 */
+	.sidebar-header {
+		padding: 20px 0;
+		text-align: center;
+		background: linear-gradient(135deg, #1e293b, #334155);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.logo-title {
+		font-size: 18px;
+		font-weight: bold;
+		color: #ffffff;
+		margin-bottom: 5px;
+		letter-spacing: 1px;
+	}
+
+	.logo-subtitle {
+		font-size: 12px;
+		color: rgba(255, 255, 255, 0.7);
+		letter-spacing: 0.5px;
 	}
 </style>
 
