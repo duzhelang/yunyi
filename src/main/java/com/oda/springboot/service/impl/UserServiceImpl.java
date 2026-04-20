@@ -81,10 +81,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         if (one == null) {
             one = new User();
             BeanUtil.copyProperties(userDTO, one, true);
-            // 默认一个普通用户的角色
-            String role = RoleEnum.ROLE_WORKER.toString();
+            // 使用前端传来的角色，如果没有则默认普通用户角色
+            String role = userDTO.getRole();
+            if (role == null || role.isEmpty()) {
+                role = RoleEnum.ROLE_WORKER.toString();
+            }
             LambdaQueryWrapper<Role> roleLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            roleLambdaQueryWrapper.eq(Role::getFlag,role);
+            roleLambdaQueryWrapper.eq(Role::getFlag, role);
             Integer roleid = roleMapper.selectOne(roleLambdaQueryWrapper).getId();
             one.setRoleid(roleid);
             one.setRole(role);

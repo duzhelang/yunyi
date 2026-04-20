@@ -43,41 +43,41 @@ export const setRoutes = () => {
       if (hasManage) {
         router.removeRoute('Manage')
       }
-        // 拼装动态路由
-        const manageRoute = {
-          path: '/',
-          name: 'Manage',
-          component: () => import('../views/Manage.vue'),
-          redirect: "/home",
-          children: [
-            { path: 'person', name: '个人信息', component: () => import('../views/Person.vue')},
-            { path: 'password', name: '修改密码', component: () => import('../views/Password.vue')}
-          ]
-        }
-        const menus = JSON.parse(storeMenus)
-        menus.forEach(item => {
-          if (item.path) {  // 当且仅当path不为空的时候才去设置路由
-            let itemMenu = {
-              path: item.path.replace("/", ""),
-              name: item.name,
-              component: () => import(`../views/${item.pagePath}.vue`)
-            }
-            manageRoute.children.push(itemMenu)
-          } else if(Array.isArray(item.children) && item.children.length) {
-            item.children.forEach(subItem => {
-              if (subItem.path) {
-                let itemMenu = {
-                  path: subItem.path.replace("/", ""),
-                  name: subItem.name,
-                  component: () => import(`../views/${subItem.pagePath}.vue`)
-                }
-                manageRoute.children.push(itemMenu)
-              }
-            })
+      // 拼装动态路由
+      const manageRoute = {
+        path: '/',
+        name: 'Manage',
+        component: () => import('../views/Manage.vue'),
+        redirect: "/home",
+        children: [
+          { path: 'person', name: '个人信息', component: () => import('../views/Person.vue')},
+          { path: 'password', name: '修改密码', component: () => import('../views/Password.vue')}
+        ]
+      }
+      const menus = JSON.parse(storeMenus)
+      menus.forEach(item => {
+        if (item.path) {  // 当且仅当path不为空的时候才去设置路由
+          let itemMenu = {
+            path: item.path.replace("/", ""),
+            name: item.name,
+            component: () => import(`../views/${item.pagePath}.vue`)
           }
-        })
-        // 动态添加到现在的路由对象中去
-        router.addRoute(manageRoute)
+          manageRoute.children.push(itemMenu)
+        } else if(Array.isArray(item.children) && item.children.length) {
+          item.children.forEach(subItem => {
+            if (subItem.path) {
+              let itemMenu = {
+                path: subItem.path.replace("/", ""),
+                name: subItem.name,
+                component: () => import(`../views/${subItem.pagePath}.vue`)
+              }
+              manageRoute.children.push(itemMenu)
+            }
+          })
+        }
+      })
+      // 动态添加到现在的路由对象中去
+      router.addRoute(manageRoute)
 
     } catch (error) {
       console.error('动态路由设置失败:', error)
@@ -91,6 +91,14 @@ setRoutes()
 let pendingPaths = new Set()
 
 router.beforeEach((to, from, next) => {
+  console.log('路由导航:', to.path)
+  
+  // ⭐ 核心修复：白名单优先检查，登录、注册、404直接放行！！！
+  if (to.path === '/login' || to.path === '/register' || to.path === '/404') {
+    console.log('白名单页面，直接放行')
+    return next()
+  }
+
   if (to.name) {
     localStorage.setItem("currentPathName", to.name)
     const store = useMainStore()
@@ -110,6 +118,7 @@ router.beforeEach((to, from, next) => {
       setRoutes()  // 重建动态路由
 
       // 重新尝试导航到目标路径
+      console.log('重建路由，重新导航')
       return next(to.fullPath)
     } else {
       return next("/login")
@@ -117,6 +126,7 @@ router.beforeEach((to, from, next) => {
   } else {
     // 清理标记（可选）
     pendingPaths.delete(to.fullPath)
+    console.log('正常通过')
     next()
   }
 })

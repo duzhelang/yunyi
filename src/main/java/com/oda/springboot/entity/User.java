@@ -56,6 +56,21 @@ public class User implements Serializable {
     @Schema(description = "roleId编号外键")
     private Integer roleid;
 
+    @Schema(description = "真实姓名")
+    private String realName;
+
+    @Schema(description = "性别")
+    private String sex;
+
+    @Schema(description = "年龄")
+    private Integer age;
+
+    @Schema(description = "紧急联系人")
+    private String emergencyContact;
+
+    @Schema(description = "与患者关系")
+    private String emergencyRelation;
+
     public Integer getId() {
         return id;
     }
@@ -144,6 +159,46 @@ public class User implements Serializable {
         this.roleid = roleid;
     }
 
+    public String getRealName() {
+        return realName;
+    }
+
+    public void setRealName(String realName) {
+        this.realName = realName;
+    }
+
+    public String getSex() {
+        return sex;
+    }
+
+    public void setSex(String sex) {
+        this.sex = sex;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    public String getEmergencyContact() {
+        return emergencyContact;
+    }
+
+    public void setEmergencyContact(String emergencyContact) {
+        this.emergencyContact = emergencyContact;
+    }
+
+    public String getEmergencyRelation() {
+        return emergencyRelation;
+    }
+
+    public void setEmergencyRelation(String emergencyRelation) {
+        this.emergencyRelation = emergencyRelation;
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -151,6 +206,9 @@ public class User implements Serializable {
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
                 ", nickname='" + nickname + '\'' +
+                ", realName='" + realName + '\'' +
+                ", sex='" + sex + '\'' +
+                ", age=" + age +
                 ", email='" + email + '\'' +
                 ", phone='" + phone + '\'' +
                 ", address='" + address + '\'' +
@@ -158,6 +216,8 @@ public class User implements Serializable {
                 ", avatarUrl='" + avatarUrl + '\'' +
                 ", role='" + role + '\'' +
                 ", roleid=" + roleid +
+                ", emergencyContact='" + emergencyContact + '\'' +
+                ", emergencyRelation='" + emergencyRelation + '\'' +
                 '}';
     }
 

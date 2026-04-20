@@ -35,13 +35,15 @@ request.interceptors.response.use(
         if (typeof res === 'string') {
             res = res ? JSON.parse(res) : res
         }
-        // 当权限验证不通过的时候给出提示
+        // 当权限验证不通过的时候给出提示（排除注册相关接口）
         if (res.code === '401') {
-            // ElementUI.Message({
-            //     message: res.msg,
-            //     type: 'error'
-            // });
-            router.push("/login")
+            // 排除不需要登录的接口（注册、登录、检查用户名等）
+            const noAuthPaths = ['/user/register', '/user/login', '/user/checkUsername'];
+            const isNoAuth = noAuthPaths.some(path => response.config.url.includes(path));
+
+            if (!isNoAuth) {
+                router.push("/login")
+            }
         }
         return res;
     },
@@ -53,4 +55,3 @@ request.interceptors.response.use(
 
 
 export default request
-

@@ -16,6 +16,14 @@ public class UserDTO {
     private String token;
     private String role;
     private Integer roleid;
+    private String realName;
+    private String sex;
+    private Integer age;
+    private String phone;
+    private String email;
+    private String address;
+    private String emergencyContact;
+    private String emergencyRelation;
     private List<Menu> menus;
 
     public Integer getId() {
@@ -80,6 +88,70 @@ public class UserDTO {
 
     public void setRoleid(Integer roleid) {
         this.roleid = roleid;
+    }
+
+    public String getRealName() {
+        return realName;
+    }
+
+    public void setRealName(String realName) {
+        this.realName = realName;
+    }
+
+    public String getSex() {
+        return sex;
+    }
+
+    public void setSex(String sex) {
+        this.sex = sex;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getEmergencyContact() {
+        return emergencyContact;
+    }
+
+    public void setEmergencyContact(String emergencyContact) {
+        this.emergencyContact = emergencyContact;
+    }
+
+    public String getEmergencyRelation() {
+        return emergencyRelation;
+    }
+
+    public void setEmergencyRelation(String emergencyRelation) {
+        this.emergencyRelation = emergencyRelation;
     }
 
     public List<Menu> getMenus() {

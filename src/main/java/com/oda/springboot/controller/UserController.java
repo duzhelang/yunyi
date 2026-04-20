@@ -130,6 +130,14 @@ public class UserController {
         return Result.success(userService.getOne(queryWrapper));
     }
 
+    @GetMapping("/checkUsername")
+    public Result<Boolean> checkUsername(@RequestParam String username) {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("username", username);
+        User user = userService.getOne(queryWrapper);
+        return Result.success(user != null);
+    }
+
     @GetMapping("/page")
     public Result findPage(@RequestParam Integer pageNum,
                                @RequestParam Integer pageSize,
