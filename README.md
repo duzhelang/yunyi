@@ -17,12 +17,14 @@
 - PyTorch (机器学习模型)
 
 ### 前端
-- Vue 2.7.15
-- Element UI 2.15.13
+- Vue 3.4.0
+- Element Plus 2.4.4
 - Echarts 5.4.3
 - axios
 - video.js (视频播放)
 - mavon-editor (富文本编辑器)
+- Pinia (状态管理)
+- Vite (构建工具)
 
 ## 项目结构
 
@@ -160,10 +162,12 @@ Software-ODA125/
 - 工具层：提供通用功能
 
 ### 前端架构
+- Vue 3 Composition API
 - 组件化开发
-- 路由管理
-- 状态管理
+- 路由管理 (Vue Router 4)
+- 状态管理 (Pinia)
 - 响应式布局
+- Vite 构建工具
 
 ## 安全措施
 
