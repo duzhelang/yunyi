@@ -31,7 +31,6 @@
         <el-form-item class="btn-group">
           <el-button
               type="info"
-              size="medium"
               @click.stop="goRegister"
               class="register-btn"
           >
@@ -39,7 +38,6 @@
           </el-button>
           <el-button
               type="primary"
-              size="medium"
               @click="login"
               class="login-btn"
           >
@@ -77,11 +75,8 @@ export default {
           setRoutes();
           ElMessage.success("登录成功");
 
-          if (res.data.role === 'ROLE_WORKER') {
-            this.$router.push("/home");
-          } else {
-            this.$router.push("/");
-          }
+          // 登录成功后跳转到首页
+          this.$router.push("/home");
         } else {
           ElMessage.error(res.msg);
         }

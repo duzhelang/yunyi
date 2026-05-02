@@ -1,7 +1,9 @@
 <template>
   <div style="line-height: 60px; display: flex">
     <div style="flex: 1;">
-      <span :class="collapseBtnClass" style="cursor: pointer; font-size: 18px" @click="collapse"></span>
+      <el-icon :size="18" style="cursor: pointer" @click="collapse">
+        <component :is="collapseBtnClass" />
+      </el-icon>
 
       <el-breadcrumb separator="/" style="display: inline-block; margin-left: 10px">
         <el-breadcrumb-item :to="'/'">首页</el-breadcrumb-item>
@@ -16,11 +18,11 @@
       </div>
       <template #dropdown>
         <el-dropdown-menu>
-          <el-dropdown-item>
-            <router-link to="/password">修改密码</router-link>
+          <el-dropdown-item @click="goToPassword">
+            修改密码
           </el-dropdown-item>
-          <el-dropdown-item>
-            <router-link to="/person">个人信息</router-link>
+          <el-dropdown-item @click="goToPerson">
+            个人信息
           </el-dropdown-item>
           <el-dropdown-item>
             <span @click="logout">退出</span>
@@ -33,30 +35,54 @@
 
 <script>
 import { computed } from 'vue'
-import { useMainStore } from '@/store'
-import { ArrowDown } from '@element-plus/icons-vue'
+import { ArrowDown, Fold, Expand } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { resetRouter } from '@/router'
-import { useRouter } from 'vue-router'
+import { resetRouter, setRoutes } from '@/router'
+import { useRouter, useRoute } from 'vue-router'
 
 export default {
   name: 'Header',
-  components: { ArrowDown },
+  components: { ArrowDown, Fold, Expand },
   props: {
     collapseBtnClass: String,
     user: Object
   },
   emits: ['asideCollapse'],
   setup(props, { emit }) {
-    const store = useMainStore()
     const router = useRouter()
+    const route = useRoute()
 
     // 当前路径名称
-    const currentPathName = computed(() => store.getCurrentPathName)
+    const currentPathName = computed(() => route.name)
 
     // 侧边栏折叠
     const collapse = () => {
       emit('asideCollapse')
+    }
+
+    // 跳转到个人信息页面
+    const goToPerson = () => {
+      console.log('点击跳转到个人信息页面')
+      console.log('当前路由:', router.getRoutes().map(r => ({path: r.path, name: r.name})))
+      
+      router.push('/person').catch(err => {
+        console.error('跳转失败:', err)
+        console.log('尝试重新设置路由...')
+        setRoutes()
+        setTimeout(() => {
+          router.push('/person').catch(err2 => {
+            console.error('二次跳转失败:', err2)
+          })
+        }, 100)
+      })
+    }
+
+    // 跳转到修改密码页面
+    const goToPassword = () => {
+      console.log('点击跳转到修改密码页面')
+      router.push('/password').catch(err => {
+        console.error('跳转失败:', err)
+      })
     }
 
     // 退出登录
@@ -75,7 +101,9 @@ export default {
     return {
       currentPathName,
       collapse,
-      logout
+      logout,
+      goToPerson,
+      goToPassword
     }
   }
 }

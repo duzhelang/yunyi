@@ -284,13 +284,18 @@ public class TestFileController {
 
     @GetMapping("/page")
     public Result findPage(@RequestParam Integer pageNum, @RequestParam Integer pageSize, @RequestParam(defaultValue = "") String name) {
-        QueryWrapper<TestFiles> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("is_delete", false);
-        queryWrapper.orderByDesc("id");
-        if (!"".equals(name)) {
-            queryWrapper.like("name", name);
+        try {
+            QueryWrapper<TestFiles> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("is_delete", false);
+            queryWrapper.orderByDesc("id");
+            if (!"".equals(name)) {
+                queryWrapper.like("name", name);
+            }
+            return Result.success(testFileMapper.selectPage(new Page<>(pageNum, pageSize), queryWrapper));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("500", "查询失败: " + e.getMessage());
         }
-        return Result.success(testFileMapper.selectPage(new Page<>(pageNum, pageSize), queryWrapper));
     }
 
     private void flushRedis(String key) {

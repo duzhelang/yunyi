@@ -122,13 +122,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         roleLambdaQueryWrapper.eq(Role::getFlag,role);
         Integer roleid = roleMapper.selectOne(roleLambdaQueryWrapper).getId();
         user.setRoleid(roleid);
-        LambdaQueryWrapper<User> userLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        userLambdaQueryWrapper.eq(User::getId,user.getId());
-        List<User> users = userMapper.selectList(userLambdaQueryWrapper);
-        if (users.size()==0){
+        if (user.getId() == null) {
             userMapper.insert(user);
+        } else {
+            userMapper.updateById(user);
         }
-        userMapper.updateById(user);
     }
 
 
@@ -162,12 +160,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         List<Menu> roleMenus = new ArrayList<>();
         // 筛选当前用户角色的菜单
         for (Menu menu : menus) {
-            if (menuIds.contains(menu.getId())) {
-                roleMenus.add(menu);
-            }
             List<Menu> children = menu.getChildren();
-            // removeIf()  移除 children 里面不在 menuIds集合中的 元素
+            // 先过滤子菜单，移除不在 menuIds 集合中的元素
             children.removeIf(child -> !menuIds.contains(child.getId()));
+            
+            // 如果父菜单有权限，或者子菜单有权限（子菜单不为空），则添加父菜单
+            if (menuIds.contains(menu.getId()) || !children.isEmpty()) {
+                // 创建菜单副本，避免修改原对象
+                Menu menuCopy = new Menu();
+                BeanUtil.copyProperties(menu, menuCopy, true);
+                menuCopy.setChildren(new ArrayList<>(children));
+                roleMenus.add(menuCopy);
+            }
         }
         return roleMenus;
     }

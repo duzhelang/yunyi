@@ -1,18 +1,17 @@
 <template>
-  <el-container style="min-height: 100vh">
+  <el-container class="manage-container">
 
-    <el-aside :width="sideWidth + 'px'" style="box-shadow: 2px 0 6px rgb(0 21 41 / 35%);">
+    <el-aside :width="sideWidth + 'px'" class="manage-aside">
       <Aside :isCollapse="isCollapse" :logoTextShow="logoTextShow" style="padding-bottom: 20px" />
     </el-aside>
 
-    <el-container>
-      <el-header style="border-bottom: 1px solid #ccc;">
+    <el-container class="manage-main-container">
+      <el-header class="manage-header">
         <Header :collapseBtnClass="collapseBtnClass" @asideCollapse="collapse" :user="user" />
       </el-header>
 
-      <el-main>
-<!--        表示当前页面的子路由会在 <router-view /> 里面展示-->
-        <router-view @refreshUser="getUser" />
+      <el-main class="manage-main">
+        <router-view :key="$route.fullPath" @refreshUser="getUser" />
       </el-main>
 
     </el-container>
@@ -24,12 +23,13 @@
 import Aside from "@/components/Aside.vue";
 import Header from "@/components/Header.vue";
 import request from "@/utils/request";
+import { setRoutes } from "@/router";
 
 export default {
   name: 'Home',
   data() {
     return {
-      collapseBtnClass: 'el-icon-s-fold',
+      collapseBtnClass: 'Fold',
       isCollapse: false,
       sideWidth: 200,
       logoTextShow: true,
@@ -41,7 +41,6 @@ export default {
     Header
   },
   created() {
-    // 从后台获取最新的User数据
     this.getUser()
   },
   methods: {
@@ -49,11 +48,11 @@ export default {
       this.isCollapse = !this.isCollapse
       if (this.isCollapse) {  // 收缩
         this.sideWidth = 64
-        this.collapseBtnClass = 'el-icon-s-unfold'
+        this.collapseBtnClass = 'Expand'
         this.logoTextShow = false
       } else {   // 展开
         this.sideWidth = 200
-        this.collapseBtnClass = 'el-icon-s-fold'
+        this.collapseBtnClass = 'Fold'
         this.logoTextShow = true
       }
     },
@@ -69,3 +68,78 @@ export default {
 }
 </script>
 
+<style scoped>
+.manage-container {
+  min-height: 100vh;
+}
+
+.manage-aside {
+  box-shadow: 2px 0 8px rgba(0, 21, 41, 0.25);
+  transition: width 0.3s ease;
+}
+
+.manage-main-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+}
+
+.manage-header {
+  border-bottom: 1px solid #e4e7ed;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.manage-main {
+  padding: 20px 24px;
+  background-color: #f5f7fa;
+  min-height: calc(100vh - 60px);
+}
+
+/* 优化工作区域内文字和构件样式 */
+.manage-main :deep(.el-card) {
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: none;
+  margin-bottom: 16px;
+}
+
+.manage-main :deep(.el-table) {
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+.manage-main :deep(.el-table th) {
+  background-color: #f5f7fa !important;
+  color: #303133;
+  font-weight: 600;
+}
+
+.manage-main :deep(.el-table td) {
+  color: #606266;
+}
+
+.manage-main :deep(.el-button) {
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.manage-main :deep(.el-input__wrapper) {
+  border-radius: 8px;
+}
+
+.manage-main :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #303133;
+}
+
+.manage-main :deep(.el-tag) {
+  border-radius: 6px;
+}
+
+.manage-main :deep(.el-pagination) {
+  margin-top: 16px;
+}
+</style>

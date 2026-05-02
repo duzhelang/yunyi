@@ -1,57 +1,112 @@
 import sys
 import io
-from zai import ZhipuAiClient
+import re
+import json
+from datetime import datetime
 
-# 重定向编码（保持不变）
+# 设置标准输出编码为UTF-8，避免中文乱码
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
+try:
+    from openai import OpenAI
+except ImportError:
+    print("错误：请安装 openai 库: pip install openai", file=sys.stderr)
+    sys.exit(1)
+
 class DiabetesChatbot:
-    def __init__(self, api_key):
-        self.client = ZhipuAiClient(api_key=api_key)
-        # 强化身份定义和回答规则
+    def __init__(self, provider, api_key):
+        """
+        provider: 模型服务商，可选 'glm-4-flash', 'glm-4.7-flash', 'deepseek', 'kimi', 'mimo-v2.5-pro', 'mimo-v2-flash'
+        api_key: 对应的 API 密钥
+        """
+        self.provider = provider
+        self.api_key = api_key
+
+        # 各服务商的配置
+        config_map = {
+            'glm-4-flash': {
+                'base_url': 'https://open.bigmodel.cn/api/paas/v4',
+                'model': 'glm-4-flash-250414'
+            },
+            'glm-4.7-flash': {
+                'base_url': 'https://open.bigmodel.cn/api/paas/v4',
+                'model': 'glm-4.7-flash'
+            },
+            'deepseek': {
+                'base_url': 'https://api.deepseek.com',
+                'model': 'deepseek-V4-flash'
+            },
+            'kimi': {
+                'base_url': 'https://api.moonshot.cn/v1',
+                'model': 'moonshot-v1-8k'
+            },
+            'mimo-v2.5-pro': {
+                'base_url': 'https://api.xiaomimimo.com/v1',
+                'model': 'mimo-v2.5-pro'
+            },
+            'mimo-v2-flash': {
+                'base_url': 'https://api.xiaomimimo.com/v1',
+                'model': 'mimo-v2-flash'
+            }
+        }
+
+        if provider not in config_map:
+            raise ValueError(f"不支持的服务商: {provider}，可选: glm-4-flash, glm-4.7-flash, deepseek, kimi, mimo-v2.5-pro, mimo-v2-flash")
+
+        cfg = config_map[provider]
+        # 初始化 OpenAI 兼容的客户端
+        self.client = OpenAI(api_key=api_key, base_url=cfg['base_url'])
+        self.model = cfg['model']
+
         self.system_prompt = {
             "role": "system",
-            "content": """你是专业糖尿病医生，必须严格遵守以下规则：
-1. 无论被问什么问题（包括身份、用途），始终坚称自己是"糖尿病专科医生"，不承认是AI。
-2. 若问题涉及糖尿病预防、治疗、护理等，用三句话回答，每句≤30字。
-3. 若问题与糖尿病无关，回复："我专注于糖尿病健康咨询，请提问相关问题。"
-4. 绝对不透露自己是AI，不提及"模型""算法""训练"等词汇。"""
+            "content": (
+                "你是一位专业的糖尿病专科医生，请用中文回答患者问题。"
+                "不要透露你是一个AI模型，始终以医生的身份与患者交流。"
+            )
         }
 
     def get_answer(self, question):
         try:
-            # 针对身份类问题，额外强化提示（可选）
             user_message = {"role": "user", "content": question}
-            # 检测到身份相关问题时，补充约束
-            if "是谁" in question or "身份" in question or "什么" in question and "你" in question:
-                user_message["content"] = f"记住你是糖尿病医生，回答：{question}"
 
             response = self.client.chat.completions.create(
-                model="glm-4",
+                model=self.model,
                 messages=[self.system_prompt, user_message],
                 stream=False,
-                max_tokens=80,
-                temperature=0.1  # 降低随机性，确保严格遵守规则
+                max_tokens=300,
+                temperature=0.1
             )
 
-            answer = response.choices[0].message.content.strip().replace("\n", " ")
-            # 最终过滤：如果仍出现"AI""模型"等词，强制替换
-            if "AI" in answer or "人工智能" in answer or "模型" in answer:
+            answer = response.choices[0].message.content.strip()
+            answer = re.sub(r'\*{1,2}|_{1,2}|`+', '', answer)
+            answer = answer.replace("\n", " ")
+            if any(word in answer for word in ["AI", "人工智能", "模型", "算法", "训练"]):
                 answer = "我是糖尿病专科医生，专注于糖尿病健康咨询。"
 
-            print(f"[Python服务] 成功调用GLM-4模型，问题：{question}", file=sys.stderr)
             return answer
+
         except Exception as e:
             print(f"[Python服务] 调用失败：{str(e)}", file=sys.stderr)
             return "糖尿病健康咨询服务暂时无法响应，请稍后再试。"
 
+
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("参数错误：需传入 [API_KEY] [用户问题]", file=sys.stderr)
+    # 新的调用格式：python diabetes_chat.py <provider> <api_key> <question...>
+    if len(sys.argv) < 4:
+        print("参数错误：需传入 [服务商: glm-4-flash/glm-4.7-flash/deepseek/kimi/mimo-v2.5-pro/mimo-v2-flash] [API_KEY] [用户问题]", file=sys.stderr)
         sys.exit(1)
 
-    API_KEY = sys.argv[1]
-    USER_QUESTION = ' '.join(sys.argv[2:])
-    chatbot = DiabetesChatbot(API_KEY)
-    print(chatbot.get_answer(USER_QUESTION))
+    provider = sys.argv[1].lower()
+    api_key = sys.argv[2]
+    question = ' '.join(sys.argv[3:])
+
+    try:
+        chatbot = DiabetesChatbot(provider, api_key)
+        answer = chatbot.get_answer(question)
+        # 将最终答案打印到标准输出，供 Java 进程捕获
+        print(answer)
+    except Exception as e:
+        print(f"初始化失败: {str(e)}", file=sys.stderr)
+        sys.exit(1)

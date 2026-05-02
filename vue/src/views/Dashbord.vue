@@ -7,7 +7,7 @@
     </div>
 
     <div v-if="loading" class="loading">
-      <el-spinner :size="50"></el-spinner>
+      <el-icon class="is-loading" :size="50"><Loading /></el-icon>
       <p>正在生成可视化图表...</p>
     </div>
 
@@ -15,7 +15,7 @@
 
       <!-- [图表 1]核心概率仪表盘 (Gauge Chart) -->
       <el-card class="chart-box main-chart">
-        <div slot="header"><span class="title">🎯 患病概率评估</span></div>
+        <template #header><span class="title">🎯 患病概率评估</span></template>
         <div id="gaugeChart" class="echart-div"></div>
         <div class="result-text" :class="isPositive ? 'text-danger' : 'text-success'">
           {{ isPositive ? '高风险:建议立即就医' : '低风险:保持健康生活' }}
@@ -24,7 +24,7 @@
 
       <!-- [图表 2]多维风险雷达图 (Radar Chart) -->
       <el-card class="chart-box">
-        <div slot="header"><span class="title">🕸️ 身体指标风险维度</span></div>
+        <template #header><span class="title">🕸️ 身体指标风险维度</span></template>
         <div id="radarChart" class="echart-div"></div>
         <p class="tip">* 红色区域越大,表示该维度偏离正常值越远</p>
       </el-card>
@@ -32,13 +32,13 @@
       <!-- [图表 3]关键指标对比条形图 (Bar Chart) -->
       <!-- 模拟展示:虽然只有一条数据,但我们可以画出"当前值"vs"警戒线" -->
       <el-card class="chart-box">
-        <div slot="header"><span class="title">📊 关键指标风险对比</span></div>
+        <template #header><span class="title">📊 关键指标风险对比</span></template>
         <div id="barChart" class="echart-div"></div>
       </el-card>
 
       <!-- 文字建议区 -->
       <el-card class="chart-box advice-box">
-        <div slot="header"><span class="title">💡 专家建议</span></div>
+        <template #header><span class="title">💡 专家建议</span></template>
         <ul class="advice-list">
           <li v-for="(item, i) in adviceList" :key="i">
             <i :class="item.icon" :style="{color: item.color}"></i> {{ item.text }}
@@ -54,9 +54,11 @@
 import * as echarts from 'echarts';
 import request from "@/utils/request";
 import { ElMessage } from "element-plus";
+import { Loading } from '@element-plus/icons-vue';
 
 export default {
   name: "VisualDiagnosis",
+  components: { Loading },
   data() {
     return {
       loading: true,
@@ -120,7 +122,6 @@ export default {
       });
     },
 
-    // --- [图表 1]仪表盘渲染逻辑 ---
     renderGauge() {
       const dom = document.getElementById('gaugeChart');
       if (!dom) return;
@@ -140,13 +141,13 @@ export default {
           center: ['50%', '60%'],
           itemStyle: { color: color },
           progress: { show: true, width: 25, roundCap: true },
-          pointer: { show: false }, // 现代风格隐藏指针
+          pointer: { show: false },
           axisLine: { lineStyle: { width: 25, color: [[1, '#EBEEF5']] } },
           axisTick: { show: false },
           splitLine: { show: false },
           axisLabel: { show: false },
           detail: {
-            show: false // 我们用 HTML 覆盖显示数字,更灵活
+            show: false
           },
           data: [{ value: this.probability }]
         }]
@@ -154,14 +155,11 @@ export default {
       this.gaugeChart.setOption(option);
     },
 
-    // --- [图表 2]雷达图渲染逻辑 ---
     renderRadar() {
       const dom = document.getElementById('radarChart');
       if (!dom) return;
       this.radarChart = echarts.init(dom);
 
-      // 模拟数据:根据患病与否,决定雷达图的形状
-      // 患病:数值大 (0.8-0.9); 未患病:数值小 (0.1-0.3)
       const baseVal = this.isPositive ? 0.85 : 0.2;
       const varyVal = this.isPositive ? 0.9 : 0.15;
 
@@ -189,11 +187,11 @@ export default {
           data: [{
             value: [
               baseVal,
-              this.isPositive ? 0.8 : 0.2, // 血压
-              this.isPositive ? 0.9 : 0.1, // 肥胖 (BMI)
+              this.isPositive ? 0.8 : 0.2,
+              this.isPositive ? 0.9 : 0.1,
               baseVal,
-              this.isPositive ? 0.7 : 0.3, // 家族史
-              varyVal  // 年龄
+              this.isPositive ? 0.7 : 0.3,
+              varyVal
             ],
             name: '当前患者',
             itemStyle: { color: this.isPositive ? '#F56C6C' : '#67C23A' },
@@ -209,14 +207,11 @@ export default {
       this.radarChart.setOption(option);
     },
 
-    // --- [图表 3]条形对比图渲染逻辑 ---
     renderBar() {
       const dom = document.getElementById('barChart');
       if (!dom) return;
       this.barChart = echarts.init(dom);
 
-      // 模拟几个关键指标的"危险程度"评分 (0-10)
-      // 患病者分数高,未患病者分数低
       const score = this.isPositive ? 8.5 : 2.0;
 
       const option = {
@@ -258,7 +253,6 @@ export default {
             showBackground: true,
             backgroundStyle: { color: '#ebeef5', borderRadius: [0, 10, 10, 0] }
           },
-          // 添加一条警戒线标记
           {
             type: 'markLine',
             silent: true,
@@ -276,7 +270,7 @@ export default {
     },
 
     goBack() {
-      this.$router.push('/'); // 根据你的实际路由修改
+      this.$router.push('/');
     }
   }
 };
@@ -311,18 +305,26 @@ export default {
   border-radius: 8px;
   color: #666;
 }
+.loading .is-loading {
+  animation: rotating 2s linear infinite;
+  color: #409EFF;
+  margin-bottom: 16px;
+}
+@keyframes rotating {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* 两列布局 */
+  grid-template-columns: repeat(2, 1fr);
   gap: 20px;
 }
 
-/* 让第一个图表(仪表盘)占满一行或者更大,看需求,这里设为占左边大块 */
 @media (min-width: 992px) {
   .main-chart {
     grid-column: span 1;
-    grid-row: span 2; /* 仪表盘占两行高度 */
+    grid-row: span 2;
   }
 }
 @media (max-width: 768px) {
@@ -345,11 +347,9 @@ export default {
 }
 .echart-div {
   width: 100%;
-  /* 仪表盘需要更高的高度 */
   height: 300px;
   flex-grow: 1;
 }
-/* 单独调整仪表盘容器高度 */
 .main-chart .echart-div {
   height: 350px;
 }

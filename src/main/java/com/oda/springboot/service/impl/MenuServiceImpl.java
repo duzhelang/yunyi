@@ -29,14 +29,11 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, Menu> implements IM
         if (StrUtil.isNotBlank(name)) {
             queryWrapper.like("name", name);
         }
-        // 查询所有数列
         List<Menu> list = list(queryWrapper);
-        // 找出pid为null的一级菜单
-        List<Menu> parentNodes = list.stream().filter(menu -> menu.getPid() == null).collect(Collectors.toList());
-        // 找出一级菜单的子菜单
+        List<Menu> parentNodes = list.stream().filter(menu -> menu.getPid() == null || menu.getPid().equals(0)).collect(Collectors.toList());
         for (Menu menu : parentNodes) {
-            // 筛选所有数据中pid=父级id的数据就是二级菜单
-            menu.setChildren(list.stream().filter(m -> menu.getId().equals(m.getPid())).collect(Collectors.toList()));
+            List<Menu> children = list.stream().filter(m -> m.getPid() != null && menu.getId().equals(m.getPid())).collect(Collectors.toList());
+            menu.setChildren(children);
         }
         return parentNodes;
     }

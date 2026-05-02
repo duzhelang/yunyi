@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.cfy</groupId>
-    <artifactId>Software-ODA</artifactId>
+    <artifactId>Software-ODA125</artifactId>
     <version>0.0.1-YUNYI</version>
     <name>springboot</name>
     <description>23lang2026</description>
@@ -48,11 +48,6 @@
             <optional>true</optional>
         </dependency>
         <!-- mybatis-plus -->
-<!--        <dependency>-->
-<!--            <groupId>com.baomidou</groupId>-->
-<!--            <artifactId>mybatis-plus-boot-starter</artifactId>-->
-<!--            <version>3.5.9</version>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
@@ -161,13 +156,14 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>com.oda.springboot.SpringbootApplication</mainClass>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
                 </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <!-- 修复后的maven-surefire-plugin:删除版本,由Spring Boot Parent管理 -->
             <plugin>

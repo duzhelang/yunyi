@@ -1,12 +1,20 @@
 package com.oda.springboot.utils;
 
+import org.springframework.stereotype.Component;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
+@Component
 public class UsePythonUtils {
+
+    // 回调接口
+    public interface PythonOutputCallback {
+        void onOutput(String line, boolean isError);
+    }
 
     // 调用Python脚本并返回输出内容
     public static String callPythonAndGetOutput(String[] arguments) throws IOException, InterruptedException {
@@ -69,6 +77,51 @@ public class UsePythonUtils {
             System.err.println("调用被中断:" + e.getMessage());
             Thread.currentThread().interrupt();
             throw e;
+        } finally {
+            if (process != null) {
+                process.destroy();
+            }
+        }
+    }
+
+    // 带回调的Python调用方法
+    public static void callPythonWithCallback(String processId, String[] arguments, PythonOutputCallback callback) throws IOException, InterruptedException {
+        if (arguments == null || arguments.length == 0) {
+            throw new IllegalArgumentException("调用参数不能为空");
+        }
+
+        Process process = null;
+        try {
+            process = Runtime.getRuntime().exec(arguments);
+
+            // 读取标准输出
+            try (InputStream stdout = process.getInputStream();
+                 BufferedReader stdoutReader = new BufferedReader(
+                         new InputStreamReader(stdout, StandardCharsets.UTF_8))
+            ) {
+                String line;
+                while ((line = stdoutReader.readLine()) != null) {
+                    if (callback != null) {
+                        callback.onOutput(line, false);
+                    }
+                }
+            }
+
+            // 读取错误输出
+            try (InputStream stderr = process.getErrorStream();
+                 BufferedReader stderrReader = new BufferedReader(
+                         new InputStreamReader(stderr, StandardCharsets.UTF_8))
+            ) {
+                String line;
+                while ((line = stderrReader.readLine()) != null) {
+                    if (callback != null) {
+                        callback.onOutput(line, true);
+                    }
+                }
+            }
+
+            process.waitFor();
+
         } finally {
             if (process != null) {
                 process.destroy();

@@ -186,8 +186,14 @@ print(f"[结果] 最佳模型已保存至：{model_output_path}")
 print(f"[结果] 缩放器已保存至：{scaler_path}")
 print(f"[结果] 编码器已保存至：{encoder_path}")
 
+# 保存背景数据供 SHAP 使用
+background_sample = X_train_tensor[:200].numpy()  # 取前200个训练样本
+background_path = model_output_path.replace('.pth', '_background.npy')
+np.save(background_path, background_sample)
+print(f"[结果] 背景数据已保存至: {background_path}")
+
 # 验证文件是否存在
-files_to_check = [model_output_path, scaler_path, encoder_path]
+files_to_check = [model_output_path, scaler_path, encoder_path, background_path]
 all_exist = True
 for f in files_to_check:
     if not os.path.exists(f):

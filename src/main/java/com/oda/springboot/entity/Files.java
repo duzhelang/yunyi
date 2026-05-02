@@ -24,6 +24,10 @@ public class Files {
     @TableField("user_id")
     private int userid;
 
+    private String remark;
+
+    private String category;
+
     public Integer getId() {
         return id;
     }
@@ -110,6 +114,22 @@ public class Files {
 
     public void setUserid(int userid) {
         this.userid = userid;
+    }
+
+    public String getRemark() {
+        return remark;
+    }
+
+    public void setRemark(String remark) {
+        this.remark = remark;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
 }

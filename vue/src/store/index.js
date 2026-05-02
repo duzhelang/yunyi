@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import router, { resetRouter } from "@/router"
+import { CacheHelper } from "@/utils/cacheHelper"
 
 export const useMainStore = defineStore('main', {
   state: () => ({
@@ -10,12 +11,15 @@ export const useMainStore = defineStore('main', {
   },
   actions: {
     setPath() {
-      this.currentPathName = localStorage.getItem("currentPathName")
+      this.currentPathName = CacheHelper.get('currentPathName')
     },
     logout() {
-      // 保持向后兼容
-      localStorage.removeItem("user")
-      localStorage.removeItem("menus")
+      CacheHelper.clearAllLoginState()
+      router.push("/login")
+      resetRouter()
+    },
+    clearAllCache() {
+      CacheHelper.clearAll()
       router.push("/login")
       resetRouter()
     }

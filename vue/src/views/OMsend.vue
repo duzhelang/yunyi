@@ -5,7 +5,7 @@
         <el-input v-model="form.title"></el-input>
       </el-form-item>
       <el-form-item label="内容:" prop="content" required>
-        <el-input type="textarea" rows="13"  v-model="form.content"></el-input>
+        <el-input type="textarea" :rows="13"  v-model="form.content"></el-input>
       </el-form-item>
       <el-form-item label="故障类型:" required>
         <el-select clearable v-model="form.type" placeholder="请选择故障类型" style="width: 100%">
@@ -75,13 +75,16 @@ export default {
     load() {
       request.get("/message/getUserName").then(res => {
         this.receiveUserNames = res.data
-      }),
-      request.get("/message/findById/" + this.id).then(res => {
-        this.form.title = res.data.title,
-        this.form.type = res.data.type,
-        this.form.content = res.data.content,
-        this.form.receiveUserName = res.data.receiveUserName
       })
+      // 只有当id存在时才发起请求
+      if (this.id) {
+        request.get("/message/findById/" + this.id).then(res => {
+          this.form.title = res.data.title,
+          this.form.type = res.data.type,
+          this.form.content = res.data.content,
+          this.form.receiveUserName = res.data.receiveUserName
+        })
+      }
     },
     resetForm () {
       this.$refs['form'].resetFields()

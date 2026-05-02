@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oda.springboot.mapper.DiabetesEducationMapper">
+
+    <resultMap id="BaseResultMap" type="com.oda.springboot.entity.DiabetesEducation">
+        <id column="id" property="id"/>
+        <result column="section_id" property="sectionId"/>
+        <result column="section_title" property="sectionTitle"/>
+        <result column="content" property="content"/>
+        <result column="sort_order" property="sortOrder"/>
+        <result column="is_deleted" property="isDeleted"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 查询所有科普内容（按排序顺序） -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM diabetes_education
+        WHERE is_deleted = 0
+        ORDER BY sort_order ASC
+    </select>
+
+    <!-- 根据ID查询单条科普内容 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM diabetes_education
+        WHERE id = #{id} AND is_deleted = 0
+    </select>
+
+    <!-- 根据篇章ID查询 -->
+    <select id="selectBySectionId" resultMap="BaseResultMap">
+        SELECT * FROM diabetes_education
+        WHERE section_id = #{sectionId} AND is_deleted = 0
+    </select>
+
+    <!-- 新增科普内容 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO diabetes_education (
+            section_id, section_title, content, sort_order
+        ) VALUES (
+            #{sectionId}, #{sectionTitle}, #{content}, #{sortOrder}
+        )
+    </insert>
+
+    <!-- 根据ID修改科普内容 -->
+    <update id="updateById">
+        UPDATE diabetes_education
+        <set>
+            <if test="sectionId != null">section_id = #{sectionId},</if>
+            <if test="sectionTitle != null">section_title = #{sectionTitle},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID删除（逻辑删除） -->
+    <update id="deleteById">
+        UPDATE diabetes_education SET is_deleted = 1 WHERE id = #{id}
+    </update>
+
+</mapper>

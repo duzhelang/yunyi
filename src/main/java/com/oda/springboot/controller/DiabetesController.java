@@ -21,57 +21,99 @@ public class DiabetesController {
     @Value("${files.pythonChatScript.path}")
     private String pythonScriptPath;
 
-    @Value("${zhipu.api.key}")
-    private String apiKey;
+    @Value("${zhipu.api.key:}")
+    private String zhipuApiKey;
 
-    // 超时时间设置(5分钟)
+    @Value("${deepseek.api.api-key:}")
+    private String deepseekApiKey;
+
+    @Value("${kimi.api.api-key:}")
+    private String kimiApiKey;
+
+    @Value("${mimo.api.api-key:}")
+    private String mimoApiKey;
+
     private static final long PROCESS_TIMEOUT = 300;
 
-    @PostMapping("/chat")
-    public Result<String> chat(@RequestParam String question) {
-        // 日志记录收到的问题
-        log.info("[Java后端] 收到问题:{}", question);
+    private String getApiKey(String keyValue, String keyName) {
+        if (keyValue == null || keyValue.isBlank()) {
+            throw new IllegalStateException(
+                    keyName + " API Key 未配置，请检查 application.yml 中的相关配置");
+        }
+        return keyValue;
+    }
 
-        // 参数校验
+    @PostMapping("/chat")
+    public Result<String> chat(@RequestParam String question,
+                               @RequestParam(required = false, defaultValue = "glm-4-flash") String provider) {
+        log.info("[Java后端] 收到问题:{}, 模型:{}", question, provider);
+
         if (question == null || question.trim().isEmpty()) {
             return Result.error("问题不能为空");
         }
 
+        String apiKey;
+        String normalizedProvider;
+        switch (provider.toLowerCase()) {
+            case "glm-4-flash":
+                apiKey = getApiKey(zhipuApiKey, "智谱");
+                normalizedProvider = "glm-4-flash";
+                break;
+            case "glm-4.7-flash":
+                apiKey = getApiKey(zhipuApiKey, "智谱");
+                normalizedProvider = "glm-4.7-flash";
+                break;
+            case "deepseek":
+                apiKey = getApiKey(deepseekApiKey, "DeepSeek");
+                normalizedProvider = "deepseek";
+                break;
+            case "kimi":
+                apiKey = getApiKey(kimiApiKey, "Kimi");
+                normalizedProvider = "kimi";
+                break;
+            case "mimo-v2.5-pro":
+                apiKey = getApiKey(mimoApiKey, "MiMo");
+                normalizedProvider = "mimo-v2.5-pro";
+                break;
+            case "mimo-v2-flash":
+                apiKey = getApiKey(mimoApiKey, "MiMo");
+                normalizedProvider = "mimo-v2-flash";
+                break;
+            default:
+                apiKey = getApiKey(zhipuApiKey, "智谱");
+                normalizedProvider = "glm-4-flash";
+                break;
+        }
+
         Process process = null;
         try {
-            // 构造调用Python的命令
             String[] command = {
                     pythonPath,
                     pythonScriptPath,
+                    normalizedProvider,
                     apiKey,
                     question
             };
 
-            // 启动进程
             process = new ProcessBuilder(command)
-                    .redirectErrorStream(false)  // 错误流单独处理
+                    .redirectErrorStream(false)
                     .start();
 
-            // 异步读取输出流(防止阻塞)
             StringBuilder answerBuilder = new StringBuilder();
             Process finalProcess = process;
             Thread outputThread = new Thread(() -> readStream(finalProcess.getInputStream(), answerBuilder, false));
             outputThread.start();
 
-            // 异步读取错误流
             StringBuilder errorMsg = new StringBuilder();
-            Process finalProcess1 = process;
-            Thread errorThread = new Thread(() -> readStream(finalProcess1.getErrorStream(), errorMsg, true));
+            Thread errorThread = new Thread(() -> readStream(finalProcess.getErrorStream(), errorMsg, true));
             errorThread.start();
 
-            // 等待进程完成,设置超时
             boolean finished = process.waitFor(PROCESS_TIMEOUT, TimeUnit.SECONDS);
             if (!finished) {
-                process.destroyForcibly();  // 超时强制销毁进程
+                process.destroyForcibly();
                 return Result.error("Python执行超时,请稍后重试");
             }
 
-            // 等待流读取线程结束
             outputThread.join(1000);
             errorThread.join(1000);
 
@@ -97,16 +139,12 @@ public class DiabetesController {
             log.error("处理进程被中断", e);
             return Result.error("请求处理被中断,请重试");
         } finally {
-            // 确保进程资源释放
             if (process != null && process.isAlive()) {
                 process.destroyForcibly();
             }
         }
     }
 
-    /**
-     * 统一读取输入流的方法
-     */
     private void readStream(InputStream inputStream, StringBuilder builder, boolean isError) {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
@@ -116,13 +154,11 @@ public class DiabetesController {
                 if (isError) {
                     log.error("[Python错误] {}", line);
                 } else if (line.startsWith("[Python服务]")) {
-                    log.info("[Python调试] {}", line);
+                    log.debug("[Python调试] {}", line);
                 }
             }
         } catch (IOException e) {
             log.error("读取流失败", e);
         }
     }
-
-
 }

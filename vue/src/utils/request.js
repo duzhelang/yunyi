@@ -1,57 +1,72 @@
 import axios from 'axios'
 import router from "@/router";
-import {serverIp} from "../../public/config";
+import { CacheHelper } from "./cacheHelper";
+
+const serverIp = window.location.hostname || 'localhost'
 
 const request = axios.create({
     baseURL: `http://${serverIp}:9090`,
     timeout: 60000
 })
 
-// request 拦截器
-// 可以自请求发送前对请求做一些处理
-// 比如统一加token,对请求参数统一加密
+// 请求拦截器
 request.interceptors.request.use(config => {
     config.headers['Content-Type'] = 'application/json;charset=utf-8';
-    let user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null
-    if (user) {
-        config.headers['token'] = user.token;  // 设置请求头
+
+    const userStr = CacheHelper.get('user')
+    let user = null
+    if (userStr) {
+      try {
+        user = JSON.parse(userStr)
+      } catch (e) {
+        console.error('解析用户信息失败:', e)
+      }
+    }
+
+    if (user && user.token) {
+        config.headers['token'] = user.token;
     }
 
     return config
-}, error => {
-    return Promise.reject(error)
-});
+}, error => Promise.reject(error))
 
-// response 拦截器
-// 可以在接口响应后统一处理结果
+// 响应拦截器
 request.interceptors.response.use(
     response => {
         let res = response.data;
-        // 如果是返回的文件
+
+        // 文件下载
         if (response.config.responseType === 'blob') {
             return res
         }
-        // 兼容服务端返回的字符串数据
+
+        // 安全解析 JSON
         if (typeof res === 'string') {
-            res = res ? JSON.parse(res) : res
+            try {
+                res = res ? JSON.parse(res) : res
+            } catch (e) {
+                return res
+            }
         }
-        // 当权限验证不通过的时候给出提示（排除注册相关接口）
+
+        // 登录失效处理
         if (res.code === '401') {
-            // 排除不需要登录的接口（注册、登录、检查用户名等）
             const noAuthPaths = ['/user/register', '/user/login', '/user/checkUsername'];
-            const isNoAuth = noAuthPaths.some(path => response.config.url.includes(path));
+            const isNoAuth = noAuthPaths.some(path =>
+                response.config.url.includes(path)
+            );
 
             if (!isNoAuth) {
                 router.push("/login")
             }
         }
+
         return res;
     },
     error => {
-        console.log('err' + error) // for debug
+        console.error('接口错误:', error)
         return Promise.reject(error)
     }
 )
-
 
 export default request

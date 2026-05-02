@@ -97,4 +97,20 @@ public class PropertyUtil {
         this.pythonModelPath = pythonModelPath;
     }
 
-}
+    // 获取 Python 脚本目录路径
+    public String getPythonPath() {
+        // 从 pythonTrainMain 路径中提取 python 目录路径
+        if (pythonTrainMain != null) {
+            // 处理 Windows 路径分隔符
+            String path = pythonTrainMain.replace("\\", "/");
+            if (path.contains("/python/")) {
+                String pythonPath = pythonTrainMain.substring(0, pythonTrainMain.lastIndexOf("/python/") + "/python/".length());
+                // 转换为系统默认路径分隔符
+                return pythonPath.replace("/", System.getProperty("file.separator"));
+            }
+        }
+        // 默认路径
+        return System.getProperty("user.dir") + System.getProperty("file.separator") + "python" + System.getProperty("file.separator");
+    }
+
+} 

@@ -6,7 +6,7 @@ import com.oda.springboot.entity.Message;
 /**
  * @BelongsProject: Software-ODA
  * @BelongsPackage: com.oda.springboot.mapper
- * @Author: DZL-125  
+ * @Author: ODA-cj  
  * @CreateTime: 2026-03-29  18:07
  * @Description: TODO
  * @Version: 1.0

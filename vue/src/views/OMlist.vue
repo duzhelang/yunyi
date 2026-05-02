@@ -41,14 +41,13 @@
 </template>
 
 <script>
-import {serverIp} from "../../public/config";
 import request from "@/utils/request";
 
 export default {
   name: "OMlist",
   data() {
     return {
-      serverIp: serverIp,
+      serverIp: window.config ? window.config.serverIp : 'localhost',
       tableData: [],
       sendUserName: '',
       multipleSelection: [],

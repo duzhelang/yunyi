@@ -5,7 +5,7 @@
         <el-input v-model="form.title"></el-input>
       </el-form-item>
       <el-form-item label="内容:" prop="content" required>
-        <el-input type="textarea" rows="13"  v-model="form.content"></el-input>
+        <el-input type="textarea" :rows="13"  v-model="form.content"></el-input>
       </el-form-item>
       <el-form-item label="故障类型:" required>
         <el-select clearable v-model="form.type" placeholder="请选择故障类型" style="width: 100%">

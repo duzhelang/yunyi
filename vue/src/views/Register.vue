@@ -152,7 +152,6 @@
         <el-form-item class="btn-group">
           <el-button
               type="primary"
-              size="medium"
               class="auth-btn primary"
               @click="register"
           >
@@ -160,7 +159,6 @@
           </el-button>
           <el-button
               type="info"
-              size="medium"
               class="auth-btn secondary"
               @click="$router.push('/login')"
           >

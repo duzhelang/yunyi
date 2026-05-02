@@ -1,316 +1,257 @@
 <template>
-  <div class="health-profile-container">
+  <div class="health-hub-pro">
+    <!-- 欢迎横幅 -->
+    <div class="welcome-banner">
+      <h1>🏥 AI 健康管理中心 Pro</h1>
+      <p>智能自查 · 趋势追踪 · 医生协同</p>
+    </div>
+
     <el-row :gutter="24">
-      <!-- 左侧:数据录入表单 -->
-      <el-col :span="16">
-        <div class="form-card">
-          <!-- 头部 -->
-          <div class="chat-header" style="border-bottom: 1px solid #eaeef5;">
-            <div class="doctor-icon" style="background: #e6f0ff; color: #4a90e2;">
-              <i class="el-icon-s-data"></i>
+      <!-- ================= 左侧：表单 + 建议 ================= -->
+      <el-col :xs="24" :lg="16">
+        <!-- 表单卡片 -->
+        <el-card class="form-card">
+          <template #header>
+            <div class="card-header">
+              <i class="el-icon-edit-outline"></i>
+              <span>健康指标自查</span>
+              <el-tag size="small" type="warning" effect="plain">诊断员在线</el-tag>
             </div>
-            <h3>健康指标自查 (人工诊断)</h3>
-            <div class="status">
-              <span class="online-dot" style="background: #e6a23c; animation: none;"></span>
-              <span class="status-text">诊断员在线 (CSV 流转模式)</span>
-            </div>
-          </div>
+          </template>
 
-          <!-- 表单主体 -->
-          <div class="form-body">
-            <el-form :model="form" label-width="150px" ref="profileForm" size="default">
+          <el-form :model="form" label-width="160px" size="default" class="health-form">
+            <!-- 基础信息 -->
+            <div class="section-title">👤 基础信息</div>
+            <el-row :gutter="16">
+              <el-col :span="8">
+                <el-form-item label="年龄 (岁)" required>
+                  <el-input-number v-model="form.Age" :min="1" :max="120" placeholder="岁" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="身高 (cm)" required>
+                  <el-input-number v-model="temp.height" :min="50" :max="250" placeholder="厘米" @change="calcBMI" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="体重 (kg)" required>
+                  <el-input-number v-model="temp.weight" :min="20" :max="300" placeholder="千克" @change="calcBMI" />
+                </el-form-item>
+              </el-col>
+            </el-row>
 
-              <div class="section-title">👤 基础身体信息</div>
-
-              <el-row :gutter="15">
-                <el-col :span="12">
-                  <el-form-item label="年龄 (Age)" required>
-                    <el-input-number
-                        v-model="form.Age"
-                        :min="1" :max="120"
-                        placeholder="岁"
-                        style="width: 100%"
-                        @focus="inputFocused = true"
-                        @blur="inputFocused = false"
-                        :class="{ 'focused-input': inputFocused }"
-                    />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="怀孕次数">
-                    <el-input-number
-                        v-model="form.Pregnancies"
-                        :min="0" :max="20"
-                        placeholder="次 (无则填 0)"
-                        style="width: 100%"
-                        @focus="inputFocused = true"
-                        @blur="inputFocused = false"
-                    />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-
-              <el-row :gutter="15">
-                <el-col :span="12">
-                  <el-form-item label="身高 (cm)" required>
-                    <el-input-number
-                        v-model="temp.height"
-                        :min="50" :max="250"
-                        placeholder="厘米"
-                        style="width: 100%"
-                        @change="calculateBMI"
-                        @focus="inputFocused = true"
-                        @blur="inputFocused = false"
-                    />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="体重 (kg)" required>
-                    <el-input-number
-                        v-model="temp.weight"
-                        :min="20" :max="300"
-                        placeholder="千克"
-                        style="width: 100%"
-                        @change="calculateBMI"
-                        @focus="inputFocused = true"
-                        @blur="inputFocused = false"
-                    />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-
-              <el-form-item label="BMI (自动计算)" required>
-                <el-input
-                    v-model="form.BMI"
-                    disabled
-                    :class="{ 'is-error': !form.BMI, 'focused-input': inputFocused }"
-                    style="width: 100%"
-                >
-                  <template #append>kg/m</template>
-                </el-input>
-                <div class="ai-tip" style="margin-top: 5px;">*由身高体重自动计算,模型必填项</div>
-              </el-form-item>
-
-              <div class="section-title">🩺 核心医疗指标</div>
-
-              <el-row :gutter="15">
-                <el-col :span="12">
-                  <el-form-item label="血糖 (Glucose)" required>
-                    <el-input-number
-                        v-model="form.Glucose"
-                        :precision="1" :step="1"
-                        placeholder="mg/dL"
-                        style="width: 100%"
-                        @focus="inputFocused = true"
-                        @blur="inputFocused = false"
-                    >
-                      <template #append>
-                        <el-tooltip content="模型单位为 mg/dL" placement="top">
-                          <i class="el-icon-question" style="cursor: pointer;"></i>
-                        </el-tooltip>
-                      </template>
-                    </el-input-number>
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="血压 (BloodPressure)">
-                    <el-input-number
-                        v-model="form.BloodPressure"
-                        :min="40" :max="200"
-                        placeholder="mmHg"
-                        style="width: 100%"
-                        @focus="inputFocused = true"
-                        @blur="inputFocused = false"
-                    />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-
-              <el-row :gutter="15">
-                <el-col :span="12">
-                  <el-form-item label="皮褶厚度">
-                    <el-input-number
-                        v-model="form.SkinThickness"
-                        :min="0" :max="100"
-                        placeholder="mm"
-                        style="width: 100%"
-                        @focus="inputFocused = true"
-                        @blur="inputFocused = false"
-                    />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="胰岛素 (Insulin)">
-                    <el-input-number
-                        v-model="form.Insulin"
-                        :precision="1" :min="0"
-                        placeholder="mU/L"
-                        style="width: 100%"
-                        @focus="inputFocused = true"
-                        @blur="inputFocused = false"
-                    />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-
-              <el-form-item label="糖尿病谱系函数" required>
-                <el-input-number
-                    v-model="form.DiabetesPedigreeFunction"
-                    :precision="3" :step="0.01" :min="0" :max="3"
-                    style="width: 100%"
-                    @focus="inputFocused = true"
-                    @blur="inputFocused = false"
-                />
-                <div class="ai-tip" style="margin-top: 5px;">*家族遗传系数,不确定填 0.5</div>
-              </el-form-item>
-
-              <!-- 单位转换工具 -->
-              <div class="unit-converter">
-                <el-checkbox v-model="autoConvertGlucose" @change="handleGlucoseConvert">
-                  我已输入 mmol/L,自动转换为 mg/dL (18)
-                </el-checkbox>
+            <el-form-item label="BMI (自动计算)" required>
+              <el-input v-model="form.BMI" disabled>
+                <template #append>kg/m²</template>
+              </el-input>
+              <div v-if="bmiFeedback.text" class="feedback-tag" :class="bmiFeedback.class">
+                {{ bmiFeedback.text }}
               </div>
+            </el-form-item>
 
-              <div class="section-title">📝 补充信息</div>
+            <!-- 医疗指标 -->
+            <div class="section-title">🩺 核心医疗指标</div>
+            <el-row :gutter="16">
+              <el-col :span="8">
+                <el-form-item label="空腹血糖 (mg/dL)" required>
+                  <el-input-number v-model="form.Glucose" :precision="1" placeholder="mg/dL" @change="evaluateGlucose" />
+                  <div v-if="glucoseFeedback.text" class="feedback-tag" :class="glucoseFeedback.class">
+                    {{ glucoseFeedback.text }}
+                  </div>
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="血压 (mmHg)">
+                  <el-input-number v-model="form.BloodPressure" :min="40" :max="200" placeholder="mmHg" @change="evaluateBP" />
+                  <div v-if="bpFeedback.text" class="feedback-tag" :class="bpFeedback.class">
+                    {{ bpFeedback.text }}
+                  </div>
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="胰岛素 (mU/L)">
+                  <el-input-number v-model="form.Insulin" :precision="1" placeholder="mU/L" />
+                </el-form-item>
+              </el-col>
+            </el-row>
 
-              <el-form-item label="自觉症状">
-                <el-input
-                    v-model="form.symptoms"
-                    type="textarea"
-                    :rows="3"
-                    placeholder="如有多饮、多尿等症状请描述..."
-                    @focus="inputFocused = true"
-                    @blur="inputFocused = false"
-                    :class="{ 'focused-input': inputFocused }"
-                />
-              </el-form-item>
+            <el-row :gutter="16">
+              <el-col :span="8">
+                <el-form-item label="皮褶厚度 (mm)">
+                  <el-input-number v-model="form.SkinThickness" placeholder="mm" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="糖尿病谱系函数" required>
+                  <el-input-number v-model="form.DiabetesPedigreeFunction" :precision="3" :step="0.01" :min="0" :max="3" />
+                  <div class="helper-text">* 家族遗传系数，不确定填 0.5</div>
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="怀孕次数">
+                  <el-input-number v-model="form.Pregnancies" :min="0" :max="20" placeholder="次" />
+                </el-form-item>
+              </el-col>
+            </el-row>
 
-              <el-form-item label="上传化验单">
-                <el-upload
-                    ref="uploadRef"
-                    action="#"
-                    :auto-upload="false"
-                    :on-change="handleFileChange"
-                    :limit="1"
-                    :file-list="fileList"
-                >
-                  <el-button type="primary" plain round icon="el-icon-upload">选择文件</el-button>
-                  <div class="el-upload__tip" slot="tip">仅用于医生参考</div>
-                </el-upload>
-              </el-form-item>
-            </el-form>
+            <!-- 单位转换 -->
+            <div class="converter-bar">
+              <el-checkbox v-model="autoConvertGlucose" @change="handleGlucoseConvert">
+                我已输入 mmol/L，自动转换为 mg/dL (×18)
+              </el-checkbox>
+            </div>
+
+            <div class="section-title">📝 补充信息</div>
+            <el-form-item label="自觉症状">
+              <el-input v-model="form.symptoms" type="textarea" :rows="2" placeholder="如有多饮、多尿等症状请描述..." />
+            </el-form-item>
+            <el-form-item label="上传化验单">
+              <el-upload ref="uploadRef" action="#" :auto-upload="false" :on-change="handleFileChange" :limit="1" :file-list="fileList">
+                <el-button type="primary" plain round icon="el-icon-upload">选择文件</el-button>
+              </el-upload>
+            </el-form-item>
+          </el-form>
+
+          <!-- 操作按钮 -->
+          <div class="action-bar">
+            <el-button @click="resetForm" plain round :disabled="saving || submitting">重置</el-button>
+            <el-button type="success" @click="saveOnly" :loading="saving" :disabled="submitting" round>💾 保存档案</el-button>
+            <el-button type="primary" @click="submitToDoctor(null)" :loading="submitting" :disabled="saving" round>
+              🚀 发送诊断员
+            </el-button>
           </div>
+        </el-card>
 
-          <!-- 底部操作区 -->
-          <div class="input-area" style="border-top: 1px solid #eaeef5; background: white; padding: 18px 24px;">
-            <el-button @click="resetForm" :disabled="saving || submitting" plain round>
-              重置
-            </el-button>
-            <div style="flex: 1;"></div>
-            <el-button
-                @click="saveOnly"
-                :loading="saving"
-                :disabled="submitting"
-                round
-                style="margin-right: 12px;"
-            >
-              💾 仅保存
-            </el-button>
-            <el-button
-                type="primary"
-                @click="submitToDoctor(null)"
-                :loading="submitting"
-                :disabled="saving"
-                round
-                class="send-btn"
-            >
-              <span v-if="!submitting">🚀 保存并发送诊断 (生成 CSV)</span>
-              <i v-else class="el-icon-loading"></i>
-            </el-button>
+        <!-- 日常建议卡片 -->
+        <el-card class="advice-card">
+          <template #header>
+            <div class="card-header">
+              <i class="el-icon-s-order"></i>
+              <span>日常健康管理建议</span>
+            </div>
+          </template>
+          <div class="advice-grid">
+            <div class="advice-item">
+              <div class="adv-icon bg-green"><i class="el-icon-food"></i></div>
+              <h3>饮食控制</h3>
+              <ul>
+                <li><b>粗细搭配</b>：主食增加燕麦、荞麦、糙米</li>
+                <li><b>多吃蔬菜</b>：每日500g以上绿叶菜</li>
+                <li><b>少油少盐</b>：食盐＜5g，避免油炸</li>
+              </ul>
+            </div>
+            <div class="advice-item">
+              <div class="adv-icon bg-blue"><i class="el-icon-running"></i></div>
+              <h3>科学运动</h3>
+              <ul>
+                <li><b>频率</b>：每周150分钟中等强度运动</li>
+                <li><b>时机</b>：餐后1小时运动，防低血糖</li>
+                <li><b>抗阻</b>：每周2次力量训练</li>
+              </ul>
+            </div>
           </div>
-        </div>
+        </el-card>
       </el-col>
 
-      <!-- 右侧:历史记录 -->
-      <el-col :span="8">
-        <div class="history-card">
-          <div class="chat-header" style="border-bottom: 1px solid #eaeef5;">
-            <h3>🕒 自查历史</h3>
-          </div>
-
-          <div class="chat-history" style="height: 600px; background: #f8fafc;">
-            <!-- 空状态 -->
-            <div v-if="!historyList || historyList.length === 0" class="welcome-message">
-              <p>暂无历史记录</p>
-              <p class="ai-tip">填写并提交后将会显示在这里</p>
+      <!-- ================= 右侧：图表 + 历史 + 工具 ================= -->
+      <el-col :xs="24" :lg="8">
+        <!-- 趋势图表卡片（新增） -->
+        <el-card class="chart-card">
+          <template #header>
+            <div class="card-header">
+              <i class="el-icon-data-analysis"></i>
+              <span>健康趋势追踪</span>
             </div>
+          </template>
+          <!-- 标签切换 -->
+          <el-radio-group v-model="chartMode" size="small" class="chart-tabs">
+            <el-radio-button label="glucose">血糖曲线</el-radio-button>
+            <el-radio-button label="bmi">BMI 趋势</el-radio-button>
+          </el-radio-group>
+          <div ref="chartRef" class="chart-box"></div>
+          <div v-if="historyList.length === 0" class="empty-chart">暂无数据，请先保存档案</div>
+        </el-card>
 
-            <!-- 列表渲染 -->
-            <div v-else v-for="(item, index) in historyList" :key="item.id" class="message-item" style="display: block; margin-bottom: 16px;">
-              <div class="bot-message" style="max-width: 100%; margin-right: 0;">
-                <div class="history-item-card">
-                  <div class="history-header">
-                    <el-tag
-                        :type="getStatusType(item.status)"
-                        size="mini"
-                        round
-                        effect="dark"
-                    >
-                      {{ getStatusText(item.status) }}
-                    </el-tag>
-                    <span class="time" style="color: #94a3b8; text-align: left;">{{ formatTime(item.createTime) }}</span>
-                  </div>
-
-                  <div class="history-grid">
-                    <!-- ✅ 关键修改:全部改为小驼峰 (glucose, bmi, age) 以匹配后端 JSON -->
-                    <span>血糖:<b>{{ item.glucose }}</b></span>
-                    <span>BMI: <b>{{ item.bmi }}</b></span>
-                    <span>年龄:<b>{{ item.age }}</b></span>
-                  </div>
-
-                  <!-- 诊断结果显示区 -->
-                  <div v-if="item.status === 'DONE' && item.diagnosisResult" class="diagnosis-result-box">
-                    <strong>👨‍⚕️ 诊断结论:</strong>
-                    <div style="margin-top: 4px; color: #333; line-height: 1.5;">{{ item.diagnosisResult }}</div>
-                  </div>
-
-                  <!-- 等待中提示 -->
-                  <div v-else-if="item.status === 'PENDING'" class="pending-tip">
-                    <i class="el-icon-time"></i> CSV 文件已生成,诊断员正在分析中...
-                  </div>
-
-                  <!-- 其他状态提示 -->
-                  <div v-else class="pending-tip" style="background: #f4f4f5; color: #909399; border-color: #e9e9eb;">
-                    <i class="el-icon-document"></i> 数据已保存
-                  </div>
-
-                  <div class="history-actions">
-                    <el-button type="text" size="mini" @click="loadHistoryToForm(item)">
-                      载入数据
-                    </el-button>
-                    <el-button
-                        type="primary"
-                        size="mini"
-                        round
-                        @click="submitToDoctor(item.id)"
-                        :loading="submittingId === item.id"
-                        :disabled="item.status === 'PENDING'"
-                    >
-                      {{ item.status === 'PENDING' ? '等待诊断' : '再次咨询' }}
-                    </el-button>
-                  </div>
-                </div>
+        <!-- 历史记录卡片 -->
+        <el-card class="history-card">
+          <template #header>
+            <div class="card-header">
+              <i class="el-icon-time"></i>
+              <span>自查历史</span>
+            </div>
+          </template>
+          <div class="history-list">
+            <div v-if="historyList.length === 0" class="empty-state">暂无历史记录</div>
+            <div v-for="item in historyList" :key="item.id" class="history-item">
+              <div class="item-header">
+                <el-tag :type="STATUS_MAP[item.status]?.type" size="small" effect="dark">
+                  {{ STATUS_MAP[item.status]?.text }}
+                </el-tag>
+                <span class="time">{{ formatTime(item.createTime) }}</span>
+              </div>
+              <div class="item-body">
+                <span>血糖: <b>{{ item.glucose }}</b></span>
+                <span>BMI: <b>{{ item.bmi }}</b></span>
+                <span>年龄: <b>{{ item.age }}</b></span>
+              </div>
+              <div v-if="item.status === 'DONE' && item.diagnosisResult" class="diagnosis-box">
+                👨‍⚕️ {{ item.diagnosisResult }}
+              </div>
+              <div class="item-actions">
+                <el-button link size="small" @click="loadHistoryToForm(item)">载入</el-button>
+                <el-button type="primary" size="small" round @click="submitToDoctor(item.id)" :loading="submittingId === item.id" :disabled="item.status === 'PENDING'">
+                  {{ item.status === 'PENDING' ? '等待中' : '咨询' }}
+                </el-button>
               </div>
             </div>
+          </div>
+        </el-card>
 
-            <!-- 加载指示器 -->
-            <div v-if="loadingHistory" class="loading-indicator" style="justify-content: center; margin-top: 20px;">
-              <div class="dot"></div>
-              <div class="dot"></div>
-              <div class="dot"></div>
+        <!-- 工具箱卡片 -->
+        <el-card class="tool-card">
+          <template #header>
+            <div class="card-header">
+              <i class="el-icon-s-tools"></i>
+              <span>糖友必备工具</span>
+            </div>
+          </template>
+          <div class="tool-grid">
+            <div class="tool-item" @click="openTool('emergency')">
+              <div class="icon-box bg-red"><i class="el-icon-warning"></i></div>
+              <span>低血糖急救</span>
+            </div>
+            <div class="tool-item" @click="openTool('carb-count')">
+              <div class="icon-box bg-orange"><i class="el-icon-magic-stick"></i></div>
+              <span>碳水计数法</span>
+            </div>
+            <div class="tool-item" @click="openTool('foot-care')">
+              <div class="icon-box bg-green"><i class="el-icon-cpu"></i></div>
+              <span>足部护理</span>
             </div>
           </div>
-        </div>
+        </el-card>
+
+        <!-- 每日打卡卡片 -->
+        <el-card class="checkin-card">
+          <template #header>
+            <div class="card-header">
+              <i class="el-icon-calendar-check"></i>
+              <span>今日打卡</span>
+            </div>
+          </template>
+          <div class="checkin-list">
+            <div v-for="(task, idx) in checkList" :key="idx" class="checkin-item" @click="toggleCheck(idx)">
+              <i :class="task.done ? 'el-icon-check' : 'el-icon-circle-outline'" class="check-icon" :style="{color: task.done ? '#67C23A' : '#DCDFE6'}"></i>
+              <span :class="{ done: task.done }">{{ task.text }}</span>
+            </div>
+          </div>
+          <div class="progress-section">
+            <div class="progress-text">
+              <span>完成度</span><span>{{ progressPercent }}%</span>
+            </div>
+            <el-progress :percentage="progressPercent" :stroke-width="8" color="#67C23A" :show-text="false" />
+          </div>
+        </el-card>
       </el-col>
     </el-row>
   </div>
@@ -319,18 +260,26 @@
 <script>
 import request from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import * as echarts from 'echarts'
 
 export default {
-  name: 'HealthProfileView',
+  name: 'HealthHubPro',
   data() {
     return {
-      // 表单数据模型 (保持你的大驼峰习惯,但在赋值时要注意转换)
+      // ================= 状态常量 =================
+      STATUS_MAP: {
+        DONE: { text: '✅ 已完成', type: 'success' },
+        PENDING: { text: '⏳ 诊断中', type: 'warning' },
+        SAVED: { text: '📝 已保存', type: 'info' }
+      },
+
+      // 表单主模型
       form: {
         Pregnancies: 0,
         Glucose: undefined,
-        BloodPressure: 0,
-        SkinThickness: 0,
-        Insulin: 0,
+        BloodPressure: undefined,
+        SkinThickness: undefined,
+        Insulin: undefined,
         BMI: undefined,
         DiabetesPedigreeFunction: 0.5,
         Age: undefined,
@@ -341,38 +290,110 @@ export default {
         height: undefined,
         weight: undefined
       },
+
+      // 即时反馈
+      bmiFeedback: { text: '', class: '' },
+      glucoseFeedback: { text: '', class: '' },
+      bpFeedback: { text: '', class: '' },
+
+      // 交互状态
       saving: false,
       submitting: false,
       submittingId: null,
-      loadingHistory: false,
-      inputFocused: false,
       autoConvertGlucose: false,
+      fileList: [],
 
-      historyList: [], // 这里将存储后端返回的小驼峰数据
-      fileList: []
+      // 历史列表
+      historyList: [],
+      loadingHistory: false,
+
+      // 打卡
+      checkList: [
+        { text: '早餐吃了粗粮/蔬菜', done: false },
+        { text: '餐后散步 20 分钟', done: false },
+        { text: '喝够 8 杯水', done: false },
+        { text: '今晚 23:00 前睡觉', done: false }
+      ],
+
+      // 图表
+      chartMode: 'glucose',
+      chartInstance: null
     }
+  },
+  computed: {
+    progressPercent() {
+      const done = this.checkList.filter(t => t.done).length
+      return Math.round((done / this.checkList.length) * 100)
+    }
+  },
+  watch: {
+    // 监听历史数据与模式变化，重新渲染图表
+    historyList: { deep: true, handler() { this.$nextTick(() => this.renderChart()) } },
+    chartMode() { this.$nextTick(() => this.renderChart()) }
   },
   mounted() {
     this.loadHistory()
   },
   methods: {
-    calculateBMI() {
-      if (this.temp.height && this.temp.weight) {
-        const h = this.temp.height / 100
-        this.form.BMI = parseFloat((this.temp.weight / (h * h)).toFixed(2))
-      } else {
+    // ================= BMI 计算（唯一入口） =================
+    calcBMI() {
+      if (!this.temp.height || !this.temp.weight) {
         this.form.BMI = undefined
+        this.bmiFeedback = { text: '', class: '' }
+        return
       }
+      const h = this.temp.height / 100
+      const bmi = this.temp.weight / (h * h)
+      this.form.BMI = parseFloat(bmi.toFixed(2))
+
+      // 评估状态（唯一 BMI 评估逻辑）
+      let text = '', cls = ''
+      if (bmi < 18.5) { text = '偏瘦'; cls = 'warning' }
+      else if (bmi <= 23.9) { text = '正常'; cls = 'success' }
+      else if (bmi < 28) { text = '超重'; cls = 'warning' }
+      else { text = '肥胖'; cls = 'danger' }
+      this.bmiFeedback = { text, class: cls }
     },
 
+    // ================= 血糖评估（医学逻辑修正，单位 mg/dL） =================
+    evaluateGlucose(val) {
+      if (!val && val !== 0) {
+        this.glucoseFeedback = { text: '', class: '' }
+        return
+      }
+      let text = '', cls = ''
+      if (val < 70) { text = '⚠️ 偏低（低血糖风险）'; cls = 'danger' }
+      else if (val <= 110) { text = '✅ 正常'; cls = 'success' }
+      else if (val < 126) { text = '⚠️ 糖尿病前期'; cls = 'warning' }
+      else { text = '❗ 过高（疑似糖尿病）'; cls = 'danger' }
+      this.glucoseFeedback = { text, class: cls }
+    },
+
+    // ================= 血压评估 =================
+    evaluateBP(val) {
+      if (!val) {
+        this.bpFeedback = { text: '', class: '' }
+        return
+      }
+      let text = '', cls = ''
+      if (val < 90) { text = '偏低'; cls = 'warning' }
+      else if (val <= 120) { text = '理想'; cls = 'success' }
+      else if (val < 140) { text = '正常偏高'; cls = 'warning' }
+      else { text = '高血压'; cls = 'danger' }
+      this.bpFeedback = { text, class: cls }
+    },
+
+    // 单位转换
     handleGlucoseConvert(val) {
       if (!this.form.Glucose) return
       if (val && this.form.Glucose < 30) {
         this.form.Glucose = parseFloat((this.form.Glucose * 18).toFixed(1))
-        ElMessage.info(`已转换:${(this.form.Glucose/18).toFixed(1)} mmol/L → ${this.form.Glucose} mg/dL`)
+        ElMessage.info(`已转换为 ${this.form.Glucose} mg/dL`)
+        this.evaluateGlucose(this.form.Glucose)
       } else if (!val && this.form.Glucose > 100) {
         this.form.Glucose = parseFloat((this.form.Glucose / 18).toFixed(1))
-        ElMessage.info(`已还原单位`)
+        ElMessage.info('已还原为 mmol/L')
+        this.evaluateGlucose(this.form.Glucose)
       }
     },
 
@@ -381,175 +402,97 @@ export default {
       this.fileList = [uploadFile]
     },
 
-    validateForm() {
+    // ================= 保存 / 发送 =================
+    validate() {
       if (!this.form.Age || !this.form.Glucose || !this.form.BMI) {
-        ElMessage.warning('请填写年龄、血糖和 BMI (身高体重) 等必填项')
-        this.inputFocused = true
+        ElMessage.warning('请填写年龄、血糖和 BMI（身高体重）')
         return false
       }
       return true
     },
-
     buildPayload() {
-      const payload = new FormData()
-      payload.append('Pregnancies', this.form.Pregnancies || 0)
-      payload.append('Glucose', this.form.Glucose)
-      payload.append('BloodPressure', this.form.BloodPressure || 0)
-      payload.append('SkinThickness', this.form.SkinThickness || 0)
-      payload.append('Insulin', this.form.Insulin || 0)
-      payload.append('BMI', this.form.BMI)
-      payload.append('DiabetesPedigreeFunction', this.form.DiabetesPedigreeFunction || 0)
-      payload.append('Age', this.form.Age)
-      payload.append('symptoms', this.form.symptoms)
-      if (this.form.file) {
-        payload.append('file', this.form.file)
-      }
-      return payload
+      const fd = new FormData()
+      fd.append('Pregnancies', this.form.Pregnancies || 0)
+      fd.append('Glucose', this.form.Glucose)
+      fd.append('BloodPressure', this.form.BloodPressure || 0)
+      fd.append('SkinThickness', this.form.SkinThickness || 0)
+      fd.append('Insulin', this.form.Insulin || 0)
+      fd.append('BMI', this.form.BMI)
+      fd.append('DiabetesPedigreeFunction', this.form.DiabetesPedigreeFunction || 0)
+      fd.append('Age', this.form.Age)
+      fd.append('symptoms', this.form.symptoms)
+      if (this.form.file) fd.append('file', this.form.file)
+      return fd
     },
-
+    extractId(res) {
+      if (typeof res === 'number') return res
+      if (typeof res === 'string' && !isNaN(Number(res))) return Number(res)
+      if (typeof res === 'object') {
+        if (res.id) return res.id
+        if (res.data) return typeof res.data === 'number' ? res.data : res.data.id
+        if (res.result) return res.result
+      }
+      return null
+    },
     async saveOnly() {
-      if (!this.validateForm()) return
+      if (!this.validate()) return
       this.saving = true
       try {
-        const response = await request.post('/api/health-profile/save', this.buildPayload(), {
+        const res = await request.post('/api/health-profile/save', this.buildPayload(), {
           headers: { 'Content-Type': 'multipart/form-data' }
         })
-        console.log('[Save] 原始响应:', response)
-
-        let savedId = null
-        if (typeof response === 'number') savedId = response
-        else if (typeof response === 'string' && !isNaN(Number(response))) savedId = Number(response)
-        else if (response && typeof response === 'object') {
-          if (response.msg !== undefined) {
-            const msgVal = Number(response.msg)
-            if (!isNaN(msgVal) && msgVal > 0) savedId = msgVal
-          }
-          if (savedId === null) {
-            const possibleFields = ['data', 'id', 'result']
-            for (const field of possibleFields) {
-              if (response[field] !== undefined) {
-                const val = response[field]
-                if (typeof val === 'number') { savedId = val; break }
-                else if (typeof val === 'string' && !isNaN(Number(val))) { savedId = Number(val); break }
-              }
-            }
-          }
-        }
-
-        if (savedId !== null && savedId !== undefined && !isNaN(savedId) && savedId > 0) {
-          ElMessage.success('档案保存成功 (ID: ' + savedId + ')')
-          this.loadHistory()
-          return savedId
+        const id = this.extractId(res)
+        if (id) {
+          ElMessage.success(`档案保存成功 (ID: ${id})`)
+          await this.loadHistory() // 刷新历史 + 图表
+          return id
         } else {
           ElMessage.error('保存成功但无法获取 ID')
           return null
         }
-      } catch (error) {
-        console.error(error)
-        ElMessage.error('网络错误,保存失败')
+      } catch (e) {
+        ElMessage.error('保存失败')
         return null
-      } finally {
-        this.saving = false
-      }
+      } finally { this.saving = false }
     },
-
     async submitToDoctor(existingId) {
-      if (existingId && typeof existingId !== 'number' && typeof existingId !== 'string') existingId = null
-      if (!this.validateForm()) return
-
+      if (!this.validate()) return
       let targetId = existingId
       if (!targetId) {
-        this.saving = true
-        try {
-          const savedId = await this.saveOnly()
-          if (!savedId) return
-          targetId = savedId
-        } catch (e) {
-        ElMessage.error('保存过程出错')
-        return
-      } finally {
-          this.saving = false
-        }
+        targetId = await this.saveOnly()
+        if (!targetId) return
       }
-
       const finalId = Number(targetId)
-      if (isNaN(finalId) || finalId <= 0) {
-        ElMessage.error('系统错误:无效的档案 ID')
-        return
-      }
-
       try {
-        await ElMessageBox.confirm('确定要生成 CSV 并发送给诊断员吗?\n\nID: ' + finalId, '确认提交', {
-          confirmButtonText: '生成并发送',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-      } catch {
-        return
-      }
+        await ElMessageBox.confirm(`确认生成 CSV 并发送给诊断员？\n档案 ID: ${finalId}`, '确认发送', { type: 'warning' })
+      } catch { return }
 
       this.submitting = !existingId
       this.submittingId = existingId
-
       try {
-        const response = await request.post(`/api/health-profile/send-to-doctor/${finalId}`, {})
-        let isSuccess = false
-        if (typeof response === 'object' && response !== null) {
-          if (response.code === 200 || response.code === '200' || response.success === true) isSuccess = true
-          else if (!response.code && !response.error) isSuccess = true
-        } else {
-          isSuccess = true
-        }
-
-        if (isSuccess) {
-          ElMessage.success('✅ CSV 文件生成成功!已通知诊断员.')
-          this.loadHistory()
-        } else {
-          ElMessage.warning((response && response.msg) || '提交完成')
-          this.loadHistory()
-        }
-      } catch (error) {
-        console.error('[Submit] 接口报错详情:', error)
-        let errMsg = '提交过程网络出错'
-        if (error.response) {
-          const data = error.response.data
-          errMsg = typeof data === 'string' ? data : (data?.msg || data?.message || `后端拒绝请求 (${error.response.status})`)
-        } else if (error.message) {
-          errMsg = error.message
-        }
-        ElMessage.error('❌ 提交失败:' + errMsg)
+        const res = await request.post(`/api/health-profile/send-to-doctor/${finalId}`, {})
+        const ok = !res || res.code === 200 || res.success === true
+        ElMessage[ok ? 'success' : 'warning'](ok ? 'CSV 已生成，诊断员已通知' : (res.msg || '提交完成'))
+        await this.loadHistory()
+      } catch (e) {
+        ElMessage.error('提交失败：' + (e.response?.data?.msg || e.message))
       } finally {
         this.submitting = false
         this.submittingId = null
       }
     },
 
-    // ✅ 修复:增加日志并正确赋值
+    // ================= 历史记录 =================
     async loadHistory() {
       this.loadingHistory = true
       try {
-        const response = await request.get('/api/health-profile/list')
-        console.log('[History] 接口原始响应:', response)
-
-        // 后端返回结构通常是 { code: 200, data: [...] }
-        // axios 会自动解析 JSON,所以 response.data 就是后端的整个 JSON 对象
-        if (response && response.data && Array.isArray(response.data)) {
-          this.historyList = response.data
-          console.log('[History] 解析后的列表长度:', this.historyList.length)
-          console.log('[History] 第一条数据样例:', this.historyList[0])
-        } else {
-          console.warn('[History] 数据格式异常或为空', response)
-          this.historyList = []
-        }
+        const res = await request.get('/api/health-profile/list')
+        this.historyList = Array.isArray(res) ? res : (res.data || [])
+        this.$nextTick(() => this.renderChart())
       } catch (e) {
-        console.error('[History] 加载失败:', e)
-        ElMessage.error('加载历史记录失败')
-      } finally {
-        this.loadingHistory = false
-      }
+        console.error('加载历史失败', e)
+      } finally { this.loadingHistory = false }
     },
-
-    // ✅ 修复:将后端的小驼峰 (item.glucose) 映射到前端的大驼峰 (this.form.Glucose)
     loadHistoryToForm(item) {
       this.form.Pregnancies = item.pregnancies
       this.form.Glucose = item.glucose
@@ -560,85 +503,324 @@ export default {
       this.form.DiabetesPedigreeFunction = item.diabetesPedigreeFunction
       this.form.Age = item.age
       this.form.symptoms = item.symptoms || ''
-
-      // 注意:后端列表接口通常不返回身高体重,所以这里无法自动回填 temp.height/weight
-      // 需要用户手动重新输入以 recalculat BMI,或者提示用户
-      ElMessage.info('已载入历史数据 (注意:身高体重需重新输入以重新计算 BMI)')
+      this.temp.height = null
+      this.temp.weight = null
+      this.calcBMI() // 重置 BMI 反馈
+      this.evaluateGlucose(this.form.Glucose)
+      this.evaluateBP(this.form.BloodPressure)
       this.fileList = []
       this.form.file = null
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      ElMessage.info('已载入历史数据，需重新输入身高体重')
+    },
+    formatTime(ts) {
+      if (!ts) return ''
+      const d = new Date(ts)
+      return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
     },
 
+    // ================= 图表渲染 =================
+    renderChart() {
+      if (!this.$refs.chartRef) return
+      if (!this.chartInstance) {
+        this.chartInstance = echarts.init(this.$refs.chartRef)
+      }
+
+      // 从 historyList 提取数据
+      const sorted = [...this.historyList].sort((a, b) => new Date(a.createTime) - new Date(b.createTime))
+      const times = sorted.map(item => this.formatTime(item.createTime))
+      const glucoseData = sorted.map(item => item.glucose)
+      const bmiData = sorted.map(item => item.bmi)
+
+      const option = {
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: times,
+          axisLabel: { rotate: 30, fontSize: 10 }
+        },
+        yAxis: {
+          type: 'value',
+          name: this.chartMode === 'glucose' ? '血糖 (mg/dL)' : 'BMI',
+          nameTextStyle: { fontSize: 11 }
+        },
+        series: [{
+          data: this.chartMode === 'glucose' ? glucoseData : bmiData,
+          type: 'line',
+          smooth: true,
+          showSymbol: true,
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: { width: 2 },
+          areaStyle: {
+            opacity: 0.1,
+            color: this.chartMode === 'glucose'
+              ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#E6A23C' }, { offset: 1, color: '#fff' }])
+              : new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#409EFF' }, { offset: 1, color: '#fff' }])
+          },
+          itemStyle: { color: this.chartMode === 'glucose' ? '#E6A23C' : '#409EFF' },
+          markLine: {
+            silent: true,
+            data: this.chartMode === 'glucose'
+              ? [{ yAxis: 110, label: { formatter: '上限', fontSize: 10 }, lineStyle: { type: 'dashed', color: '#F56C6C' } }]
+              : []
+          }
+        }]
+      }
+
+      this.chartInstance.setOption(option, true)
+    },
+
+    // ================= 工具 & 打卡 =================
+    openTool(type) {
+      const tips = {
+        emergency: '🚑 低血糖急救：立即食用 15g 快速升糖食品（如半杯果汁、3-4 颗糖），15 分钟后复测。若未缓解请立即就医。',
+        'carb-count': '🍚 碳水计数法：每份碳水约含 15g 碳水化合物。例如：1小碗米饭≈2份碳水。',
+        'foot-care': '🦶 足部护理指南：每天检查双脚有无伤口、水泡；穿宽松鞋袜；洗脚水温不超过 37℃；定期修剪指甲。'
+      }
+      ElMessage.info(tips[type] || '功能开发中...')
+    },
+    toggleCheck(idx) {
+      this.checkList[idx].done = !this.checkList[idx].done
+    },
+
+    // 重置表单
     resetForm() {
-      this.form.Pregnancies = 0
-      this.form.Glucose = undefined
-      this.form.BloodPressure = 0
-      this.form.SkinThickness = 0
-      this.form.Insulin = 0
-      this.form.BMI = undefined
-      this.form.DiabetesPedigreeFunction = 0.5
-      this.form.Age = undefined
-      this.form.symptoms = ''
-      this.form.file = null
+      this.form = {
+        Pregnancies: 0, Glucose: undefined, BloodPressure: undefined,
+        SkinThickness: undefined, Insulin: undefined, BMI: undefined,
+        DiabetesPedigreeFunction: 0.5, Age: undefined,
+        symptoms: '', file: null
+      }
       this.temp.height = undefined
       this.temp.weight = undefined
       this.fileList = []
       this.autoConvertGlucose = false
+      this.bmiFeedback = { text: '', class: '' }
+      this.glucoseFeedback = { text: '', class: '' }
+      this.bpFeedback = { text: '', class: '' }
       ElMessage.info('表单已重置')
-    },
-
-    getStatusType(status) {
-      if (status === 'DONE') return 'success'
-      if (status === 'PENDING') return 'warning'
-      return 'info'
-    },
-    getStatusText(status) {
-      if (status === 'DONE') return '✅ 已完成'
-      if (status === 'PENDING') return '⏳ 诊断中'
-      return '📝 已保存'
-    },
-
-    formatTime(timestamp) {
-      if (!timestamp) return ''
-      const date = new Date(timestamp)
-      return `${date.getMonth()+1}/${date.getDate()} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`
     }
   }
 }
 </script>
 
 <style scoped>
-/* 样式部分保持不变 */
-.health-profile-container { max-width: 1200px; width: 95%; margin: 30px auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-.form-card, .history-card { border-radius: 20px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); overflow: hidden; background: white; margin-bottom: 20px; }
-.chat-header { display: flex; align-items: center; padding: 20px 24px; background: white; }
-.chat-header h3 { font-size: 18px; font-weight: 600; color: #1e293b; margin: 0 12px 0 12px; }
-.doctor-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-.status { margin-left: auto; display: flex; align-items: center; font-size: 13px; color: #64748b; }
-.online-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; margin-right: 6px; animation: onlinePulse 2s infinite; }
-@keyframes onlinePulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
-.form-body { padding: 24px; background-color: #f8fafc; min-height: 500px; }
-.section-title { font-size: 15px; font-weight: 600; color: #4a90e2; margin: 20px 0 15px 0; padding-left: 10px; border-left: 3px solid #4a90e2; }
-.ai-tip { font-size: 11px; color: #94a3b8; font-style: italic; }
-.unit-converter { margin: 10px 0 20px 150px; padding: 10px; background: #ecf5ff; border-radius: 8px; font-size: 13px; color: #4a90e2; }
-.focused-input :deep(.el-input__inner), .focused-input :deep(.el-input-number__decrease), .focused-input :deep(.el-input-number__increase) { border-color: #4a90e2 !important; box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.15) !important; }
-.is-error :deep(.el-input__inner) { border-color: #f56c6c !important; }
-.input-area { display: flex; align-items: center; gap: 12px; }
-.send-btn { background: #4a90e2; border-color: #4a90e2; transition: all 0.2s; }
-.send-btn:hover:not(:disabled) { background: #357abd; transform: translateY(-1px); }
-.send-btn:disabled { background: #cbd5e1; border-color: #cbd5e1; }
-.chat-history { padding: 24px; overflow-y: auto; }
-.welcome-message { text-align: center; color: #64748b; margin-top: 50px; }
-.history-item-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; transition: all 0.2s; }
-.history-item-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-color: #4a90e2; }
-.history-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
-.history-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 13px; color: #475569; margin-bottom: 12px; }
-.diagnosis-result-box { background: #f0f9eb; border: 1px solid #e1f3d8; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px; color: #67c23a; }
-.pending-tip { font-size: 12px; color: #e6a23c; margin-bottom: 10px; background: #fdf6ec; padding: 8px; border-radius: 6px; border: 1px dashed #faecd8; }
-.history-actions { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px dashed #e2e8f0; padding-top: 10px; }
-.loading-indicator { display: flex; gap: 6px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; animation: loadingDots 1.4s infinite ease-in-out; }
-.dot:nth-child(1) { animation-delay: -0.32s; }
-.dot:nth-child(2) { animation-delay: -0.16s; }
-@keyframes loadingDots { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+.health-hub-pro {
+  padding: 20px;
+  background: #f0f2f5;
+  min-height: 100vh;
+}
+
+/* 欢迎横幅 */
+.welcome-banner {
+  background: linear-gradient(135deg, #409EFF 0%, #66B1FF 100%);
+  color: white;
+  padding: 28px 32px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 6px 20px rgba(64,158,255,0.25);
+}
+.welcome-banner h1 { margin: 0 0 8px; font-size: 26px; }
+.welcome-banner p { margin: 0; opacity: 0.9; font-size: 15px; }
+
+/* 卡片通用 */
+.form-card, .advice-card, .chart-card, .history-card, .tool-card, .checkin-card {
+  border: none;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  color: #1D2129;
+}
+.card-header i { color: #409EFF; font-size: 18px; }
+
+/* 表单 */
+.health-form {
+  padding: 8px 0;
+}
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 24px 0 16px 0;
+  padding-left: 12px;
+  border-left: 4px solid #409EFF;
+}
+.feedback-tag {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.feedback-tag.success { background: #f0f9eb; color: #67C23A; }
+.feedback-tag.warning { background: #fdf6ec; color: #E6A23C; }
+.feedback-tag.danger { background: #fef0f0; color: #F56C6C; }
+
+.converter-bar {
+  margin: 20px 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.action-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #EBEEF5;
+}
+
+/* 建议卡片 */
+.advice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.advice-item {
+  background: #fafafa;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #ebeef5;
+}
+.adv-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 20px; margin-bottom: 12px;
+}
+.bg-green { background: #67C23A; }
+.bg-blue { background: #409EFF; }
+.advice-item h3 { margin: 0 0 8px; color: #303133; }
+.advice-item ul { margin: 0; padding-left: 18px; color: #606266; font-size: 14px; line-height: 1.8; }
+
+/* 图表卡片 */
+.chart-card {
+  position: relative;
+}
+.chart-tabs {
+  margin-bottom: 12px;
+}
+.chart-box {
+  width: 100%;
+  height: 220px;
+}
+.empty-chart {
+  text-align: center;
+  color: #999;
+  padding: 30px 0;
+  font-size: 14px;
+}
+
+/* 历史记录 */
+.history-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+.empty-state { text-align: center; color: #999; padding: 40px 0; }
+.history-item {
+  padding: 12px;
+  margin-bottom: 12px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+.item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.item-body { display: flex; gap: 12px; font-size: 13px; color: #555; margin-bottom: 6px; }
+.item-body b { color: #222; }
+.diagnosis-box {
+  background: #f0f9eb;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: #2d6a2d;
+}
+.item-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px dashed #eee;
+  padding-top: 8px;
+}
+
+/* 工具箱 */
+.tool-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tool-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tool-item:hover {
+  background: #f5f7fa;
+  border-color: #409EFF;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64,158,255,0.12);
+}
+.icon-box {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 20px;
+}
+.bg-red { background: #F56C6C; }
+.bg-orange { background: #E6A23C; }
+
+/* 打卡 */
+.checkin-list {
+  margin-bottom: 16px;
+}
+.checkin-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  cursor: pointer;
+}
+.check-icon {
+  font-size: 20px;
+  margin-right: 10px;
+  transition: color 0.2s;
+}
+.checkin-item span { font-size: 14px; color: #303133; }
+.checkin-item span.done { text-decoration: line-through; color: #909399; }
+.progress-section {
+  border-top: 1px solid #ebeef5;
+  padding-top: 14px;
+}
+.progress-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 768px) {
+  .advice-grid { grid-template-columns: 1fr; }
+  .tool-grid { flex-direction: row; flex-wrap: wrap; }
+  .tool-item { flex: 1; min-width: 120px; }
+}
 </style>

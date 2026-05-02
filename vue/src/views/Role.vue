@@ -128,7 +128,7 @@ export default {
       roleId: 0,
       roleFlag: '',
       ids: [],
-      protectedRoles: ['ROLE_ADMIN', 'ROLE_USER', 'ROLE_WORKER']
+      protectedRoles: ['ROLE_ADMIN', 'ROLE_WORKER', 'ROLE_MAINTENANCE']
     }
   },
   created() {

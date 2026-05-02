@@ -12,6 +12,8 @@
 *.weights
 *.scaler
 *.encoder
+secrets/
+application-secrets.yml
 diabetes_model.pth
 
 # 数据集 & 业务数据

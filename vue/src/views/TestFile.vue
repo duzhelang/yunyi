@@ -23,12 +23,12 @@
           class="ml-5"
           confirm-button-text='确定'
           cancel-button-text='我再想想'
-          icon="el-icon-info"
-          icon-color="red"
           title="您确定批量删除这些数据吗?"
           @confirm="delBatch"
       >
-        <el-button type="danger" slot="reference">批量删除 <i class="el-icon-remove-outline"></i></el-button>
+        <template #reference>
+          <el-button type="danger">批量删除</el-button>
+        </template>
       </el-popconfirm>
     </div>
 
@@ -40,14 +40,15 @@
         :header-cell-class-name="'headerBg'"
         @selection-change="handleSelectionChange"
     >
-      <el-table-column type="selection" width="55"></el-table-column>
-      <el-table-column prop="id" label="ID" width="80"></el-table-column>
-      <el-table-column prop="name" label="文件名称" show-overflow-tooltip></el-table-column>
-      <el-table-column prop="type" label="文件类型" width="100"></el-table-column>
-      <el-table-column prop="size" label="文件大小(kb)" width="100"></el-table-column>
+      <el-table-column type="selection" width="50"></el-table-column>
+      <el-table-column prop="id" label="ID" width="60"></el-table-column>
+      <el-table-column prop="name" label="文件名称" width="180" show-overflow-tooltip></el-table-column>
+      <el-table-column prop="updateTime" label="修改时间" width="160"></el-table-column>
+      <el-table-column prop="type" label="文件类型" width="80"></el-table-column>
+      <el-table-column prop="size" label="文件大小(kb)" width="90"></el-table-column>
 
       <!-- 预测状态列 (优化显示) -->
-      <el-table-column label="预测状态" width="100">
+      <el-table-column label="预测状态" width="90">
         <template v-slot="scope">
           <el-tag :type="scope.row.enable === 1 ? 'success' : 'info'">
             {{ scope.row.enable === 1 ? '已完成' : '未预测' }}
@@ -55,11 +56,11 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="在线预测" width="100">
+      <el-table-column label="在线预测" width="90">
         <template v-slot="scope">
           <el-button
               type="primary"
-              size="mini"
+              size="small"
               @click="star(scope.row.url)"
               :disabled="scope.row.enable === 1"
           >
@@ -68,11 +69,11 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="查看结果" width="100">
+      <el-table-column label="查看结果" width="90">
         <template v-slot="scope">
           <el-button
               type="success"
-              size="mini"
+              size="small"
               @click="show(scope.row.id)"
               :disabled="scope.row.enable !== 1"
           >
@@ -81,11 +82,11 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="下载结果" width="100">
+      <el-table-column label="下载结果" width="90">
         <template v-slot="scope">
           <el-button
               type="warning"
-              size="mini"
+              size="small"
               @click="download(scope.row.jsonUrl)"
               :disabled="!scope.row.jsonUrl || scope.row.enable !== 1"
           >
@@ -94,19 +95,23 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" width="150" align="center">
+      <el-table-column label="操作" width="90" align="center">
         <template v-slot="scope">
-          <el-popconfirm
-              class="ml-5"
-              confirm-button-text='确定'
-              cancel-button-text='我再想想'
-              icon="el-icon-info"
-              icon-color="red"
-              title="您确定删除吗?"
-              @confirm="del(scope.row.id)"
-          >
-            <el-button type="danger" size="mini" slot="reference">删除 <i class="el-icon-remove-outline"></i></el-button>
-          </el-popconfirm>
+          <div class="action-wrapper">
+            <el-button link size="small" @click="handleEdit(scope.row)">修改</el-button>
+            <div class="delete-wrapper">
+              <el-popconfirm
+                  confirm-button-text='确定'
+                  cancel-button-text='我再想想'
+                  title="您确定删除吗?"
+                  @confirm="del(scope.row.id)"
+              >
+                <template #reference>
+                  <el-button link size="small">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </div>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -127,7 +132,6 @@
 </template>
 
 <script>
-import { serverIp } from "../../public/config";
 import request from "@/utils/request";
 import { ElMessage } from "element-plus";
 
@@ -135,7 +139,7 @@ export default {
   name: "TestFile",
   data() {
     return {
-      serverIp: serverIp,
+      serverIp: window.config ? window.config.serverIp : 'localhost',
       tableData: [],
       name: '',
       multipleSelection: [],
@@ -218,6 +222,9 @@ export default {
       this.pageNum = pageNum;
       this.load();
     },
+    handleEdit(row) {
+      ElMessage.info("修改功能开发中...");
+    },
     handleFileUploadSuccess(res) {
       if (res.code === '200') {
         ElMessage.success("上传成功");
@@ -233,7 +240,7 @@ export default {
         if (!this.isMounted) return;
         if (res.code === '200') {
           this.$router.push({
-            path: "/Dashbord",
+            path: "/dashbord",
             query: { id }
           });
         } else {
@@ -351,5 +358,22 @@ export default {
 }
 .ml-5 {
   margin-left: 5px;
+}
+.action-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.delete-wrapper {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-left: 10px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+.action-wrapper:hover .delete-wrapper {
+  opacity: 1;
 }
 </style>

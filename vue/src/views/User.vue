@@ -41,6 +41,11 @@
       <el-table-column prop="email" label="邮箱"></el-table-column>
       <el-table-column prop="phone" label="电话"></el-table-column>
       <el-table-column prop="address" label="地址"></el-table-column>
+      <el-table-column prop="realName" label="真实姓名"></el-table-column>
+      <el-table-column prop="sex" label="性别"></el-table-column>
+      <el-table-column prop="age" label="年龄"></el-table-column>
+      <el-table-column prop="emergencyContact" label="紧急联系人"></el-table-column>
+      <el-table-column prop="emergencyRelation" label="与患者关系"></el-table-column>
       <el-table-column label="操作"  width="500" align="center">
         <template #default="scope">
          <el-button type="success" @click="handleEdit(scope.row)">编辑</el-button>
@@ -92,6 +97,24 @@
         <el-form-item label="地址">
           <el-input v-model="form.address" autocomplete="off"></el-input>
         </el-form-item>
+        <el-form-item label="真实姓名">
+          <el-input v-model="form.realName" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="性别">
+          <el-select v-model="form.sex" placeholder="请选择性别" style="width: 100%">
+            <el-option label="男" value="男"></el-option>
+            <el-option label="女" value="女"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="年龄">
+          <el-input v-model.number="form.age" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="紧急联系人">
+          <el-input v-model="form.emergencyContact" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="与患者关系">
+          <el-input v-model="form.emergencyRelation" autocomplete="off"></el-input>
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -107,7 +130,6 @@
 </template>
 
 <script>
-import {serverIp} from "../../public/config";
 import request from "@/utils/request";
 import { ElMessage } from "element-plus";
 
@@ -115,7 +137,7 @@ export default {
   name: "User",
   data() {
     return {
-      serverIp: serverIp,
+      serverIp: window.config ? window.config.serverIp : 'localhost',
       tableData: [],
       total: 0,
       pageNum: 1,

@@ -12,17 +12,16 @@
 </template>
 
 <script>
-import { serverIp } from "../../public/config";
 export default {
-  name: "update",
+  name: "DataTest",
   data() {
     return {
-      serverIp: serverIp,
+      serverIp: window.config ? window.config.serverIp : 'localhost',
     }
   },
   methods: {
     onSuccess() {
-      this.$router.push('/TestFile');
+      this.$router.push('/test-file');
     },
   }
 }
