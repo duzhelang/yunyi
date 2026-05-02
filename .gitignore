@@ -15,6 +15,7 @@
 secrets/
 application-secrets.yml
 diabetes_model.pth
+SKILL.md
 
 # 数据集 & 业务数据
 data/
