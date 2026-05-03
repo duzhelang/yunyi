@@ -99,4 +99,7 @@ kimi:
 mimo:
   api:
     api-key: ${MIMO_API_KEY:}
+mimo-omni:
+  api:
+    api-key: ${MIMO_OMNI_API_KEY:}
 

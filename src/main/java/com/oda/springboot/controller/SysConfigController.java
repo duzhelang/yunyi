@@ -27,7 +27,7 @@ public class SysConfigController {
     private SysConfigService sysConfigService;
 
     // 支持的模型列表
-    private static final List<String> VALID_MODELS = Arrays.asList("glm-4-flash", "glm-4.7-flash", "deepseek", "kimi", "mimo-v2.5-pro", "mimo-v2-flash");
+    private static final List<String> VALID_MODELS = Arrays.asList("glm-4-flash", "glm-4.7-flash", "deepseek", "kimi", "mimo-v2.5-pro", "mimo-v2-flash", "mimo-v2-omni");
 
     /**
      * 获取当前默认AI模型（所有用户可访问，包括未登录）

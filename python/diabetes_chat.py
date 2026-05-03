@@ -17,7 +17,7 @@ except ImportError:
 class DiabetesChatbot:
     def __init__(self, provider, api_key):
         """
-        provider: 模型服务商，可选 'glm-4-flash', 'glm-4.7-flash', 'deepseek', 'kimi', 'mimo-v2.5-pro', 'mimo-v2-flash'
+        provider: 模型服务商，可选 'glm-4-flash', 'glm-4.7-flash', 'deepseek', 'kimi', 'mimo-v2.5-pro', 'mimo-v2-flash', 'mimo-v2-omni'
         api_key: 对应的 API 密钥
         """
         self.provider = provider
@@ -48,11 +48,15 @@ class DiabetesChatbot:
             'mimo-v2-flash': {
                 'base_url': 'https://api.xiaomimimo.com/v1',
                 'model': 'mimo-v2-flash'
+            },
+            'mimo-v2-omni': {
+                'base_url': 'https://token-plan-cn.xiaomimimo.com/v1',
+                'model': 'mimo-v2-omni'
             }
         }
 
         if provider not in config_map:
-            raise ValueError(f"不支持的服务商: {provider}，可选: glm-4-flash, glm-4.7-flash, deepseek, kimi, mimo-v2.5-pro, mimo-v2-flash")
+            raise ValueError(f"不支持的服务商: {provider}，可选: glm-4-flash, glm-4.7-flash, deepseek, kimi, mimo-v2.5-pro, mimo-v2-flash, mimo-v2-omni")
 
         cfg = config_map[provider]
         # 初始化 OpenAI 兼容的客户端
@@ -64,6 +68,7 @@ class DiabetesChatbot:
             "content": (
                 "你是一位专业的糖尿病专科医生，请用中文回答患者问题。"
                 "不要透露你是一个AI模型，始终以医生的身份与患者交流。"
+                "回答请尽量简洁，突出重点，控制在150字以内。"
             )
         }
 
@@ -75,14 +80,14 @@ class DiabetesChatbot:
                 model=self.model,
                 messages=[self.system_prompt, user_message],
                 stream=False,
-                max_tokens=300,
+                max_tokens=500,
                 temperature=0.1
             )
 
             answer = response.choices[0].message.content.strip()
             answer = re.sub(r'\*{1,2}|_{1,2}|`+', '', answer)
             answer = answer.replace("\n", " ")
-            if any(word in answer for word in ["AI", "人工智能", "模型", "算法", "训练"]):
+            if any(word in answer for word in ["我是AI", "我由人工智能", "我是模型"]):
                 answer = "我是糖尿病专科医生，专注于糖尿病健康咨询。"
 
             return answer
@@ -95,7 +100,7 @@ class DiabetesChatbot:
 if __name__ == "__main__":
     # 新的调用格式：python diabetes_chat.py <provider> <api_key> <question...>
     if len(sys.argv) < 4:
-        print("参数错误：需传入 [服务商: glm-4-flash/glm-4.7-flash/deepseek/kimi/mimo-v2.5-pro/mimo-v2-flash] [API_KEY] [用户问题]", file=sys.stderr)
+        print("参数错误：需传入 [服务商: glm-4-flash/glm-4.7-flash/deepseek/kimi/mimo-v2.5-pro/mimo-v2-flash/mimo-v2-omni] [API_KEY] [用户问题]", file=sys.stderr)
         sys.exit(1)
 
     provider = sys.argv[1].lower()

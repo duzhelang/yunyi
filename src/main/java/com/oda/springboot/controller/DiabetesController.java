@@ -33,6 +33,9 @@ public class DiabetesController {
     @Value("${mimo.api.api-key:}")
     private String mimoApiKey;
 
+    @Value("${mimo-omni.api.api-key:}")
+    private String mimoOmniApiKey;
+
     private static final long PROCESS_TIMEOUT = 300;
 
     private String getApiKey(String keyValue, String keyName) {
@@ -78,6 +81,10 @@ public class DiabetesController {
             case "mimo-v2-flash":
                 apiKey = getApiKey(mimoApiKey, "MiMo");
                 normalizedProvider = "mimo-v2-flash";
+                break;
+            case "mimo-v2-omni":
+                apiKey = getApiKey(mimoOmniApiKey, "MiMo-OMNI");
+                normalizedProvider = "mimo-v2-omni";
                 break;
             default:
                 apiKey = getApiKey(zhipuApiKey, "智谱");

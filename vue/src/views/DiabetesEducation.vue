@@ -1214,7 +1214,7 @@ body, .diabetes-education-container {
   border-color: #3366CC;
 }
 
-/* 右侧悬浮导航栏 - 克制化低饱和霓虹赛博风 */
+/* 右侧悬浮导航栏 - 清新明亮风格 */
 .floating-nav {
   position: fixed;
   right: 24px;
@@ -1222,19 +1222,19 @@ body, .diabetes-education-container {
   bottom: 24px;
   width: 180px;
   padding: 16px 12px;
-  background: rgba(20, 25, 40, 0.6);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(100, 150, 255, 0.2), 0 0 10px rgba(100, 150, 255, 0.1);
-  border: 1px solid rgba(100, 150, 255, 0.3);
+  box-shadow: 0 4px 20px rgba(64, 128, 255, 0.15);
+  border: 1px solid rgba(64, 128, 255, 0.12);
   overflow-y: auto;
   z-index: 1000;
   max-height: calc(100vh - 160px);
   transition: all 0.3s ease;
 }
 
-/* 美化导航栏滚动条 - 科技风设计 */
+/* 美化导航栏滚动条 */
 .floating-nav::-webkit-scrollbar {
   width: 4px;
 }
@@ -1242,7 +1242,7 @@ body, .diabetes-education-container {
   background: transparent;
 }
 .floating-nav::-webkit-scrollbar-thumb {
-  background: rgba(100, 150, 255, 0.4);
+  background: rgba(64, 128, 255, 0.25);
   border-radius: 2px;
 }
 
@@ -1251,12 +1251,10 @@ body, .diabetes-education-container {
   font-size: 1rem;
   font-weight: 600;
   margin: 0 0 15px 0;
-  color: rgba(140, 180, 255, 0.9);
-  border-bottom: 1px solid rgba(100, 150, 255, 0.3);
+  color: #3b82f6;
+  border-bottom: 2px solid #e0e7ff;
   padding-bottom: 10px;
-  text-shadow: 0 0 8px rgba(100, 150, 255, 0.3);
   letter-spacing: 1px;
-  font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
 
 .floating-nav ul {
@@ -1266,72 +1264,38 @@ body, .diabetes-education-container {
 }
 
 .floating-nav li {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
-/* 导航项基础状态质感 */
+/* 导航项基础状态 */
 .floating-nav a {
   display: block;
-  padding: 14px 12px;
-  color: rgba(180, 200, 230, 0.8);
+  padding: 10px 12px;
+  color: #64748b;
   text-decoration: none;
-  border-radius: 10px;
-  font-size: 15px;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  background: transparent;
-  text-shadow: 0 0 2px rgba(180, 200, 230, 0.2);
+  border-radius: 8px;
+  font-size: 13px;
+  transition: all 0.25s ease;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   position: relative;
-  overflow: hidden;
 }
 
-/* 鼠标悬浮交互体验 - 轮盘钢琴键感 */
+/* 鼠标悬浮交互 */
 .floating-nav a:hover {
-  background: rgba(100, 150, 255, 0.15);
-  color: rgba(140, 180, 255, 0.95);
-  transform: translateX(6px) scale(1.02);
-  text-shadow: 0 0 8px rgba(100, 150, 255, 0.5);
-  box-shadow: 0 4px 12px rgba(100, 150, 255, 0.3), 0 0 15px rgba(100, 150, 255, 0.2);
-  border-radius: 12px;
+  background: linear-gradient(135deg, #eff6ff, #e0f2fe);
+  color: #2563eb;
+  border-color: #bfdbfe;
+  transform: translateX(3px);
 }
 
-/* 钢琴键光效 */
-.floating-nav a:hover::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(45deg, transparent, rgba(100, 150, 255, 0.2), transparent);
-  transform: rotate(45deg);
-  animation: pianoKey 0.6s ease-out;
-}
-
-@keyframes pianoKey {
-  0% {
-    transform: translateX(-100%) rotate(45deg);
-    opacity: 0;
-  }
-  50% {
-    opacity: 0.8;
-  }
-  100% {
-    transform: translateX(100%) rotate(45deg);
-    opacity: 0;
-  }
-}
-
-/* 激活态高亮设计 */
+/* 激活态高亮 */
 .floating-nav a.active {
-  background: rgba(100, 150, 255, 0.15);
-  color: rgba(140, 180, 255, 0.95);
-  font-weight: 500;
-  border-left: 3px solid rgba(100, 150, 255, 0.8);
-  padding-left: 9px;
-  text-shadow: 0 0 6px rgba(100, 150, 255, 0.4);
-  box-shadow: 0 0 12px rgba(100, 150, 255, 0.3);
-  border-radius: 12px;
-  transform: translateX(4px);
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1d4ed8;
+  font-weight: 600;
+  border-color: #93c5fd;
+  padding-left: 14px;
 }
 
 /* 响应式设计 */

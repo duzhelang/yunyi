@@ -57,7 +57,9 @@ import { User, Lock } from '@element-plus/icons-vue';
 
 export default {
   name: "Login",
-  components: { User, Lock },
+  setup() {
+    return { User, Lock }
+  },
   data() {
     return {
       user: {}
