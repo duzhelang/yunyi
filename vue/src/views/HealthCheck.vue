@@ -28,8 +28,8 @@
         </el-form-item>
         <el-form-item label="性别">
           <el-radio-group v-model="form.gender">
-            <el-radio label="男">男</el-radio>
-            <el-radio label="女">女</el-radio>
+            <el-radio value="男">男</el-radio>
+            <el-radio value="女">女</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="身高(m)">
@@ -49,8 +49,8 @@
         </el-form-item>
         <el-form-item label="糖尿病家族史">
           <el-radio-group v-model="form.familyHistory">
-            <el-radio label="有">有</el-radio>
-            <el-radio label="无">无</el-radio>
+            <el-radio value="有">有</el-radio>
+            <el-radio value="无">无</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="运动频率">
@@ -70,16 +70,16 @@
         </el-form-item>
         <el-form-item label="吸烟情况">
           <el-radio-group v-model="form.smoking">
-            <el-radio label="不吸烟">不吸烟</el-radio>
-            <el-radio label="偶尔吸烟">偶尔吸烟</el-radio>
-            <el-radio label="经常吸烟">经常吸烟</el-radio>
+            <el-radio value="不吸烟">不吸烟</el-radio>
+            <el-radio value="偶尔吸烟">偶尔吸烟</el-radio>
+            <el-radio value="经常吸烟">经常吸烟</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="饮酒情况">
           <el-radio-group v-model="form.drinking">
-            <el-radio label="不饮酒">不饮酒</el-radio>
-            <el-radio label="偶尔饮酒">偶尔饮酒</el-radio>
-            <el-radio label="经常饮酒">经常饮酒</el-radio>
+            <el-radio value="不饮酒">不饮酒</el-radio>
+            <el-radio value="偶尔饮酒">偶尔饮酒</el-radio>
+            <el-radio value="经常饮酒">经常饮酒</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item>

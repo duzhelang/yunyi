@@ -2,7 +2,7 @@
   <div class="health-hub-pro">
     <!-- 欢迎横幅 -->
     <div class="welcome-banner">
-      <h1>🏥 AI 健康管理中心 Pro</h1>
+      <h1>🏥 健康管理中心</h1>
       <p>智能自查 · 趋势追踪 · 医生协同</p>
     </div>
 
@@ -165,8 +165,8 @@
           </template>
           <!-- 标签切换 -->
           <el-radio-group v-model="chartMode" size="small" class="chart-tabs">
-            <el-radio-button label="glucose">血糖曲线</el-radio-button>
-            <el-radio-button label="bmi">BMI 趋势</el-radio-button>
+            <el-radio-button value="glucose">血糖曲线</el-radio-button>
+            <el-radio-button value="bmi">BMI 趋势</el-radio-button>
           </el-radio-group>
           <div ref="chartRef" class="chart-box"></div>
           <div v-if="historyList.length === 0" class="empty-chart">暂无数据，请先保存档案</div>

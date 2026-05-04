@@ -144,9 +144,9 @@
         <el-form label-width="120px">
           <el-form-item label="报告类型">
             <el-radio-group v-model="reportType">
-              <el-radio label="诊断建议">诊断建议</el-radio>
-              <el-radio label="健康管理">健康管理</el-radio>
-              <el-radio label="完整报告">完整报告</el-radio>
+              <el-radio value="诊断建议">诊断建议</el-radio>
+              <el-radio value="健康管理">健康管理</el-radio>
+              <el-radio value="完整报告">完整报告</el-radio>
             </el-radio-group>
           </el-form-item>
           <el-form-item>

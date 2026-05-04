@@ -148,8 +148,8 @@
         <el-form label-width="120px">
           <el-form-item label="导出格式">
             <el-radio-group v-model="exportFormat">
-              <el-radio label="pdf">PDF</el-radio>
-              <el-radio label="excel">Excel</el-radio>
+              <el-radio value="pdf">PDF</el-radio>
+              <el-radio value="excel">Excel</el-radio>
             </el-radio-group>
           </el-form-item>
           <el-form-item label="包含内容">
