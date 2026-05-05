@@ -86,32 +86,33 @@ export const resetRouter = () => {
 export const setRoutes = () => {
   const storeMenus = CacheHelper.get('menus');
   console.log('setRoutes 被调用，storeMenus:', storeMenus)
+
+  const hasManage = router.getRoutes().some(v => v.name === 'Manage')
+  console.log('hasManage:', hasManage)
+  if (hasManage) {
+    router.removeRoute('Manage')
+  }
+
+  const manageRoute = {
+    path: '/',
+    name: 'Manage',
+    component: () => import('../views/Manage.vue'),
+    redirect: "/home",
+    children: [
+      { path: 'person', name: '个人信息', component: () => import('../views/Person.vue')},
+      { path: 'password', name: '修改密码', component: () => import('../views/Password.vue')},
+      { path: 'treatment-record', name: '诊疗档案', component: () => import('../views/TreatmentRecord.vue')}
+    ]
+  }
+
+  const existingPaths = new Set(['person', 'password', 'treatment-record'])
+
   if (storeMenus) {
     try {
-      const hasManage = router.getRoutes().some(v => v.name === 'Manage')
-      console.log('hasManage:', hasManage)
-      if (hasManage) {
-        router.removeRoute('Manage')
-      }
-      
-      const manageRoute = {
-        path: '/',
-        name: 'Manage',
-        component: () => import('../views/Manage.vue'),
-        redirect: "/home",
-        children: [
-          { path: 'person', name: '个人信息', component: () => import('../views/Person.vue')},
-          { path: 'password', name: '修改密码', component: () => import('../views/Password.vue')}
-        ]
-      }
-      
-      const existingPaths = new Set(['person', 'password'])
-      
       const menus = JSON.parse(storeMenus)
       menus.forEach(item => {
         if (item.path || item.pagePath) {
           let componentName = item.pagePath || item.path.replace(/^\//, '')
-          // 如果 pagePath 在映射表中，直接使用；否则走通用转换
           if (mapPagePath[componentName]) {
             componentName = mapPagePath[componentName]
           } else {
@@ -119,7 +120,7 @@ export const setRoutes = () => {
             componentName = componentName.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
           }
           const routePath = item.path ? (item.path.startsWith('/') ? item.path : '/' + item.path).toLowerCase() : '/' + item.pagePath.toLowerCase()
-          
+
           if (!existingPaths.has(routePath)) {
             existingPaths.add(routePath)
             manageRoute.children.push({
@@ -129,12 +130,11 @@ export const setRoutes = () => {
             })
           }
         }
-        
+
         if (Array.isArray(item.children) && item.children.length) {
           item.children.forEach(subItem => {
             if (subItem.path || subItem.pagePath) {
               let componentName = subItem.pagePath || subItem.path.replace(/^\//, '')
-              // 如果 pagePath 在映射表中，直接使用；否则走通用转换
               if (mapPagePath[componentName]) {
                 componentName = mapPagePath[componentName]
               } else {
@@ -142,7 +142,7 @@ export const setRoutes = () => {
                 componentName = componentName.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
               }
               const routePath = subItem.path ? (subItem.path.startsWith('/') ? subItem.path : '/' + subItem.path).toLowerCase() : '/' + subItem.pagePath.toLowerCase()
-              
+
               if (!existingPaths.has(routePath)) {
                 existingPaths.add(routePath)
                 manageRoute.children.push({
@@ -155,20 +155,16 @@ export const setRoutes = () => {
           })
         }
       })
-      
-      console.log('完整manageRoute:', manageRoute)
-      
-      // 动态添加到现在的路由对象中去
-      router.addRoute(manageRoute)
-      
-      console.log('添加路由后的所有路由:', router.getRoutes().map(r => ({path: r.path, name: r.name})))
-
     } catch (error) {
       console.error('动态路由设置失败:', error)
     }
   } else {
-    console.log('没有storeMenus，跳过路由设置')
+    console.log('没有storeMenus，跳过动态路由')
   }
+
+  router.addRoute(manageRoute)
+
+  console.log('添加路由后的所有路由:', router.getRoutes().map(r => ({path: r.path, name: r.name})))
 }
 
 // 初始化时设置路由

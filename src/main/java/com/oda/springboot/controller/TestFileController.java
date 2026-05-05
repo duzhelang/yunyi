@@ -117,11 +117,11 @@ public class TestFileController {
     }
 
     /**
-     * 预测接口 - 保持原有逻辑
+     * 检测接口 - 保持原有逻辑
      */
     @GetMapping("/getUrl/{url}")
     public Result debugging(@PathVariable String url) throws IOException {
-        System.out.println("====== 开始预测流程 ======");
+        System.out.println("====== 开始检测流程 ======");
         long stime = System.currentTimeMillis();
 
         LambdaQueryWrapper<TestFiles> queryWrapper = new LambdaQueryWrapper<>();
@@ -152,11 +152,11 @@ public class TestFileController {
         String jsonFileNameNoExt = UUID.randomUUID().toString();
         String jsonFileName = jsonFileNameNoExt + ".json";
 
-        String predictTitle = "糖尿病筛查预测_" + System.currentTimeMillis();
+        String predictTitle = "糖尿病筛查检测_" + System.currentTimeMillis();
 
         String modelPath = propertyUtil.getPythonModelPath();
         if (StrUtil.isBlank(modelPath)) {
-            modelPath = propertyUtil.getPythonDownload() + "diabetes_model.pth";
+            modelPath = System.getProperty("user.dir") + "/models/diabetes_model.pth";
         }
         File modelFile = new File(modelPath);
 
@@ -200,7 +200,7 @@ public class TestFileController {
 
         if (exitCode != 0) {
             System.err.println("Python 执行失败!");
-            return Result.error("507", "预测算法执行失败 (Exit Code: " + exitCode + ")");
+            return Result.error("507", "检测算法执行失败 (Exit Code: " + exitCode + ")");
         }
 
         // --- 核心修复:全局搜索文件 ---
@@ -261,7 +261,7 @@ public class TestFileController {
                         System.out.println("      - " + f);
                     }
                 }
-                return Result.error("510", "预测完成但文件丢失，请联系管理员检查后台日志");
+                return Result.error("510", "检测完成但文件丢失，请联系管理员检查后台日志");
             }
         }
         // --- 搜索结束 ---
@@ -278,7 +278,7 @@ public class TestFileController {
         flushRedis(Constants.FILES_KEY);
 
         long etime = System.currentTimeMillis();
-        System.out.println("预测全流程结束，耗时:" + (etime - stime) + "ms");
+        System.out.println("检测全流程结束，耗时:" + (etime - stime) + "ms");
         return Result.success();
     }
 
@@ -413,10 +413,10 @@ public class TestFileController {
         }
 
         if (ObjectUtil.isEmpty(fileRecord.getEnable()) || !"1".equals(fileRecord.getEnable().toString())) {
-            System.out.println("3. 文件尚未预测完成 (enable=" + fileRecord.getEnable() + ")");
+            System.out.println("3. 文件尚未检测完成 (enable=" + fileRecord.getEnable() + ")");
             response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"code\":409,\"msg\":\"预测尚未完成\"}");
+            response.getWriter().write("{\"code\":409,\"msg\":\"检测尚未完成\"}");
             return;
         }
 

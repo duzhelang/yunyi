@@ -50,14 +50,14 @@ public class EchartsController {
         return Result.success(map);
     }
 
-    // 3. 总检测人数(替换为故障总数)
+    // 3. 总检测人数
     @GetMapping("/totle")
     public Result totle() {
         Long totalCount = diabetesMapper.selectCount(null); // 统计所有记录数
         return Result.success(totalCount);
     }
 
-    // 4. 今日检测人数(替换为今日故障预测总数)
+    // 4. 今日检测人数
     @GetMapping("/totle1")
     public Result totle1() {
         List<DiabetesRecord> allRecords = diabetesMapper.selectList(new QueryWrapper<>());

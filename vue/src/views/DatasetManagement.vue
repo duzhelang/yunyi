@@ -1,281 +1,322 @@
 <template>
   <div class="dataset-management">
     <div class="page-header">
-      <div class="title-section">
-        <h2 class="page-title">
-          <el-icon><FolderOpened /></el-icon>
+      <div class="header-content">
+        <h1 class="page-title">
+          <el-icon class="title-icon"><FolderOpened /></el-icon>
           训练集管理
-        </h2>
-        <p class="page-desc">数据资产中心，管理所有CSV训练数据</p>
+        </h1>
+        <p class="page-desc">管理所有训练用CSV文件的数据资产</p>
       </div>
-      <div class="header-actions">
-        <el-button type="primary" :icon="Refresh" @click="scanFiles">扫描数据目录</el-button>
-        <el-button type="success" :icon="Upload" @click="uploadVisible = true">上传训练集</el-button>
+      <div class="header-stats">
+        <div class="stat-card">
+          <span class="stat-num">{{ fileList.length }}</span>
+          <span class="stat-label">数据集总数</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num">{{ fileList.filter(f => f.category === 'train').length }}</span>
+          <span class="stat-label">训练集</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num">{{ fileList.filter(f => f.category === 'test').length }}</span>
+          <span class="stat-label">测试集</span>
+        </div>
       </div>
     </div>
 
-    <!-- 上传训练集弹窗 -->
-    <el-dialog v-model="uploadVisible" title="上传训练集" width="650px" destroy-on-close>
-      <div class="upload-container">
-        <el-upload
-          :action="uploadUrl"
-          :on-success="onUploadSuccess"
-          :on-error="onUploadError"
-          :before-upload="beforeUpload"
-          drag
-          multiple
-          name="file"
-          accept=".csv,.xlsx,.xls"
-          class="upload-demo"
-        >
-          <el-icon class="el-icon-upload"><UploadFilled /></el-icon>
-          <div class="el-upload__text">将训练集拖到此处，或<em>点击上传</em></div>
-          <div class="el-upload__tip" slot="tip">支持 CSV、XLSX、XLS 格式，单个文件不超过 50MB</div>
-        </el-upload>
+    <div class="main-card">
+      <div class="card-header">
+        <div class="search-bar">
+          <el-input v-model="keyword" placeholder="输入文件名搜索" prefix-icon="Search" clearable
+                    @keyup.enter="loadData" style="width: 240px" />
+          <el-select v-model="category" placeholder="分类筛选" clearable style="width: 140px" @change="loadData">
+            <el-option label="训练集" value="train" />
+            <el-option label="测试集" value="test" />
+          </el-select>
+          <el-button type="primary" :icon="Search" @click="loadData">搜索</el-button>
+        </div>
+        <div class="action-bar">
+          <el-button type="primary" plain :icon="Refresh" @click="scanFiles" :loading="scanning">扫描目录</el-button>
+          <el-button type="primary" :icon="Upload" @click="uploadDialogVisible = true">上传数据集</el-button>
+        </div>
       </div>
+
+      <el-table :data="fileList" border stripe style="width: 100%"
+                :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: 600 }">
+        <el-table-column label="文件名" prop="name" min-width="200" show-overflow-tooltip />
+        <el-table-column label="分类" prop="category" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.category === 'train' ? 'success' : 'warning'" size="small">
+              {{ row.category === 'train' ? '训练集' : row.category === 'test' ? '测试集' : row.category || '-' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="质量" prop="qualityLevel" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag :type="qualityTagType(row.qualityLevel)" size="small" effect="plain">
+              {{ qualityLabel(row.qualityLevel) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="样本量" prop="sampleCount" width="90" align="center">
+          <template #default="{ row }">
+            {{ row.sampleCount ? row.sampleCount.toLocaleString() : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="文件大小" prop="fileSize" width="100" align="center">
+          <template #default="{ row }">
+            {{ row.fileSize || formatSize(row.size) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.isDelete ? 'danger' : 'success'" size="small">
+              {{ row.isDelete ? '已删除' : '正常' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="入库时间" width="170" align="center">
+          <template #default="{ row }">
+            {{ formatDate(row.createTime) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" align="center" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" @click="viewFile(row)">详情</el-button>
+            <el-popconfirm title="确定删除该数据集？" @confirm="deleteFile(row.id)" confirm-button-text="删除"
+                           cancel-button-text="取消">
+              <template #reference>
+                <el-button size="small" type="danger">删除</el-button>
+              </template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <div class="pagination-wrap">
+        <el-pagination background layout="total, sizes, prev, pager, next, jumper"
+                       :total="total" :page-sizes="[10, 20, 50]" v-model:current-page="currentPage"
+                       v-model:page-size="pageSize" @current-change="loadData" @size-change="loadData" />
+      </div>
+    </div>
+
+    <el-dialog v-model="uploadDialogVisible" title="上传数据集" width="480px" destroy-on-close>
+      <div class="upload-area">
+        <el-upload
+          ref="uploadRef"
+          :auto-upload="false"
+          :on-change="handleFileChange"
+          :before-upload="beforeUpload"
+          :limit="1"
+          accept=".csv,.xlsx,.xls"
+          drag
+        >
+          <el-icon class="el-icon--upload"><Upload /></el-icon>
+          <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+          <template #tip>
+            <div class="el-upload__tip">支持 CSV、XLSX、XLS 格式，单文件最大 50MB</div>
+          </template>
+        </el-upload>
+        <el-form label-width="80px" style="margin-top: 16px">
+          <el-form-item label="数据分类">
+            <el-radio-group v-model="uploadCategory">
+              <el-radio value="train">训练集</el-radio>
+              <el-radio value="test">测试集</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <el-button @click="uploadDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitUpload" :loading="uploading" :disabled="!selectedFile">
+          {{ uploading ? '上传中...' : '开始上传' }}
+        </el-button>
+      </template>
     </el-dialog>
 
-    <div class="search-section">
-      <el-card>
-        <div class="search-box">
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索训练集名称"
-            clearable
-            style="width: 300px"
-            @keyup.enter="loadData"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
-          <el-button type="primary" @click="loadData">
-            <el-icon><Search /></el-icon>
-            搜索
-          </el-button>
+    <el-dialog v-model="detailDialogVisible" title="数据集详情" width="600px" destroy-on-close>
+      <template v-if="currentFile">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="文件名" :span="2">{{ currentFile.name }}</el-descriptions-item>
+          <el-descriptions-item label="分类">
+            <el-tag :type="currentFile.category === 'train' ? 'success' : 'warning'" size="small">
+              {{ currentFile.category === 'train' ? '训练集' : currentFile.category === 'test' ? '测试集' : currentFile.category || '-' }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="质量等级">
+            <el-tag :type="qualityTagType(currentFile.qualityLevel)" size="small" effect="plain">
+              {{ qualityLabel(currentFile.qualityLevel) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="样本量">{{ currentFile.sampleCount ? currentFile.sampleCount.toLocaleString() : '-' }}</el-descriptions-item>
+          <el-descriptions-item label="文件大小">{{ currentFile.fileSize || formatSize(currentFile.size) }}</el-descriptions-item>
+          <el-descriptions-item label="存储路径" :span="2">
+            <el-text type="info" size="small" style="word-break: break-all">{{ currentFile.url }}</el-text>
+          </el-descriptions-item>
+          <el-descriptions-item label="Python路径" :span="2">
+            <el-text type="info" size="small" style="word-break: break-all">{{ currentFile.pythonurl || '-' }}</el-text>
+          </el-descriptions-item>
+          <el-descriptions-item label="入库时间" :span="2">{{ formatDate(currentFile.createTime) }}</el-descriptions-item>
+        </el-descriptions>
+        <div v-if="currentFile.columnInfo" style="margin-top: 16px">
+          <h4 style="margin-bottom: 8px; color: #303133">特征列信息</h4>
+          <div class="columns-grid">
+            <el-tag v-for="(col, idx) in parseColumnInfo(currentFile.columnInfo)" :key="idx"
+                    type="info" size="small" style="margin: 2px">
+              {{ col.name }}
+            </el-tag>
+          </div>
         </div>
-      </el-card>
-    </div>
-
-    <div class="table-section">
-      <el-card>
-        <el-tabs v-model="activeCategory" @tab-change="loadData">
-          <el-tab-pane label="全部" name="all" />
-          <el-tab-pane label="训练集" name="train">
-            <template #label>
-              <span>训练集</span>
-              <el-badge :value="trainCount" :hidden="trainCount === 0" type="success" style="margin-left: 4px" />
-            </template>
-          </el-tab-pane>
-          <el-tab-pane label="测试集" name="test">
-            <template #label>
-              <span>测试集</span>
-              <el-badge :value="testCount" :hidden="testCount === 0" type="warning" style="margin-left: 4px" />
-            </template>
-          </el-tab-pane>
-        </el-tabs>
-
-        <el-table :data="tableData" style="width: 100%" v-loading="loading" stripe border>
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="name" label="文件名" min-width="200" />
-          <el-table-column prop="category" label="分类" width="100">
-            <template #default="scope">
-              <el-tag :type="scope.row.category === 'train' ? 'success' : 'warning'">
-                {{ scope.row.category === 'train' ? '训练集' : '测试集' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="type" label="文件类型" width="100">
-            <template #default="scope">
-              <el-tag :type="getFileTagType(scope.row.type)">{{ scope.row.type.toUpperCase() }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="size" label="文件大小" width="120">
-            <template #default="scope">
-              {{ formatFileSize(scope.row.size) }}
-            </template>
-          </el-table-column>
-          <el-table-column prop="createTime" label="创建时间" width="180" />
-          <el-table-column prop="remark" label="备注" min-width="250" show-overflow-tooltip />
-          <el-table-column label="操作" width="150" fixed="right">
-            <template #default="scope">
-              <el-button type="primary" size="small" @click="viewDetail(scope.row)">详情</el-button>
-              <el-button type="danger" size="small" @click="deleteDataset(scope.row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <div class="pagination-box">
-          <el-pagination
-            v-model:current-page="pageNum"
-            v-model:page-size="pageSize"
-            :page-sizes="[10, 20, 50, 100]"
-            :total="total"
-            layout="total, sizes, prev, pager, next, jumper"
-            @size-change="loadData"
-            @current-change="loadData"
-          />
+        <div v-if="currentFile.remark" style="margin-top: 16px">
+          <h4 style="margin-bottom: 8px; color: #303133">备注</h4>
+          <el-text>{{ currentFile.remark }}</el-text>
         </div>
-      </el-card>
-    </div>
-
-    <el-dialog v-model="detailVisible" title="训练集详情" width="500px">
-      <el-descriptions v-if="currentDataset" :column="1" border>
-        <el-descriptions-item label="ID">{{ currentDataset.id }}</el-descriptions-item>
-        <el-descriptions-item label="文件名">{{ currentDataset.name }}</el-descriptions-item>
-        <el-descriptions-item label="分类">
-          <el-tag :type="currentDataset.category === 'train' ? 'success' : 'warning'">
-            {{ currentDataset.category === 'train' ? '训练集' : '测试集' }}
-          </el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="文件类型">{{ currentDataset.type }}</el-descriptions-item>
-        <el-descriptions-item label="文件大小">{{ formatFileSize(currentDataset.size) }}</el-descriptions-item>
-        <el-descriptions-item label="文件路径">{{ currentDataset.url }}</el-descriptions-item>
-        <el-descriptions-item label="Python路径">{{ currentDataset.pythonurl }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ currentDataset.createTime }}</el-descriptions-item>
-        <el-descriptions-item label="备注">{{ currentDataset.remark }}</el-descriptions-item>
-      </el-descriptions>
+      </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { FolderOpened, Refresh, Search, Upload, UploadFilled } from '@element-plus/icons-vue'
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Search, Upload, Refresh, FolderOpened } from '@element-plus/icons-vue'
 import request from '@/utils/request'
+import { serverIp } from '@/utils/request'
 
-const serverIp = window.config ? window.config.serverIp : 'localhost'
-
-const searchKeyword = ref('')
-const tableData = ref([])
-const allData = ref([])
-const loading = ref(false)
-const pageNum = ref(1)
-const pageSize = ref(10)
+const fileList = ref([])
 const total = ref(0)
-const detailVisible = ref(false)
-const currentDataset = ref(null)
-const activeCategory = ref('all')
-const uploadVisible = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const keyword = ref('')
+const category = ref('')
+const scanning = ref(false)
+const uploadDialogVisible = ref(false)
+const detailDialogVisible = ref(false)
+const currentFile = ref(null)
+const selectedFile = ref(null)
+const uploading = ref(false)
+const uploadCategory = ref('train')
 
-const uploadUrl = computed(() => `http://${serverIp}:9090/python/upload`)
-
-const trainCount = computed(() => allData.value.filter(item => item.category === 'train').length)
-const testCount = computed(() => allData.value.filter(item => item.category === 'test').length)
-
-const loadData = async () => {
-  loading.value = true
-  try {
-    const response = await request.get('/api/dataset/list', {
-      params: {
-        pageNum: 1,
-        pageSize: 1000,
-        keyword: searchKeyword.value
-      }
-    })
-    if (response.code === 200) {
-      allData.value = response.data.records
-      let filtered = allData.value
-      if (activeCategory.value !== 'all') {
-        filtered = allData.value.filter(item => item.category === activeCategory.value)
-      }
-      total.value = filtered.length
-      const start = (pageNum.value - 1) * pageSize.value
-      const end = start + pageSize.value
-      tableData.value = filtered.slice(start, end)
-    }
-  } catch (error) {
-    ElMessage.error('加载失败')
-  } finally {
-    loading.value = false
-  }
+const qualityTagType = (level) => {
+  const map = { raw: 'info', cleaned: 'success', verified: 'primary' }
+  return map[level] || 'info'
 }
 
-const scanFiles = async () => {
-  try {
-    const response = await request.post('/api/dataset/scan')
-    if (response.code === 200) {
-      ElMessage.success('扫描成功！新增 ' + response.data.newFiles + ' 个文件')
-      loadData()
+const qualityLabel = (level) => {
+  const map = { raw: '原始', cleaned: '已清洗', verified: '已验证' }
+  return map[level] || '未知'
+}
+
+const formatSize = (bytes) => {
+  if (!bytes) return '-'
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / 1048576).toFixed(1) + ' MB'
+}
+
+const loadData = () => {
+  request.get('/api/dataset/list', {
+    params: {
+      pageNum: currentPage.value,
+      pageSize: pageSize.value,
+      keyword: keyword.value || undefined,
+      category: category.value || undefined
     }
-  } catch (error) {
-    ElMessage.error('扫描失败')
-  }
+  }).then(res => {
+    if (res.code === '200') {
+      fileList.value = res.data.records || []
+      total.value = res.data.total || 0
+    }
+  })
+}
+
+const viewFile = (row) => {
+  request.get(`/api/dataset/${row.id}`).then(res => {
+    if (res.code === '200') {
+      currentFile.value = res.data
+      detailDialogVisible.value = true
+    }
+  })
+}
+
+const deleteFile = (id) => {
+  request.delete(`/api/dataset/${id}`).then(res => {
+    if (res.code === '200') {
+      ElMessage.success('删除成功')
+      loadData()
+    } else {
+      ElMessage.error(res.msg || '删除失败')
+    }
+  })
+}
+
+const scanFiles = () => {
+  scanning.value = true
+  request.post('/api/dataset/scan').then(res => {
+    if (res.code === '200') {
+      const data = res.data
+      ElMessage.success(`扫描完成：新增 ${data.newFiles}，更新 ${data.updatedFiles}，共 ${data.totalFiles} 个文件`)
+      loadData()
+    } else {
+      ElMessage.error(res.msg || '扫描失败')
+    }
+  }).finally(() => {
+    scanning.value = false
+  })
 }
 
 const beforeUpload = (file) => {
-  const isValidType = ['text/csv',
-                       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                       'application/vnd.ms-excel'].includes(file.type) ||
-                       file.name.endsWith('.csv') ||
-                       file.name.endsWith('.xlsx') ||
-                       file.name.endsWith('.xls')
-  if (!isValidType) {
-    ElMessage.error('只能上传 CSV、XLSX 或 XLS 格式文件！')
-    return false
-  }
-  const isValidSize = file.size / 1024 / 1024 < 50
-  if (!isValidSize) {
-    ElMessage.error('文件大小不能超过 50MB！')
+  const maxSize = 50 * 1024 * 1024
+  if (file.size > maxSize) {
+    ElMessage.error('文件大小不能超过 50MB')
     return false
   }
   return true
 }
 
-const onUploadSuccess = (response) => {
-  if (response.code === 200) {
-    ElMessage.success('上传成功')
-    uploadVisible.value = false
-    loadData()
-  } else {
-    ElMessage.error(response.msg || '上传失败')
+const handleFileChange = (uploadFile) => {
+  selectedFile.value = uploadFile.raw
+}
+
+const submitUpload = async () => {
+  if (!selectedFile.value) {
+    ElMessage.warning('请先选择文件')
+    return
   }
-}
-
-const onUploadError = () => {
-  ElMessage.error('上传失败，请检查网络或文件格式')
-}
-
-const viewDetail = (row) => {
-  currentDataset.value = row
-  detailVisible.value = true
-}
-
-const deleteDataset = async (row) => {
+  uploading.value = true
   try {
-    await ElMessageBox.confirm('确定要删除该训练集吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    const response = await request.delete(`/api/dataset/${row.id}`)
-    if (response.code === 200) {
-      ElMessage.success('删除成功')
+    const formData = new FormData()
+    formData.append('file', selectedFile.value)
+    const url = `http://${serverIp}:9090/python/upload?name=datasets&pythonurl=diabetes_1.csv`
+    const response = await fetch(url, { method: 'POST', body: formData })
+    const result = await response.json()
+    if (result.code === '200') {
+      ElMessage.success('文件上传成功！')
+      uploadDialogVisible.value = false
+      selectedFile.value = null
       loadData()
+    } else {
+      ElMessage.error(result.msg || '文件上传失败')
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
+  } catch (err) {
+    ElMessage.error('上传出错: ' + err.message)
+  } finally {
+    uploading.value = false
   }
 }
 
-const formatFileSize = (bytes) => {
-  if (!bytes) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+const parseColumnInfo = (info) => {
+  if (!info) return []
+  try {
+    return typeof info === 'string' ? JSON.parse(info) : info
+  } catch { return [] }
 }
 
-const getFileTagType = (type) => {
-  const map = {
-    'csv': 'success',
-    'xlsx': 'primary',
-    'xls': 'info'
-  }
-  return map[type] || 'default'
+const formatDate = (date) => {
+  if (!date) return '-'
+  const d = new Date(date)
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 onMounted(() => {
@@ -285,133 +326,102 @@ onMounted(() => {
 
 <style scoped>
 .dataset-management {
-  padding: 20px;
+  padding: 0;
 }
 
 .page-header {
-  margin-bottom: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.title-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  margin-bottom: 24px;
+  padding: 24px;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  border-radius: 12px;
+  color: #1a1a2e;
 }
 
 .page-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 6px 0;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  color: #303133;
+}
+
+.title-icon {
+  font-size: 28px;
 }
 
 .page-desc {
-  margin: 0;
   font-size: 14px;
-  color: #909399;
+  opacity: 0.75;
+  margin: 0;
 }
 
-.header-actions {
+.header-stats {
   display: flex;
-  gap: 12px;
+  gap: 16px;
 }
 
-.search-section {
-  margin-bottom: 20px;
+.stat-card {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  padding: 12px 20px;
+  text-align: center;
+  backdrop-filter: blur(10px);
 }
 
-.search-box {
+.stat-num {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.stat-label {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.main-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.card-header {
   display: flex;
-  gap: 12px;
+  justify-content: space-between;
   align-items: center;
-}
-
-.table-section {
   margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.pagination-box {
-  margin-top: 20px;
+.search-bar {
+  display: flex;
+  gap: 10px;
+}
+
+.action-bar {
+  display: flex;
+  gap: 10px;
+}
+
+.pagination-wrap {
   display: flex;
   justify-content: flex-end;
+  margin-top: 20px;
 }
 
-/* 上传区域样式（融合原上传组件风格） */
-.upload-container {
-  padding: 10px 0;
-}
-
-.upload-demo {
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 45px 20px;
-  border: 2px dashed #c9cdd4;
-  border-radius: 12px;
+.upload-area {
   text-align: center;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  background-color: #f9fafb;
 }
 
-.upload-demo:hover {
-  border-color: #2ecc71;
-  background-color: #f0fdf4;
-  transform: translateY(-4px);
-  box-shadow: 0 6px 18px rgba(46, 204, 113, 0.12);
-}
-
-.el-icon-upload {
-  font-size: 52px;
-  color: #2ecc71;
-  margin-bottom: 22px;
-  transition: transform 0.3s ease;
-}
-
-.upload-demo:hover .el-icon-upload {
-  transform: scale(1.08) rotate(5deg);
-}
-
-.el-upload__text {
-  font-size: 16px;
-  color: #4b5563;
-  margin-bottom: 18px;
-  line-height: 1.6;
-}
-
-.el-upload__text em {
-  color: #2ecc71;
-  font-style: normal;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: underline;
-  padding: 0 3px;
-}
-
-.el-upload__tip {
-  color: #9ca3af;
-  font-size: 14px;
-  margin-top: 12px;
-  padding: 0 25px;
-  line-height: 1.5;
-}
-
-@media (max-width: 768px) {
-  .upload-demo {
-    padding: 35px 15px;
-    margin: 25px auto;
-  }
-  .el-icon-upload {
-    font-size: 40px;
-    margin-bottom: 18px;
-  }
-  .el-upload__text {
-    font-size: 14px;
-  }
+.columns-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 </style>

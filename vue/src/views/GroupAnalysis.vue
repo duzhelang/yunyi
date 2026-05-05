@@ -154,10 +154,10 @@
           </el-form-item>
           <el-form-item label="包含内容">
             <el-checkbox-group v-model="exportContent">
-              <el-checkbox label="风险分布">风险分布</el-checkbox>
-              <el-checkbox label="特征重要性">特征重要性</el-checkbox>
-              <el-checkbox label="异常样本">异常样本</el-checkbox>
-              <el-checkbox label="结论摘要">结论摘要</el-checkbox>
+              <el-checkbox value="风险分布">风险分布</el-checkbox>
+              <el-checkbox value="特征重要性">特征重要性</el-checkbox>
+              <el-checkbox value="异常样本">异常样本</el-checkbox>
+              <el-checkbox value="结论摘要">结论摘要</el-checkbox>
             </el-checkbox-group>
           </el-form-item>
           <el-form-item>

@@ -58,7 +58,7 @@ files:
     path: ${files.upload.path}avatar/
   common:
     path: ${files.upload.path}common/
-  # Python数据上传
+  # Python数据上传（训练集/测试集）
   pythonUpload:
     path: ${base.path}/data/
   # Python文件下载
@@ -70,6 +70,12 @@ files:
   # 预测数据上传
   pythonDataTestUpload:
     path: ${base.path}/OnlinePredict/
+  # 模型文件目录
+  models:
+    path: ${base.path}/models/
+  # 训练日志目录
+  trainLogs:
+    path: ${base.path}/logs/
   # 相对路径
   pythonExe:
     path: python
@@ -82,9 +88,9 @@ files:
   # 对话脚本（全相对路径）
   pythonChatScript:
     path: ${base.path}/python/diabetes_chat.py
-  # 模型文件路径（全相对路径）
+  # 模型文件路径（默认，实际从 sys_model_version 表读取激活模型）
   pythonModelPath:
-    path: ${base.path}/diabetes_model.pth
+    path: ${base.path}/models/diabetes_model.pth
 
 
 zhipu:
@@ -102,4 +108,7 @@ mimo:
 mimo-omni:
   api:
     api-key: ${MIMO_OMNI_API_KEY:}
+
+patient-visit:
+  max-records: 5
 

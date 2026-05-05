@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -95,9 +96,10 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
             // 训练完成
             task.setStatus("completed");
             task.setEndTime(new Date());
-            
-            // 设置模型输出路径
-            String modelPath = "data/models/pth_models/" + task.getModelName() + ".pth";
+
+            // 设置模型输出路径（使用新的 models/ 目录）
+            String projectRoot = System.getProperty("user.dir");
+            String modelPath = projectRoot + File.separator + "models" + File.separator + task.getModelName() + ".pth";
             task.setModelOutputPath(modelPath);
             
             // 设置模拟性能指标（实际项目中应该从训练输出中解析）
@@ -125,13 +127,17 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
     }
 
     /**
-     * 构建训练参数
+     * 构建训练参数（train.py 期望: csv_path, model_output_path）
      */
     private String[] buildTrainingArguments(TrainTask task) {
-        String[] args = new String[3];
-        args[0] = task.getTrainFileName() != null ? task.getTrainFileName() : "";
-        args[1] = task.getModelName() != null ? task.getModelName() : "diabetes_model";
-        args[2] = task.getHyperParams() != null ? task.getHyperParams() : "";
+        String projectRoot = System.getProperty("user.dir");
+        String csvPath = task.getTrainFileName() != null ? task.getTrainFileName() : "";
+        String modelName = task.getModelName() != null ? task.getModelName() : "diabetes_model";
+        String modelOutputPath = projectRoot + File.separator + "models" + File.separator + modelName + ".pth";
+
+        String[] args = new String[2];
+        args[0] = csvPath;
+        args[1] = modelOutputPath;
         return args;
     }
 
@@ -148,6 +154,13 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
             modelVersion.setVersion(version);
             modelVersion.setSource("online_train");
             modelVersion.setFilePath(task.getModelOutputPath());
+
+            // 设置 scaler 和 encoder 路径
+            String projectRoot = System.getProperty("user.dir");
+            String modelName = task.getModelName();
+            modelVersion.setScalerPath(projectRoot + File.separator + "models" + File.separator + modelName + "_scaler.pkl");
+            modelVersion.setEncoderPath(projectRoot + File.separator + "models" + File.separator + modelName + "_encoder.pkl");
+
             modelVersion.setDescription("通过在线训练任务创建: " + task.getTaskName());
             
             // 设置性能指标

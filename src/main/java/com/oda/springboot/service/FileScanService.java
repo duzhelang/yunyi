@@ -15,6 +15,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -46,6 +47,8 @@ public class FileScanService {
         String projectRoot = System.getProperty("user.dir");
         String[] scanPaths = {
             projectRoot + File.separator + "data",
+            projectRoot + File.separator + "data" + File.separator + "train",
+            projectRoot + File.separator + "data" + File.separator + "test",
             projectRoot + File.separator + "python" + File.separator + "data"
         };
 
@@ -68,7 +71,14 @@ public class FileScanService {
                 continue;
             }
 
-            String category = scanPath.contains("python" + File.separator + "data") ? "test" : "train";
+            String category;
+            if (scanPath.contains("python" + File.separator + "data")) {
+                category = "test";
+            } else if (scanPath.contains("data" + File.separator + "test")) {
+                category = "test";
+            } else {
+                category = "train";
+            }
 
             log.info("开始扫描目录: {}, 发现 {} 个文件", scanPath, files.length);
 
@@ -127,13 +137,17 @@ public class FileScanService {
         record.setCreateTime(new Date());
         record.setUserid(1);
         record.setCategory(category);
+        record.setQualityLevel("raw");
+        record.setSampleCount((int) countLines(file));
+        record.setFileSize(formatFileSize(file.length()));
+        record.setColumnInfo(buildColumnInfo(file, extension));
 
-        long lineCount = countLines(file);
+        int lineCount = record.getSampleCount();
         String remark = String.format("自动扫描 | 来源: %s | 分类: %s | 行数: %d | 大小: %s",
                 category.equals("train") ? "data目录" : "python/data目录",
                 category.equals("train") ? "训练集" : "测试集",
                 lineCount,
-                formatFileSize(file.length()));
+                record.getFileSize());
         record.setRemark(remark);
 
         return record;
@@ -142,14 +156,41 @@ public class FileScanService {
     private void updateFileRecord(Files record, File file) {
         record.setSize(file.length());
         record.setMd5(calculateFileHash(file));
-        long lineCount = countLines(file);
+        record.setSampleCount((int) countLines(file));
+        record.setFileSize(formatFileSize(file.length()));
+        record.setColumnInfo(buildColumnInfo(file, record.getType()));
+        int lineCount = record.getSampleCount();
         String category = record.getCategory();
         String remark = String.format("自动扫描 | 来源: %s | 分类: %s | 行数: %d | 大小: %s",
                 category.equals("train") ? "data目录" : "python/data目录",
                 category.equals("train") ? "训练集" : "测试集",
                 lineCount,
-                formatFileSize(file.length()));
+                record.getFileSize());
         record.setRemark(remark);
+    }
+
+    private String buildColumnInfo(File file, String extension) {
+        try {
+            if (!".csv".equals(extension)) {
+                return null;
+            }
+            List<String> lines = FileUtil.readLines(file, StandardCharsets.UTF_8);
+            if (lines.isEmpty()) {
+                return null;
+            }
+            String header = lines.get(0);
+            String[] columns = header.split(",");
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < columns.length; i++) {
+                String col = columns[i].trim();
+                if (i > 0) sb.append(",");
+                sb.append("{\"name\":\"").append(col).append("\",\"index\":").append(i).append("}");
+            }
+            sb.append("]");
+            return sb.toString();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private long countLines(File file) {

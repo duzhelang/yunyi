@@ -6,6 +6,31 @@
       <p class="subtitle">从10个维度系统梳理糖尿病知识，涵盖基础概念、日常管理、误区澄清及前沿进展</p>
     </div>
 
+    <!-- 视频播放窗口 -->
+    <div class="video-player-section">
+      <div class="video-selector">
+        <button 
+          v-for="(video, index) in videoList" 
+          :key="index"
+          :class="['video-tab', { active: currentVideoIndex === index }]"
+          @click="selectVideo(index)"
+        >
+          {{ video.title }}
+        </button>
+      </div>
+      <div class="video-container">
+        <iframe 
+          :src="videoList[currentVideoIndex].src" 
+          scrolling="no" 
+          border="0" 
+          frameborder="no" 
+          framespacing="0" 
+          allowfullscreen="true"
+          class="bilibili-player"
+        ></iframe>
+      </div>
+    </div>
+
     <!-- 内容导航 -->
     <div class="navigation">
       <div class="nav-item" v-for="(section, index) in sections" :key="index" @click="scrollToSection(section.id)">
@@ -689,6 +714,41 @@ export default {
         { id: 'summary', title: '核心建议' },
         { id: 'comments', title: '留言讨论' }
       ],
+      videoList: [
+        { 
+          title: '糖尿病基础知识',
+          src: '//player.bilibili.com/player.html?isOutside=true&aid=525373118&bvid=BV1iM411x7a3&cid=1033141128&p=1&danmaku=0&muted=0'
+        },
+        { 
+          title: '糖尿病预防与控制',
+          src: '//player.bilibili.com/player.html?isOutside=true&aid=961181150&bvid=BV1sH4y1S7wc&cid=1272479110&p=1&danmaku=0&muted=0'
+        },
+        { 
+          title: '糖尿病饮食管理',
+          src: '//player.bilibili.com/player.html?isOutside=true&aid=114566306464087&bvid=BV1ebjuzGEoQ&cid=30138435449&p=1&danmaku=0&muted=0'
+        },
+        { 
+          title: '糖尿病运动治疗',
+          src: '//player.bilibili.com/player.html?isOutside=true&aid=729648895&bvid=BV1ES4y1W7s9&cid=808685182&p=1&danmaku=0&muted=0'
+        },
+        { 
+          title: '糖尿病药物治疗',
+          src: '//player.bilibili.com/player.html?isOutside=true&aid=627196236&bvid=BV15t4y1q77H&cid=236854129&p=1&danmaku=0&muted=0'
+        },
+        { 
+          title: '血糖监测指南',
+          src: '//player.bilibili.com/player.html?isOutside=true&aid=287244587&bvid=BV1Ff4y1Q7tE&cid=236853503&p=1&danmaku=0&muted=0'
+        },
+        { 
+          title: '糖尿病并发症防治',
+          src: '//player.bilibili.com/player.html?isOutside=true&aid=113597556464857&bvid=BV1ddiDYPEFg&cid=27185578468&p=1&danmaku=0&muted=0'
+        },
+        { 
+          title: '糖尿病日常护理',
+          src: '//player.bilibili.com/player.html?isOutside=true&aid=112963746793555&bvid=BV1awexeTEnG&cid=500001649938450&p=1&danmaku=0&muted=0'
+        }
+      ],
+      currentVideoIndex: 0,
       isPlaying: false,
       editMode: false,
       isAdmin: false,
@@ -710,6 +770,9 @@ export default {
     window.removeEventListener('scroll', this.handleScroll);
   },
   methods: {
+    selectVideo(index) {
+      this.currentVideoIndex = index;
+    },
     async loadComments() {
       try {
         const res = await request.get('/education-comment/list');
@@ -729,7 +792,7 @@ export default {
     },
     handleScroll() {
       const scrollY = window.scrollY;
-      this.showFloatingNav = scrollY > 300;
+      this.showFloatingNav = scrollY > 600;
       this.showBackToTop = scrollY > 500;
       this.updateCurrentSection();
     },
@@ -868,6 +931,63 @@ body, .diabetes-education-container {
   font-size: 16px;
   max-width: 800px;
   margin: 0 auto;
+}
+
+/* 视频播放区域样式 */
+.video-player-section {
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.video-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.video-tab {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  background: #F3F4F6;
+  color: #4B5563;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.video-tab:hover {
+  background: rgba(64, 128, 255, 0.1);
+  color: #4080FF;
+}
+
+.video-tab.active {
+  background: linear-gradient(135deg, #4080FF, #3366CC);
+  color: white;
+  box-shadow: 0 4px 12px rgba(64, 128, 255, 0.3);
+}
+
+.video-container {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.bilibili-player {
+  width: 100%;
+  height: 500px;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .bilibili-player {
+    height: 280px;
+  }
 }
 
 /* 导航样式 */
@@ -1214,47 +1334,63 @@ body, .diabetes-education-container {
   border-color: #3366CC;
 }
 
-/* 右侧悬浮导航栏 - 清新明亮风格 */
+/* 右侧悬浮导航栏 - 精修版 */
 .floating-nav {
   position: fixed;
-  right: 24px;
-  top: 80px;
-  bottom: 24px;
-  width: 180px;
-  padding: 16px 12px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(64, 128, 255, 0.15);
-  border: 1px solid rgba(64, 128, 255, 0.12);
+  right: 32px;
+  top: 100px;
+  bottom: 32px;
+  width: 190px;
+  padding: 20px 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(64, 128, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(64, 128, 255, 0.08);
   overflow-y: auto;
   z-index: 1000;
-  max-height: calc(100vh - 160px);
-  transition: all 0.3s ease;
+  max-height: calc(100vh - 200px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 美化导航栏滚动条 */
 .floating-nav::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 .floating-nav::-webkit-scrollbar-track {
   background: transparent;
+  margin: 8px 0;
 }
 .floating-nav::-webkit-scrollbar-thumb {
-  background: rgba(64, 128, 255, 0.25);
-  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(64, 128, 255, 0.3), rgba(64, 128, 255, 0.15));
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+.floating-nav::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(64, 128, 255, 0.5), rgba(64, 128, 255, 0.3));
 }
 
 /* 顶部标题层级设计 */
 .floating-nav h3 {
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0 0 15px 0;
-  color: #3b82f6;
-  border-bottom: 2px solid #e0e7ff;
-  padding-bottom: 10px;
-  letter-spacing: 1px;
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 18px 0;
+  color: #1e40af;
+  border-bottom: 2px solid rgba(64, 128, 255, 0.1);
+  padding-bottom: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.floating-nav h3::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: linear-gradient(180deg, #4080FF, #3366CC);
+  border-radius: 2px;
 }
 
 .floating-nav ul {
@@ -1264,38 +1400,58 @@ body, .diabetes-education-container {
 }
 
 .floating-nav li {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 /* 导航项基础状态 */
 .floating-nav a {
-  display: block;
-  padding: 10px 12px;
-  color: #64748b;
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  color: #475569;
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 13px;
-  transition: all 0.25s ease;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: transparent;
+  border: 1px solid transparent;
   position: relative;
+  overflow: hidden;
+}
+.floating-nav a::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleX(0);
+  width: 3px;
+  height: 20px;
+  background: linear-gradient(180deg, #4080FF, #3366CC);
+  border-radius: 0 2px 2px 0;
+  transition: transform 0.3s ease;
 }
 
 /* 鼠标悬浮交互 */
 .floating-nav a:hover {
-  background: linear-gradient(135deg, #eff6ff, #e0f2fe);
-  color: #2563eb;
-  border-color: #bfdbfe;
-  transform: translateX(3px);
+  background: linear-gradient(135deg, rgba(64, 128, 255, 0.08), rgba(64, 128, 255, 0.02));
+  color: #1d4ed8;
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(64, 128, 255, 0.08);
+}
+.floating-nav a:hover::before {
+  transform: translateY(-50%) scaleX(1);
 }
 
 /* 激活态高亮 */
 .floating-nav a.active {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  color: #1d4ed8;
+  background: linear-gradient(135deg, rgba(64, 128, 255, 0.1), rgba(64, 128, 255, 0.05));
+  color: #1e40af;
   font-weight: 600;
-  border-color: #93c5fd;
-  padding-left: 14px;
+  box-shadow: 0 4px 12px rgba(64, 128, 255, 0.1);
+}
+.floating-nav a.active::before {
+  transform: translateY(-50%) scaleX(1);
 }
 
 /* 响应式设计 */

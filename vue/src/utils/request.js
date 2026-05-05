@@ -2,7 +2,7 @@ import axios from 'axios'
 import router from "@/router";
 import { CacheHelper } from "./cacheHelper";
 
-const serverIp = window.location.hostname || 'localhost'
+export const serverIp = window.location.hostname || 'localhost'
 
 const request = axios.create({
     baseURL: `http://${serverIp}:9090`,

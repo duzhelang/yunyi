@@ -28,6 +28,16 @@ public class Files {
 
     private String category;
 
+    private String qualityLevel;
+
+    private Integer sampleCount;
+
+    private String columnInfo;
+
+    private String fileSize;
+
+    private Date updateTime;
+
     public Integer getId() {
         return id;
     }
@@ -130,6 +140,46 @@ public class Files {
 
     public void setCategory(String category) {
         this.category = category;
+    }
+
+    public String getQualityLevel() {
+        return qualityLevel;
+    }
+
+    public void setQualityLevel(String qualityLevel) {
+        this.qualityLevel = qualityLevel;
+    }
+
+    public Integer getSampleCount() {
+        return sampleCount;
+    }
+
+    public void setSampleCount(Integer sampleCount) {
+        this.sampleCount = sampleCount;
+    }
+
+    public String getColumnInfo() {
+        return columnInfo;
+    }
+
+    public void setColumnInfo(String columnInfo) {
+        this.columnInfo = columnInfo;
+    }
+
+    public String getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(String fileSize) {
+        this.fileSize = fileSize;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
     }
 
 }

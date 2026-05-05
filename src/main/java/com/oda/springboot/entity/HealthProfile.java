@@ -1,9 +1,10 @@
 package com.oda.springboot.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import java.time.LocalDateTime;
 
-@TableName("user_health_profiles")
+@TableName(value = "user_health_profiles", autoResultMap = true)
 public class HealthProfile {
 
     @TableId(type = IdType.AUTO)
@@ -47,6 +48,24 @@ public class HealthProfile {
     private String status;           // 状态:PENDING (待诊?, DONE (已完?
     private String diagnosisResult;  // 诊断员填写的最终结?
     private LocalDateTime diagnoseTime; // 诊断完成的时?
+
+    // === 预测相关字段 ===
+    private String riskLevel;
+    private Double riskProbability;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private String predictionJson;
+
+    // === 生活方式字段 ===
+    private Double height;
+    private Double weight;
+    private String exerciseFrequency;
+    private String dietHabit;
+    private String smoking;
+    private String drinking;
+    private String gender;
+
+    // === AI 建议 ===
+    private String aiAdvice;
 
     public Long getId() {
         return id;
@@ -183,6 +202,42 @@ public class HealthProfile {
     public void setDiagnoseTime(LocalDateTime diagnoseTime) {
         this.diagnoseTime = diagnoseTime;
     }
+
+    // === 预测相关 getter/setter ===
+    public String getRiskLevel() { return riskLevel; }
+    public void setRiskLevel(String riskLevel) { this.riskLevel = riskLevel; }
+
+    public Double getRiskProbability() { return riskProbability; }
+    public void setRiskProbability(Double riskProbability) { this.riskProbability = riskProbability; }
+
+    public String getPredictionJson() { return predictionJson; }
+    public void setPredictionJson(String predictionJson) { this.predictionJson = predictionJson; }
+
+    // === 生活方式 getter/setter ===
+    public Double getHeight() { return height; }
+    public void setHeight(Double height) { this.height = height; }
+
+    public Double getWeight() { return weight; }
+    public void setWeight(Double weight) { this.weight = weight; }
+
+    public String getExerciseFrequency() { return exerciseFrequency; }
+    public void setExerciseFrequency(String exerciseFrequency) { this.exerciseFrequency = exerciseFrequency; }
+
+    public String getDietHabit() { return dietHabit; }
+    public void setDietHabit(String dietHabit) { this.dietHabit = dietHabit; }
+
+    public String getSmoking() { return smoking; }
+    public void setSmoking(String smoking) { this.smoking = smoking; }
+
+    public String getDrinking() { return drinking; }
+    public void setDrinking(String drinking) { this.drinking = drinking; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
+    // === AI 建议 ===
+    public String getAiAdvice() { return aiAdvice; }
+    public void setAiAdvice(String aiAdvice) { this.aiAdvice = aiAdvice; }
 
     public String getCsvFileName() {
 

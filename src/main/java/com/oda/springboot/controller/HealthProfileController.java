@@ -1,6 +1,8 @@
 package com.oda.springboot.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oda.springboot.common.Result;
+import com.oda.springboot.controller.dto.SaveAndPredictRequest;
 import com.oda.springboot.entity.HealthProfile;
 import com.oda.springboot.service.impl.HealthProfileServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,19 +13,24 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/health-profile")
-@CrossOrigin(origins = "*") // 允许前端跨域访问
+@CrossOrigin(origins = "*")
 public class HealthProfileController {
 
     @Autowired
     private HealthProfileServiceImpl healthProfileService;
 
-    // 从配置文件读取CSV根路径(适配Windows系统)
-//    @Value("${file.csv.root-path:D:\\Software-ODA125\\data\\csv_for_doctor}")
+    @Autowired
+    private SinglePredictController singlePredictController;
+
+    private static final ConcurrentHashMap<String, String> ADVICE_CACHE = new ConcurrentHashMap<>();
+
     @Value("${file.csv.root-path:#{systemProperties['user.dir'] + '/data/csv_for_doctor'}}")
     private String csvRootPath;
 
@@ -229,10 +236,14 @@ public class HealthProfileController {
      */
     @GetMapping("/list")
     public Result<List<HealthProfile>> list() {
-        // TODO: 实际应从 Token 解析 userId
-        Long currentUserId = 1L;
-        List<HealthProfile> list = healthProfileService.getListByUserId(currentUserId);
-        return Result.success(list);
+        try {
+            Long currentUserId = 1L;
+            List<HealthProfile> list = healthProfileService.getListByUserId(currentUserId);
+            return Result.success(list);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("查询失败: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+        }
     }
 
     /**
@@ -254,5 +265,102 @@ public class HealthProfileController {
             return Result.error("记录不存在");
         }
         return Result.success(profile);
+    }
+
+    /**
+     * 8. 保存健康档案并自动进行风险预测
+     */
+    @PostMapping("/save-and-predict")
+    public Result saveAndPredict(@RequestBody SaveAndPredictRequest request) {
+        try {
+            Long profileId = healthProfileService.saveProfileFull(
+                request.getPregnancies(), request.getGlucose(),
+                request.getBloodPressure(), request.getSkinThickness(),
+                request.getInsulin(), request.getBmi(),
+                request.getDiabetesPedigreeFunction(), request.getAge(),
+                request.getSymptoms(), null,
+                request.getHeight(), request.getWeight(),
+                request.getExerciseFrequency(), request.getDietHabit(),
+                request.getSmoking(), request.getDrinking(),
+                request.getGender()
+            );
+
+            Map<String, Object> features = new HashMap<>();
+            features.put("pregnancies", request.getPregnancies() != null ? request.getPregnancies() : 0);
+            features.put("glucose", request.getGlucose() != null ? request.getGlucose() : 0.0);
+            features.put("bloodPressure", request.getBloodPressure() != null ? request.getBloodPressure() : 0);
+            features.put("skinThickness", request.getSkinThickness() != null ? request.getSkinThickness() : 0);
+            features.put("insulin", request.getInsulin() != null ? request.getInsulin() : 0.0);
+            features.put("bmi", request.getBmi() != null ? request.getBmi() : 0.0);
+            features.put("diabetesPedigreeFunction", request.getDiabetesPedigreeFunction() != null ? request.getDiabetesPedigreeFunction() : 0.0);
+            features.put("age", request.getAge() != null ? request.getAge() : 0);
+
+            Result predictResult = singlePredictController.singlePredict(features);
+            Map<String, Object> predictionData = new HashMap<>();
+            if ("200".equals(predictResult.getCode()) && predictResult.getData() != null) {
+                predictionData = (Map<String, Object>) predictResult.getData();
+                String riskLevel = (String) predictionData.getOrDefault("risk_level", "low");
+                Double probability = predictionData.get("probability") instanceof Number
+                    ? ((Number) predictionData.get("probability")).doubleValue()
+                    : 0.0;
+                String predictionJson = new ObjectMapper().writeValueAsString(predictionData);
+                healthProfileService.updatePrediction(profileId, riskLevel, probability, predictionJson);
+            }
+
+            if (request.getAskAI() != null && request.getAskAI()) {
+                String advice = generateStaticAdvice(predictionData);
+                healthProfileService.updateAiAdvice(profileId, advice);
+                predictionData.put("ai_advice", advice);
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("id", profileId);
+            result.put("prediction", predictionData);
+            return Result.success(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("500", "保存并预测失败: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@PathVariable Long id) {
+        try {
+            healthProfileService.deleteById(id);
+            return Result.success();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("500", "删除失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 静态AI建议（使用本地缓存避免重复生成）
+     */
+    private String generateStaticAdvice(Map<String, Object> predictionData) {
+        String riskLevel = (String) predictionData.getOrDefault("risk_level", "low");
+        Double probability = predictionData.get("probability") instanceof Number
+            ? ((Number) predictionData.get("probability")).doubleValue()
+            : 0.0;
+
+        String cacheKey = riskLevel + "_" + String.format("%.1f", probability);
+        String cached = ADVICE_CACHE.get(cacheKey);
+        if (cached != null) return cached;
+
+        StringBuilder advice = new StringBuilder();
+        if ("high".equals(riskLevel)) {
+            advice.append("您的糖尿病风险较高（概率").append(String.format("%.1f", probability)).append("%），");
+            advice.append("建议尽快就医，进行专业检查和治疗。");
+        } else if ("medium".equals(riskLevel)) {
+            advice.append("您的糖尿病风险中等（概率").append(String.format("%.1f", probability)).append("%），");
+            advice.append("建议控制饮食，增加运动，定期监测血糖。");
+        } else {
+            advice.append("您的糖尿病风险较低（概率").append(String.format("%.1f", probability)).append("%），");
+            advice.append("请继续保持健康的生活方式，定期体检。");
+        }
+        advice.append("建议每周至少进行150分钟中等强度运动，保持均衡饮食，控制碳水化合物摄入。");
+
+        ADVICE_CACHE.put(cacheKey, advice.toString());
+        return advice.toString();
     }
 }

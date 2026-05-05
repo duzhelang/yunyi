@@ -3,9 +3,12 @@ package com.oda.springboot.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oda.springboot.common.Result;
+import com.oda.springboot.entity.ModelVersion;
+import com.oda.springboot.service.ModelVersionService;
 import com.oda.springboot.utils.PropertyUtil;
 import com.oda.springboot.utils.UsePythonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,6 +25,12 @@ public class SinglePredictController {
 
     @Autowired
     private PropertyUtil propertyUtil;
+
+    @Autowired
+    private ModelVersionService modelVersionService;
+
+    @Value("${base.path:./}")
+    private String basePath;
 
     @PostMapping("/single")
     public Result singlePredict(@RequestBody Map<String, Object> requestData) {
@@ -49,7 +58,10 @@ public class SinglePredictController {
                 return Result.error("503", "Python环境未就绪，请联系管理员");
             }
 
-            // 3. 构建 Python 脚本调用参数
+            // 3. 获取激活模型路径
+            String modelBasePath = getActiveModelBasePath();
+
+            // 4. 构建 Python 脚本调用参数
             String[] arguments = new String[]{
                     pythonExe,
                     pythonScript,
@@ -60,21 +72,23 @@ public class SinglePredictController {
                     String.valueOf(insulin),
                     String.valueOf(bmi),
                     String.valueOf(diabetesPedigreeFunction),
-                    String.valueOf(age)
+                    String.valueOf(age),
+                    "--model",
+                    modelBasePath
             };
 
-            // 4. 调用 Python 脚本（带超时控制）
+            // 5. 调用 Python 脚本（带超时控制）
             String output = callPythonWithTimeout(arguments, 30);
 
             if (output == null) {
-                return Result.error("504", "预测超时");
+                return Result.error("504", "检测超时");
             }
 
-            // 5. 解析 JSON 输出
+            // 6. 解析 JSON 输出
             ObjectMapper mapper = new ObjectMapper();
             JsonNode resultNode = mapper.readTree(output);
 
-            // 6. 构建返回结果
+            // 7. 构建返回结果
             String status = resultNode.get("status").asText();
             if ("success".equals(status)) {
                 int prediction = resultNode.get("prediction").asInt();
@@ -114,18 +128,18 @@ public class SinglePredictController {
                         resultNode.get("charts"), Map.class));
                 }
 
-                return Result.success("预测成功", resultData);
+                return Result.success("检测成功", resultData);
             } else {
                 String msg = resultNode.get("msg").asText();
-                return Result.error("500", "预测失败: " + msg);
+                return Result.error("500", "检测失败: " + msg);
             }
 
         } catch (IllegalArgumentException e) {
             return Result.error("400", e.getMessage());
         } catch (IOException | InterruptedException e) {
-            return Result.error("500", "预测失败: " + e.getMessage());
+            return Result.error("500", "检测失败: " + e.getMessage());
         } catch (Exception e) {
-            return Result.error("500", "预测失败: " + e.getMessage());
+            return Result.error("500", "检测失败: " + e.getMessage());
         }
     }
 
@@ -209,5 +223,28 @@ public class SinglePredictController {
             }
         }
         return defaultValue;
+    }
+
+    /**
+     * 获取激活模型的基础路径（不含扩展名）
+     * 优先从 sys_model_version 表读取激活模型，未找到则使用默认路径
+     */
+    private String getActiveModelBasePath() {
+        try {
+            ModelVersion activeModel = modelVersionService.getActiveModel();
+            if (activeModel != null && activeModel.getFilePath() != null) {
+                String filePath = activeModel.getFilePath();
+                if (filePath.endsWith(".pth")) {
+                    filePath = filePath.substring(0, filePath.length() - 4);
+                }
+                if (!new File(filePath).isAbsolute()) {
+                    filePath = basePath + filePath;
+                }
+                return filePath;
+            }
+        } catch (Exception e) {
+            // 降级到默认路径
+        }
+        return basePath + "python/diabetes_model";
     }
 }

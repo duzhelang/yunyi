@@ -107,7 +107,7 @@ public class pythonController {
         // [核心修改]使用配置文件中的模型路径
         String modelSavePath = propertyUtil.getPythonModelPath();
         if (modelSavePath == null || modelSavePath.isEmpty()) {
-            modelSavePath = propertyUtil.getPythonDownload() + "diabetes_model.pth";
+            modelSavePath = System.getProperty("user.dir") + "/models/diabetes_model.pth";
         }
 
         // 确保模型目录存在
@@ -118,7 +118,7 @@ public class pythonController {
         }
 
         try {
-            // [核心修改]参数为4个 (python 和脚本路径)
+            // (python 和脚本路径)
             // 0: python.exe
             // 1: train.py
             // 2: 输入 CSV

@@ -22,39 +22,64 @@
         </el-alert>
       </div>
       
-      <el-form :model="form" label-width="150px" class="health-form">
+      <el-form label-width="150px" class="health-form">
         <el-form-item label="年龄">
-          <el-input v-model.number="form.age" placeholder="请输入年龄" type="number"></el-input>
+          <el-input v-model.number="store.age" placeholder="请输入年龄" type="number"></el-input>
         </el-form-item>
         <el-form-item label="性别">
-          <el-radio-group v-model="form.gender">
+          <el-radio-group v-model="store.gender">
             <el-radio value="男">男</el-radio>
             <el-radio value="女">女</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="身高(m)">
-          <el-input v-model.number="form.height" placeholder="请输入身高" type="number" step="0.01" @input="calculateBmi"></el-input>
+          <el-input v-model.number="store.height" placeholder="请输入身高" type="number" step="0.01" @input="calculateBmi"></el-input>
         </el-form-item>
         <el-form-item label="体重(kg)">
-          <el-input v-model.number="form.weight" placeholder="请输入体重" type="number" step="0.1" @input="calculateBmi"></el-input>
+          <el-input v-model.number="store.weight" placeholder="请输入体重" type="number" step="0.1" @input="calculateBmi"></el-input>
+        </el-form-item>
+        <el-form-item label="BMI">
+          <el-input :model-value="store.bmi" disabled placeholder="自动计算"></el-input>
         </el-form-item>
         <el-form-item label="空腹血糖值(mg/dL)">
-          <el-input v-model.number="form.glucose" placeholder="请输入空腹血糖值" type="number"></el-input>
+          <el-input v-model.number="store.glucose" placeholder="请输入空腹血糖值" type="number"></el-input>
         </el-form-item>
         <el-form-item label="胰岛素水平(uIU/mL)">
-          <el-input v-model.number="form.insulin" placeholder="请输入胰岛素水平" type="number"></el-input>
+          <el-input v-model.number="store.insulin" placeholder="请输入胰岛素水平" type="number"></el-input>
         </el-form-item>
         <el-form-item label="血压(收缩压)">
-          <el-input v-model.number="form.bloodPressure" placeholder="请输入收缩压" type="number"></el-input>
+          <el-input v-model.number="store.bloodPressure" placeholder="请输入收缩压" type="number"></el-input>
         </el-form-item>
         <el-form-item label="糖尿病家族史">
-          <el-radio-group v-model="form.familyHistory">
-            <el-radio value="有">有</el-radio>
-            <el-radio value="无">无</el-radio>
-          </el-radio-group>
+          <div class="family-history-wrapper">
+            <div class="family-radio-row">
+              <el-radio-group v-model="familyHistoryType">
+                <el-radio value="simple">快速选择</el-radio>
+                <el-radio value="precise">精确计算 (DPF)</el-radio>
+              </el-radio-group>
+            </div>
+            <div v-if="familyHistoryType === 'simple'" class="family-simple-row">
+              <el-radio-group v-model="familyHistorySimple">
+                <el-radio value="无">无</el-radio>
+                <el-radio value="有">有</el-radio>
+              </el-radio-group>
+              <span class="family-precision-warning">
+                <el-icon><Warning /></el-icon> 选"有/无"会丢失遗传风险精度
+              </span>
+            </div>
+            <div v-else class="family-precise-row">
+              <div class="family-dpf-group">
+                <el-input-number v-model="store.diabetesPedigreeFunction" :precision="3" :step="0.01" :min="0.08" :max="2.42" controls-position="right" style="width: 180px" />
+                <el-button type="primary" plain size="small" @click="goToDpfCalculator">
+                  精确计算
+                </el-button>
+              </div>
+              <span class="family-dpf-value">当前 DPF: {{ store.diabetesPedigreeFunction.toFixed(3) }}</span>
+            </div>
+          </div>
         </el-form-item>
         <el-form-item label="运动频率">
-          <el-select v-model="form.exerciseFrequency" placeholder="请选择运动频率">
+          <el-select v-model="store.exerciseFrequency" placeholder="请选择运动频率">
             <el-option label="每周少于1次" value="0"></el-option>
             <el-option label="每周1-2次" value="1"></el-option>
             <el-option label="每周3-4次" value="2"></el-option>
@@ -62,21 +87,21 @@
           </el-select>
         </el-form-item>
         <el-form-item label="饮食习惯">
-          <el-select v-model="form.dietHabit" placeholder="请选择饮食习惯">
+          <el-select v-model="store.dietHabit" placeholder="请选择饮食习惯">
             <el-option label="清淡饮食" value="0"></el-option>
             <el-option label="适中" value="1"></el-option>
             <el-option label="偏咸偏油" value="2"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="吸烟情况">
-          <el-radio-group v-model="form.smoking">
+          <el-radio-group v-model="store.smoking">
             <el-radio value="不吸烟">不吸烟</el-radio>
             <el-radio value="偶尔吸烟">偶尔吸烟</el-radio>
             <el-radio value="经常吸烟">经常吸烟</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="饮酒情况">
-          <el-radio-group v-model="form.drinking">
+          <el-radio-group v-model="store.drinking">
             <el-radio value="不饮酒">不饮酒</el-radio>
             <el-radio value="偶尔饮酒">偶尔饮酒</el-radio>
             <el-radio value="经常饮酒">经常饮酒</el-radio>
@@ -104,44 +129,22 @@
           </div>
         </div>
 
-        <div class="charts-carousel" v-if="chartsData">
-          <div class="carousel-header">
-            <h4>可视化分析</h4>
-            <span class="carousel-indicators">
-              <span
-                v-for="(chart, index) in availableCharts"
-                :key="index"
-                :class="['indicator-dot', { active: currentChartIndex === index }]"
-                @click="goToChart(index)"
-              ></span>
-            </span>
+        <div class="echarts-grid" v-if="showECharts">
+          <div class="echart-item">
+            <h4 class="chart-title">风险仪表盘</h4>
+            <div ref="gaugeChartRef" class="echart-box"></div>
           </div>
-          <div class="carousel-main">
-            <button class="carousel-btn prev" @click="prevChart" :disabled="availableCharts.length <= 1">
-              <el-icon><ArrowLeft /></el-icon>
-            </button>
-            <div class="carousel-display" v-loading="!chartsData" element-loading-background="rgba(255,255,255,0.5)" @click="previewCurrentChart">
-              <img
-                v-if="availableCharts[currentChartIndex]"
-                :src="'data:image/png;base64,' + availableCharts[currentChartIndex].image"
-                :alt="availableCharts[currentChartIndex].label"
-              />
-              <div class="carousel-hint-text">点击查看大图</div>
-            </div>
-            <button class="carousel-btn next" @click="nextChart" :disabled="availableCharts.length <= 1">
-              <el-icon><ArrowRight /></el-icon>
-            </button>
+          <div class="echart-item">
+            <h4 class="chart-title">健康雷达图</h4>
+            <div ref="radarChartRef" class="echart-box"></div>
           </div>
-          <div class="carousel-thumbnails">
-            <div
-              v-for="(chart, index) in availableCharts"
-              :key="index"
-              :class="['thumbnail', { active: currentChartIndex === index }]"
-              @click="goToChart(index)"
-            >
-              <img :src="'data:image/png;base64,' + chart.image" :alt="chart.label" />
-              <span class="thumbnail-label">{{ chart.label }}</span>
-            </div>
+          <div class="echart-item">
+            <h4 class="chart-title">因素贡献</h4>
+            <div ref="waterfallChartRef" class="echart-box"></div>
+          </div>
+          <div class="echart-item">
+            <h4 class="chart-title">指标对比</h4>
+            <div ref="comparisonChartRef" class="echart-box"></div>
           </div>
         </div>
 
@@ -155,25 +158,25 @@
           <Transition name="panel-slide">
             <div class="panel-content" v-show="showDataDetails">
               <el-descriptions :column="2" size="small" border>
-                <el-descriptions-item label="年龄">{{ form.age }}岁</el-descriptions-item>
-                <el-descriptions-item label="性别">{{ form.gender }}</el-descriptions-item>
-                <el-descriptions-item label="身高">{{ form.height }} m</el-descriptions-item>
-                <el-descriptions-item label="体重">{{ form.weight }} kg</el-descriptions-item>
-                <el-descriptions-item label="BMI">{{ form.bmi }}</el-descriptions-item>
-                <el-descriptions-item label="空腹血糖">{{ form.glucose }} mg/dL</el-descriptions-item>
-                <el-descriptions-item label="胰岛素水平">{{ form.insulin }} uIU/mL</el-descriptions-item>
-                <el-descriptions-item label="血压">{{ form.bloodPressure }} mmHg</el-descriptions-item>
-                <el-descriptions-item label="家族史">{{ form.familyHistory }}</el-descriptions-item>
-                <el-descriptions-item label="运动频率">{{ getExerciseText(form.exerciseFrequency) }}</el-descriptions-item>
-                <el-descriptions-item label="饮食习惯">{{ getDietText(form.dietHabit) }}</el-descriptions-item>
-                <el-descriptions-item label="吸烟情况">{{ form.smoking }}</el-descriptions-item>
-                <el-descriptions-item label="饮酒情况">{{ form.drinking }}</el-descriptions-item>
+                <el-descriptions-item label="年龄">{{ store.age }}岁</el-descriptions-item>
+                <el-descriptions-item label="性别">{{ store.gender }}</el-descriptions-item>
+                <el-descriptions-item label="身高">{{ store.height }} m</el-descriptions-item>
+                <el-descriptions-item label="体重">{{ store.weight }} kg</el-descriptions-item>
+                <el-descriptions-item label="BMI">{{ store.bmi }}</el-descriptions-item>
+                <el-descriptions-item label="空腹血糖">{{ store.glucose }} mg/dL</el-descriptions-item>
+                <el-descriptions-item label="胰岛素水平">{{ store.insulin }} uIU/mL</el-descriptions-item>
+                <el-descriptions-item label="血压">{{ store.bloodPressure }} mmHg</el-descriptions-item>
+                <el-descriptions-item label="家族史DPF">{{ store.diabetesPedigreeFunction }}</el-descriptions-item>
+                <el-descriptions-item label="运动频率">{{ getExerciseText(store.exerciseFrequency) }}</el-descriptions-item>
+                <el-descriptions-item label="饮食习惯">{{ getDietText(store.dietHabit) }}</el-descriptions-item>
+                <el-descriptions-item label="吸烟情况">{{ store.smoking }}</el-descriptions-item>
+                <el-descriptions-item label="饮酒情况">{{ store.drinking }}</el-descriptions-item>
               </el-descriptions>
             </div>
           </Transition>
         </div>
 
-        <div class="collapse-panel percentile-ranking" v-if="Object.keys(percentiles).length > 0">
+        <div class="collapse-panel percentile-ranking" v-if="Object.keys(store.percentiles).length > 0">
           <div class="panel-header" @click="togglePercentileRanking">
             <span class="panel-title">指标百分位排名</span>
             <span class="panel-arrow" :class="{ expanded: showPercentileRanking }">
@@ -183,7 +186,7 @@
           <Transition name="panel-slide">
             <div class="panel-content" v-show="showPercentileRanking">
               <div class="percentile-list">
-                <div class="percentile-item" v-for="(value, key) in percentiles" :key="key">
+                <div class="percentile-item" v-for="(value, key) in store.percentiles" :key="key">
                   <span class="percentile-label">{{ getFeatureLabel(key) }}</span>
                   <el-progress
                     :percentage="value"
@@ -245,329 +248,205 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import { ArrowDown, ArrowLeft, ArrowRight, Document } from '@element-plus/icons-vue'
+import * as echarts from 'echarts'
+import { ArrowDown, ArrowLeft, ArrowRight, Document, Warning } from '@element-plus/icons-vue'
 import request from '@/utils/request'
+import { useHealthStore } from '@/store/healthStore'
+import { usePrediction } from '@/composables/usePrediction'
 
-const form = ref({
-  age: 20,
-  gender: '女',
-  height: 1.7,
-  weight: 60,
-  bmi: '',
-  glucose: 90,
-  insulin: 50,
-  bloodPressure: 120,
-  familyHistory: '无',
-  exerciseFrequency: '0',
-  dietHabit: '1',
-  smoking: '不吸烟',
-  drinking: '不饮酒'
-})
+const router = useRouter()
+const store = useHealthStore()
+const { runPrediction, getRiskText, getRiskClass, getHealthAdvice } = usePrediction()
+
+function goToDpfCalculator() {
+  router.push('/health-profile')
+}
 
 const resultDialogVisible = ref(false)
-const probability = ref(0)
-const riskLevelText = ref('')
-const healthAdvice = ref('')
-const confidenceInterval = ref([0, 0])
-const featureImportance = ref([])
-const featureNames = ref([])
-const percentiles = ref({})
-const similarCases = ref(null)
-const chartsData = ref(null)
+const probability = computed(() => store.riskProbability)
+const riskLevelText = computed(() => getRiskText(store.riskLevel))
+const healthAdvice = computed(() => getHealthAdvice(store.riskLevel))
+const confidenceInterval = computed(() => store.confidenceInterval)
 const showDataDetails = ref(false)
 const showPercentileRanking = ref(false)
 const previewDialogVisible = ref(false)
 const previewImage = ref('')
 const previewTitle = ref('')
-const currentChartIndex = ref(0)
+const familyHistoryType = ref('precise')
+const familyHistorySimple = ref('无')
 
-const availableCharts = computed(() => {
-  if (!chartsData.value) return []
-  const chartList = [
-    { key: 'dashboard_chart', label: '风险仪表盘', image: chartsData.value.dashboard_chart },
-    { key: 'radar_chart', label: '健康雷达图', image: chartsData.value.radar_chart },
-    { key: 'comparison_chart', label: '指标对比', image: chartsData.value.comparison_chart },
-    { key: 'scorecard_chart', label: '健康评分', image: chartsData.value.scorecard_chart },
-    { key: 'heatmap_chart', label: '风险热力图', image: chartsData.value.heatmap_chart },
-    { key: 'waterfall_chart', label: '因素贡献', image: chartsData.value.waterfall_chart },
-    { key: 'confidence_chart', label: '置信区间', image: chartsData.value.confidence_chart },
-    { key: 'pie_chart', label: '风险分布', image: chartsData.value.pie_chart },
-    { key: 'importance_chart', label: '特征重要性', image: chartsData.value.importance_chart }
-  ]
-  return chartList.filter(chart => chart.image)
-})
+const showECharts = ref(false)
+const gaugeChartRef = ref(null)
+const radarChartRef = ref(null)
+const waterfallChartRef = ref(null)
+const comparisonChartRef = ref(null)
 
-function toggleDataDetails() {
-  showDataDetails.value = !showDataDetails.value
-}
-
-function togglePercentileRanking() {
-  showPercentileRanking.value = !showPercentileRanking.value
-}
-
-function previewChart(chartKey, title) {
-  if (chartsData.value && chartsData.value[chartKey]) {
-    previewImage.value = chartsData.value[chartKey]
-    previewTitle.value = title
-    previewDialogVisible.value = true
-  }
-}
-
-function previewCurrentChart() {
-  if (availableCharts.value.length > 0) {
-    const current = availableCharts.value[currentChartIndex.value]
-    previewImage.value = current.image
-    previewTitle.value = current.label
-    previewDialogVisible.value = true
-  }
-}
-
-function prevChart() {
-  if (availableCharts.value.length > 0) {
-    currentChartIndex.value = (currentChartIndex.value - 1 + availableCharts.value.length) % availableCharts.value.length
-  }
-}
-
-function nextChart() {
-  if (availableCharts.value.length > 0) {
-    currentChartIndex.value = (currentChartIndex.value + 1) % availableCharts.value.length
-  }
-}
-
-function goToChart(index) {
-  currentChartIndex.value = index
-}
-
-// 获取用户信息并填充到表单
-async function loadUserInfo() {
-  try {
-    const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null
-    if (user && user.username) {
-      const response = await request.get('/user/username/' + user.username)
-      if (response.data) {
-        if (response.data.age) {
-          form.value.age = response.data.age
-        }
-        if (response.data.sex) {
-          form.value.gender = response.data.sex
-        }
-      }
-    }
-  } catch (error) {
-    console.error('获取用户信息失败:', error)
-  }
-}
+const riskLevelClass = computed(() => getRiskClass(store.riskLevel))
 
 onMounted(() => {
-  loadUserInfo()
-  // 初始化时计算 BMI
-  setTimeout(() => {
-    calculateBmi()
-  }, 100)
+  store.loadFromDraft()
 })
+
+function showResult() {
+  resultDialogVisible.value = true
+  nextTick(() => initECharts())
+}
+
+function initECharts() {
+  showECharts.value = true
+  nextTick(() => {
+    // 1. 风险仪表盘 (gauge)
+    if (gaugeChartRef.value) {
+      const gaugeChart = echarts.init(gaugeChartRef.value)
+      gaugeChart.setOption({
+        series: [{
+          type: 'gauge',
+          startAngle: 200, endAngle: -20,
+          min: 0, max: 100,
+          pointer: { length: '60%' },
+          progress: { show: true, width: 15 },
+          axisLine: { lineStyle: { width: 15, color: [
+            [0.3, '#67C23A'], [0.6, '#E6A23C'], [1, '#F56C6C']
+          ]}},
+          data: [{ value: store.riskProbability, name: '患病概率' }],
+          detail: { formatter: '{value}%', fontSize: 20, fontWeight: 'bold' }
+        }]
+      })
+    }
+
+    // 2. 健康雷达图 (radar)
+    if (radarChartRef.value) {
+      const radarChart = echarts.init(radarChartRef.value)
+      const featureNames = ['血糖', 'BMI', '血压', '胰岛素', '皮褶厚度', '年龄', '怀孕次数', '遗传']
+      const userValues = [
+        store.glucose / 200 * 100,
+        store.bmi / 40 * 100,
+        store.bloodPressure / 200 * 100,
+        store.insulin / 200 * 100,
+        store.skinThickness / 50 * 100,
+        store.age / 100 * 100,
+        store.pregnancies / 10 * 100,
+        store.diabetesPedigreeFunction / 2.5 * 100
+      ]
+      radarChart.setOption({
+        radar: {
+          indicator: featureNames.map((name, i) => ({ name, max: 100 })),
+          radius: '65%'
+        },
+        series: [{
+          type: 'radar',
+          data: [{ value: userValues, name: '您的指标', areaStyle: { opacity: 0.2 } }],
+          lineStyle: { width: 2 }
+        }]
+      })
+    }
+
+    // 3. 因素贡献 (bar)
+    if (waterfallChartRef.value && store.featureImportance.length > 0 && store.featureNames.length > 0) {
+      const waterfallChart = echarts.init(waterfallChartRef.value)
+      const importanceLabels = store.featureNames.map(n => {
+        const map = { Pregnancies: '怀孕次数', Glucose: '血糖', BloodPressure: '血压',
+          SkinThickness: '皮褶厚度', Insulin: '胰岛素', BMI: 'BMI',
+          DiabetesPedigreeFunction: '遗传', Age: '年龄' }
+        return map[n] || n
+      })
+      waterfallChart.setOption({
+        xAxis: { type: 'category', data: importanceLabels, axisLabel: { rotate: 30 } },
+        yAxis: { type: 'value', name: 'SHAP 值' },
+        series: [{
+          type: 'bar',
+          data: store.featureImportance.map(v => ({
+            value: v,
+            itemStyle: { color: v >= 0 ? '#F56C6C' : '#67C23A' }
+          }))
+        }]
+      })
+    }
+
+    // 4. 指标对比 (bar)
+    if (comparisonChartRef.value) {
+      const comparisonChart = echarts.init(comparisonChartRef.value)
+      const metricLabels = ['血糖', 'BMI', '血压', '胰岛素']
+      const userMetricValues = [store.glucose, store.bmi, store.bloodPressure, store.insulin]
+      comparisonChart.setOption({
+        xAxis: { type: 'category', data: metricLabels },
+        yAxis: { type: 'value' },
+        tooltip: { trigger: 'axis' },
+        series: [
+          { name: '您的值', type: 'bar', data: userMetricValues, barWidth: '30%' },
+          { name: '参考值', type: 'bar', data: [90, 22, 120, 50], barWidth: '30%', itemStyle: { color: '#909399' } }
+        ]
+      })
+    }
+  })
+}
 
 function calculateBmi() {
-  if (form.value.height && form.value.weight && form.value.height > 0) {
-    const heightInMeters = form.value.height
-    const bmi = form.value.weight / (heightInMeters * heightInMeters)
-    form.value.bmi = Math.round(bmi * 10) / 10
-  } else {
-    form.value.bmi = ''
+  if (store.height && store.weight) {
+    const h = store.height
+    const w = store.weight
+    const calcBmi = w / (h * h)
+    store.height = h
+    store.weight = w
   }
 }
 
-function updateBmiValidation() {
-  if (form.value.height && form.value.weight) {
-    return true
-  }
-  ElMessage.warning('请输入身高和体重')
-  return false
-}
-
-const riskLevelClass = computed(() => {
-  if (probability.value < 30) return 'low-risk'
-  if (probability.value < 60) return 'medium-risk'
-  return 'high-risk'
-})
-
-// 按绝对值排序特征重要性
-const sortedFeatureImportance = computed(() => {
-  if (!featureImportance.value || featureImportance.value.length === 0) return []
-  return [...featureImportance.value]
-})
-
-function submitCheck() {
-  // 验证表单
-  if (form.value.age === '' || form.value.height === '' || form.value.weight === '' || form.value.glucose === '' || form.value.insulin === '' || form.value.bloodPressure === '') {
+async function submitCheck() {
+  if (!store.age || !store.height || !store.weight || !store.glucose || !store.insulin || !store.bloodPressure) {
     ElMessage.warning('请填写完整的评估信息')
     return
   }
-
-  if (!updateBmiValidation()) {
+  if (!store.height || !store.weight) {
+    ElMessage.warning('请输入身高和体重')
     return
   }
 
-  // 确保 BMI 已计算
-  if (!form.value.bmi) {
-    calculateBmi()
+  if (familyHistoryType.value === 'simple') {
+    store.diabetesPedigreeFunction = familyHistorySimple.value === '有' ? 0.8 : 0.2
   }
 
-  const loadingInstance = ElLoading.service({
-    lock: true,
-    text: '正在分析数据，请稍候...',
-    background: 'rgba(0, 0, 0, 0.7)'
-  })
-
-  // 准备请求数据
-  const requestData = {
-    pregnancies: form.value.gender === '女' ? (form.value.age > 30 ? 2 : 1) : 0,
-    glucose: form.value.glucose,
-    bloodPressure: form.value.bloodPressure,
-    skinThickness: 20,
-    insulin: form.value.insulin,
-    bmi: form.value.bmi,
-    diabetesPedigreeFunction: 0.5,
-    age: form.value.age
-  }
-
-  // 调用后端预测接口
-  request.post('/api/predict/single', requestData)
-  .then(res => {
-    loadingInstance.close()
-    console.log('后端返回数据:', res)
-    if (res.code === '200' && res.data && res.data.probability !== undefined) {
-      ElMessage.success('预测成功！')
-      probability.value = res.data.probability
-      confidenceInterval.value = res.data.confidence_interval || [0, 0]
-      featureImportance.value = res.data.feature_importance || []
-      featureNames.value = res.data.feature_names || []
-      percentiles.value = res.data.percentiles || {}
-      similarCases.value = res.data.similar_cases || null
-      chartsData.value = res.data.charts || null
-      if (res.data.risk_level === 'high') {
-        riskLevelText.value = '高风险'
-        healthAdvice.value = '您的糖尿病风险较高，建议尽快就医，进行专业检查和治疗。建议立即咨询医生，进行详细的血糖检测和相关检查，制定个性化的预防和治疗方案。'
-      } else if (res.data.risk_level === 'medium') {
-        riskLevelText.value = '中风险'
-        healthAdvice.value = '您的糖尿病风险中等，建议控制饮食，增加运动，定期监测血糖。建议每半年进行一次血糖检测，减少高糖、高脂肪食物摄入，每周至少进行150分钟中等强度运动。'
-      } else {
-        riskLevelText.value = '低风险'
-        healthAdvice.value = '您的糖尿病风险较低，请继续保持健康的生活方式，定期体检。建议每年进行一次血糖检测，保持均衡饮食和适量运动。'
-      }
-    } else {
-      ElMessage.warning('后端返回格式异常，使用本地预测')
-      // 后端返回格式不符合预期，使用本地计算
-      calculateLocalPrediction()
-    }
-    resultDialogVisible.value = true
-  })
-  .catch(error => {
-    loadingInstance.close()
-    console.error('预测失败，使用本地计算:', error)
-    ElMessage.error('预测接口调用失败，使用本地预测')
-    // 使用本地模拟计算
-    calculateLocalPrediction()
-    resultDialogVisible.value = true
-  })
-}
-
-function calculateLocalPrediction() {
-  // 模拟评估结果，根据输入值计算更合理的概率
-  let baseProbability = 10
-  
-  // 年龄因素
-  if (form.value.age > 60) baseProbability += 20
-  else if (form.value.age > 45) baseProbability += 10
-  
-  // BMI因素
-  if (form.value.bmi > 30) baseProbability += 25
-  else if (form.value.bmi > 24) baseProbability += 15
-  
-  // 血糖因素
-  if (form.value.glucose > 120) baseProbability += 30
-  else if (form.value.glucose > 100) baseProbability += 15
-  
-  // 家族史因素
-  if (form.value.familyHistory === '有') baseProbability += 20
-  
-  // 运动频率因素
-  if (form.value.exerciseFrequency === '0') baseProbability += 15
-  else if (form.value.exerciseFrequency === '1') baseProbability += 5
-  
-  // 饮食习惯因素
-  if (form.value.dietHabit === '2') baseProbability += 15
-  
-  // 吸烟因素
-  if (form.value.smoking === '经常吸烟') baseProbability += 10
-  
-  // 饮酒因素
-  if (form.value.drinking === '经常饮酒') baseProbability += 8
-  
-  // 确保概率在合理范围内
-  probability.value = Math.min(Math.max(baseProbability, 5), 95)
-  
-  if (probability.value < 30) {
-    riskLevelText.value = '低风险'
-    healthAdvice.value = '您的糖尿病风险较低，请继续保持健康的生活方式，定期体检。建议每年进行一次血糖检测，保持均衡饮食和适量运动。'
-  } else if (probability.value < 60) {
-    riskLevelText.value = '中风险'
-    healthAdvice.value = '您的糖尿病风险中等，建议控制饮食，增加运动，定期监测血糖。建议每半年进行一次血糖检测，减少高糖、高脂肪食物摄入，每周至少进行150分钟中等强度运动。'
+  const features = store.toFeatures()
+  const result = await runPrediction(features)
+  if (result.success) {
+    store.setPredictionResult(result.data)
   } else {
-    riskLevelText.value = '高风险'
-    healthAdvice.value = '您的糖尿病风险较高，建议尽快就医，进行专业检查和治疗。建议立即咨询医生，进行详细的血糖检测和相关检查，制定个性化的预防和治疗方案。'
+    store.setPredictionResult(result.data)
+    ElMessage.warning(result.message)
   }
+  showResult()
+  saveSelfCheckToRecord()
 }
 
-function resetForm() {
-  form.value = {
-    age: 20,
-    gender: '女',
-    height: 1.7,
-    weight: 60,
-    bmi: '',
-    glucose: 90,
-    insulin: 50,
-    bloodPressure: 120,
-    familyHistory: '无',
-    exerciseFrequency: '0',
-    dietHabit: '1',
-    smoking: '不吸烟',
-    drinking: '不饮酒'
+async function saveSelfCheckToRecord() {
+  try {
+    const glucoseValue = store.glucose ? (store.glucose / 18).toFixed(1) : null
+    const riskText = store.riskLevel === 'high' ? '高风险' : store.riskLevel === 'medium' ? '中风险' : '低风险'
+    const payload = {
+      recordType: 'self_check',
+      recordDate: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      chiefComplaint: '风险快检自查',
+      diagnosis: `风险等级: ${riskText}，患病概率: ${store.riskProbability}%`,
+      treatmentPlan: healthAdvice.value || `${riskText}，建议定期监测并咨询医生`,
+      glucoseFasting: glucoseValue ? Number(glucoseValue) : null,
+      bloodPressureSystolic: store.bloodPressure || null,
+      bloodPressureDiastolic: null,
+      bmi: store.bmi || null,
+      weight: store.weight || null
+    }
+    await request.post('/api/patient-visit', payload)
+  } catch (e) {
+    console.error('自动保存自查记录失败', e)
   }
-  resultDialogVisible.value = false
-}
-
-function getExerciseText(value) {
-  const map = {
-    '0': '每周少于1次',
-    '1': '每周1-2次',
-    '2': '每周3-4次',
-    '3': '每周5次以上'
-  }
-  return map[value] || value
-}
-
-function getDietText(value) {
-  const map = {
-    '0': '清淡饮食',
-    '1': '适中',
-    '2': '偏咸偏油'
-  }
-  return map[value] || value
 }
 
 function getFeatureLabel(featureName) {
   const map = {
-    'Pregnancies': '怀孕次数',
-    'Glucose': '血糖浓度',
-    'BloodPressure': '血压',
-    'SkinThickness': '皮脂厚度',
-    'Insulin': '胰岛素水平',
-    'BMI': 'BMI指数',
-    'DiabetesPedigreeFunction': '糖尿病遗传系数',
-    'Age': '年龄'
+    Pregnancies: '怀孕次数', Glucose: '血糖浓度', BloodPressure: '血压',
+    SkinThickness: '皮脂厚度', Insulin: '胰岛素水平', BMI: 'BMI指数',
+    DiabetesPedigreeFunction: '糖尿病遗传系数', Age: '年龄'
   }
   return map[featureName] || featureName
 }
@@ -586,137 +465,69 @@ function getPercentileDesc(value) {
   return '偏高'
 }
 
+function getExerciseText(value) {
+  const map = { '0': '每周少于1次', '1': '每周1-2次', '2': '每周3-4次', '3': '每周5次以上' }
+  return map[value] || value
+}
+
+function getDietText(value) {
+  const map = { '0': '清淡饮食', '1': '适中', '2': '偏咸偏油' }
+  return map[value] || value
+}
+
+function toggleDataDetails() {
+  showDataDetails.value = !showDataDetails.value
+}
+
+function togglePercentileRanking() {
+  showPercentileRanking.value = !showPercentileRanking.value
+}
+
+function resetForm() {
+  store.resetAll()
+  resultDialogVisible.value = false
+}
+
 function downloadReport() {
-  const percentileText = Object.keys(percentiles.value).length > 0
-    ? `<h3>指标百分位排名</h3><ul>` +
-      Object.entries(percentiles.value)
-        .map(([key, value]) => `<li>${getFeatureLabel(key)}: ${value}% (${getPercentileDesc(value)})</li>`)
-        .join('') + '</ul>'
-    : ''
-
-  const similarCasesText = similarCases.value
-    ? `<h3>相似病例分析</h3><ul>
-      <li>相似病例数: ${similarCases.value.count}</li>
-      <li>平均患病概率: ${similarCases.value.avg_probability}%</li>
-      <li>概率范围: ${similarCases.value.min_probability}% - ${similarCases.value.max_probability}%</li>
-      <li>标准差: ${similarCases.value.std_probability}%</li>
-    </ul>`
-    : ''
-
-  const featureImportanceText = featureImportance.value.length > 0
-    ? `<h3>特征重要性 (SHAP)</h3><ul>` +
-      featureNames.value
-        .map((name, i) => `<li>${getFeatureLabel(name)}: ${(featureImportance.value[i] * 100).toFixed(2)}%</li>`)
-        .join('') + '</ul>'
-    : ''
-
-  const chartsHtml = chartsData.value
-    ? `<div class="charts-section">
-        <h3>可视化分析</h3>
-        <div class="charts-grid-full">
-          ${chartsData.value.dashboard_chart ? `<div class="chart-item-full"><h5>风险仪表盘</h5><img src="data:image/png;base64,${chartsData.value.dashboard_chart}" /></div>` : ''}
-          ${chartsData.value.radar_chart ? `<div class="chart-item-full"><h5>健康雷达图</h5><img src="data:image/png;base64,${chartsData.value.radar_chart}" /></div>` : ''}
-          ${chartsData.value.comparison_chart ? `<div class="chart-item-full"><h5>指标对比</h5><img src="data:image/png;base64,${chartsData.value.comparison_chart}" /></div>` : ''}
-          ${chartsData.value.scorecard_chart ? `<div class="chart-item-full"><h5>健康评分</h5><img src="data:image/png;base64,${chartsData.value.scorecard_chart}" /></div>` : ''}
-          ${chartsData.value.heatmap_chart ? `<div class="chart-item-full"><h5>风险热力图</h5><img src="data:image/png;base64,${chartsData.value.heatmap_chart}" /></div>` : ''}
-          ${chartsData.value.waterfall_chart ? `<div class="chart-item-full"><h5>因素贡献</h5><img src="data:image/png;base64,${chartsData.value.waterfall_chart}" /></div>` : ''}
-          ${chartsData.value.confidence_chart ? `<div class="chart-item-full"><h5>置信区间</h5><img src="data:image/png;base64,${chartsData.value.confidence_chart}" /></div>` : ''}
-          ${chartsData.value.pie_chart ? `<div class="chart-item-full"><h5>风险分布</h5><img src="data:image/png;base64,${chartsData.value.pie_chart}" /></div>` : ''}
-          ${chartsData.value.importance_chart ? `<div class="chart-item-full"><h5>特征重要性</h5><img src="data:image/png;base64,${chartsData.value.importance_chart}" /></div>` : ''}
-        </div>
-      </div>`
-    : ''
-
   const htmlContent = `
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <title>糖尿病风险评估报告</title>
-  <style>
-    body { font-family: 'Microsoft YaHei', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-    h1 { color: #4080FF; text-align: center; border-bottom: 3px solid #4080FF; padding-bottom: 10px; }
-    h2 { color: #333; margin-top: 30px; }
-    h3 { color: #666; margin-top: 20px; }
-    .header { background: linear-gradient(135deg, #f5f7fa, #c3cfe2); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-    .risk-level { font-size: 24px; font-weight: bold; color: ${riskLevelText.value === '高风险' ? '#f56c6c' : riskLevelText.value === '中风险' ? '#e6a23c' : '#67c23a'}; }
-    .probability { font-size: 36px; color: #4080FF; font-weight: bold; }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .info-item { background: #f8f9fa; padding: 10px; border-radius: 5px; }
-    .info-label { font-weight: bold; color: #666; }
-    .charts-section { margin: 20px 0; }
-    .charts-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-    .charts-grid-full { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-    .chart-item { flex: 1; min-width: 200px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .chart-item img { width: 100%; height: auto; }
-    .chart-item h5 { margin: 0 0 10px 0; text-align: center; color: #666; }
-    .chart-item-full { background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .chart-item-full img { width: 100%; height: 180px; object-fit: contain; display: block; }
-    .chart-item-full h5 { margin: 8px 0 0 0; text-align: center; color: #6B7280; font-size: 13px; font-weight: 500; }
-    ul { list-style-type: none; padding-left: 0; }
-    li { padding: 5px 0; border-bottom: 1px solid #eee; }
-    .advice { background: #ecf5ff; padding: 15px; border-radius: 8px; border-left: 4px solid #4080FF; margin: 20px 0; }
-    .tips { background: #f0f9eb; padding: 15px; border-radius: 8px; border-left: 4px solid #67c23a; }
-    .tips ul { padding-left: 20px; }
-    .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #999; text-align: center; }
-    @media print { body { padding: 0; } .no-print { display: none; } }
-  </style>
+<head><meta charset="UTF-8"><title>糖尿病风险评估报告</title>
+<style>
+  body { font-family: 'Microsoft YaHei', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+  h1 { color: #4080FF; text-align: center; border-bottom: 3px solid #4080FF; padding-bottom: 10px; }
+  .header { background: linear-gradient(135deg, #f5f7fa, #c3cfe2); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+  .risk-level { font-size: 24px; font-weight: bold; }
+  .probability { font-size: 36px; color: #4080FF; font-weight: bold; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .info-item { background: #f8f9fa; padding: 10px; border-radius: 5px; }
+  .advice { background: #ecf5ff; padding: 15px; border-radius: 8px; border-left: 4px solid #4080FF; margin: 20px 0; }
+  .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #999; text-align: center; }
+</style>
 </head>
 <body>
   <div class="header">
     <h1>🩺 糖尿病风险评估报告</h1>
     <p style="text-align:center; color:#666;">评估时间: ${new Date().toLocaleString()}</p>
     <div style="text-align:center; margin: 20px 0;">
-      <div class="risk-level">${riskLevelText.value}</div>
-      <div class="probability">${probability.value}%</div>
-      ${confidenceInterval.value[0] > 0 ? `<p style="color:#666;">置信区间: ${confidenceInterval.value[0]}% - ${confidenceInterval.value[1]}%</p>` : ''}
+      <div class="risk-level" style="color:${store.riskLevel === 'high' ? '#f56c6c' : store.riskLevel === 'medium' ? '#e6a23c' : '#67c23a'}">${riskLevelText.value}</div>
+      <div class="probability">${store.riskProbability}%</div>
     </div>
   </div>
-
   <h2>📋 数据详情</h2>
   <div class="info-grid">
-    <div class="info-item"><span class="info-label">年龄:</span> ${form.value.age}岁</div>
-    <div class="info-item"><span class="info-label">性别:</span> ${form.value.gender}</div>
-    <div class="info-item"><span class="info-label">身高:</span> ${form.value.height} m</div>
-    <div class="info-item"><span class="info-label">体重:</span> ${form.value.weight} kg</div>
-    <div class="info-item"><span class="info-label">BMI:</span> ${form.value.bmi}</div>
-    <div class="info-item"><span class="info-label">空腹血糖:</span> ${form.value.glucose} mg/dL</div>
-    <div class="info-item"><span class="info-label">胰岛素水平:</span> ${form.value.insulin} uIU/mL</div>
-    <div class="info-item"><span class="info-label">血压:</span> ${form.value.bloodPressure} mmHg</div>
-    <div class="info-item"><span class="info-label">家族史:</span> ${form.value.familyHistory}</div>
-    <div class="info-item"><span class="info-label">运动频率:</span> ${getExerciseText(form.value.exerciseFrequency)}</div>
-    <div class="info-item"><span class="info-label">饮食习惯:</span> ${getDietText(form.value.dietHabit)}</div>
-    <div class="info-item"><span class="info-label">吸烟情况:</span> ${form.value.smoking}</div>
+    <div class="info-item"><span class="info-label">年龄:</span> ${store.age}岁</div>
+    <div class="info-item"><span class="info-label">BMI:</span> ${store.bmi}</div>
+    <div class="info-item"><span class="info-label">空腹血糖:</span> ${store.glucose} mg/dL</div>
+    <div class="info-item"><span class="info-label">血压:</span> ${store.bloodPressure} mmHg</div>
   </div>
-
-  ${percentileText}
-  ${similarCasesText}
-  ${featureImportanceText}
-  ${chartsHtml}
-
   <h2>💡 健康建议</h2>
   <div class="advice">${healthAdvice.value}</div>
-
-  <h2>🛡️ 预防措施</h2>
-  <div class="tips">
-    <ul>
-      <li>保持健康饮食，控制碳水化合物摄入</li>
-      <li>定期进行有氧运动，每周至少150分钟</li>
-      <li>保持健康体重，BMI控制在18.5-24之间</li>
-      <li>定期监测血糖，特别是有家族史的人群</li>
-      <li>戒烟限酒，减少心血管疾病风险</li>
-      <li>保持良好的作息习惯，避免熬夜</li>
-    </ul>
-  </div>
-
   <div class="footer">
-    <p>备注: 本评估结果仅供参考，不能替代专业医疗诊断。</p>
+    <p>本评估结果仅供参考，不能替代专业医疗诊断。</p>
     <p>生成时间: ${new Date().toLocaleString()}</p>
   </div>
-</body>
-</html>
-  `
-
+</body></html>`
   const blob = new Blob([htmlContent], { type: 'text/html' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -724,8 +535,7 @@ function downloadReport() {
   a.download = `糖尿病风险评估报告_${new Date().toISOString().split('T')[0]}.html`
   a.click()
   URL.revokeObjectURL(url)
-
-  ElMessage.success('报告下载成功！可使用浏览器打印功能保存为PDF')
+  ElMessage.success('报告下载成功！')
 }
 </script>
 
@@ -813,11 +623,23 @@ function downloadReport() {
 }
 
 .result-header {
-  padding: 20px 24px;
+  padding: 24px 28px;
   border-radius: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+
+.result-header::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -30%;
+  width: 160%;
+  height: 160%;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%);
+  animation: glow-pulse 3s infinite alternate;
 }
 
 .result-header::before {
@@ -1371,11 +1193,49 @@ function downloadReport() {
 </style>
 
 <style>
+.el-dialog__wrapper {
+  backdrop-filter: blur(4px);
+  background: rgba(0,0,0,0.5) !important;
+}
+
+.echarts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.echart-item {
+  background: #F8FAFC;
+  border-radius: 14px;
+  border: 1px solid rgba(64, 128, 255, 0.1);
+  padding: 14px;
+  transition: box-shadow 0.3s;
+}
+
+.echart-item:hover {
+  box-shadow: 0 4px 16px rgba(64, 128, 255, 0.1);
+}
+
+.chart-title {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.echart-box {
+  width: 100%;
+  height: 200px;
+}
+
 .result-dialog {
   border-radius: 20px !important;
   backdrop-filter: blur(20px);
-  background: rgba(255,255,255,0.92) !important;
-  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+  background: rgba(255,255,255,0.96) !important;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25) !important;
   animation: dialog-fade-in 0.3s ease;
 }
 
@@ -1384,19 +1244,79 @@ function downloadReport() {
   to { opacity: 1; transform: scale(1); }
 }
 
-.dialog-footer .el-button {
-  border-radius: 8px;
-  padding: 10px 24px;
-  transition: all 0.25s;
+.result-dialog .el-dialog__header {
+  border-bottom: 1px solid rgba(64, 128, 255, 0.08);
+  padding: 18px 24px;
 }
 
-.dialog-footer .el-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+.result-dialog .el-dialog__body {
+  padding: 20px 24px;
 }
 
-.el-dialog__wrapper {
-  backdrop-filter: blur(4px);
-  background: rgba(0,0,0,0.5) !important;
+.family-history-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.family-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #E6A23C;
+}
+
+.family-hint .el-icon {
+  font-size: 14px;
+}
+
+.family-history-wrapper {
+  width: 100%;
+}
+
+.family-radio-row {
+  margin-bottom: 8px;
+}
+
+.family-radio-row .el-radio-group .el-radio {
+  margin-right: 16px;
+}
+
+.family-simple-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.family-precision-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #E6A23C;
+}
+
+.family-precision-warning .el-icon {
+  font-size: 14px;
+}
+
+.family-precise-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.family-dpf-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.family-dpf-value {
+  font-size: 12px;
+  color: #909399;
 }
 </style>

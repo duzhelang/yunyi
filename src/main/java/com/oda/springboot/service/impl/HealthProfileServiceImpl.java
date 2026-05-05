@@ -65,27 +65,21 @@ public class HealthProfileServiceImpl {
     }
 
     /**
-     * 生成 CSV 文件并更新数据库状态
+     * 生成 CSV 文件并更新数据库状态（增强版，含预测结果）
      */
     public String generateCsvForDiagnostician(Long profileId) throws Exception {
         HealthProfile profile = healthProfileMapper.selectById(profileId);
         if (profile == null) throw new RuntimeException("档案不存在");
 
-        // 确保目录存在
         File dir = new File(CSV_DIR);
         if (!dir.exists()) dir.mkdirs();
 
-        // 生成文件名
         String csvFileName = "patient_" + profileId + "_" + System.currentTimeMillis() + ".csv";
         String csvFullPath = CSV_DIR + "\\" + csvFileName;
 
-        // 写入 CSV 内容
         try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(csvFullPath), StandardCharsets.UTF_8))) {
-            // 表头 (方便医生用Excel 查看)
-            writer.println("ID,Pregnancies,Glucose,BloodPressure,SkinThickness,Insulin,BMI,DiabetesPedigreeFunction,Age,Symptoms,CreateTime");
-
-            // 数据行
-            writer.printf("%d,%d,%f,%d,%d,%f,%f,%f,%d,\"%s\",%s%n",
+            writer.println("ID,Pregnancies,Glucose,BloodPressure,SkinThickness,Insulin,BMI,DiabetesPedigreeFunction,Age,Symptoms,CreateTime,RiskLevel,RiskProbability");
+            writer.printf("%d,%d,%f,%d,%d,%f,%f,%f,%d,\"%s\",%s,%s,%f%n",
                     profile.getId(),
                     profile.getPregnancies() != null ? profile.getPregnancies() : 0,
                     profile.getGlucose() != null ? profile.getGlucose() : 0.0,
@@ -95,16 +89,16 @@ public class HealthProfileServiceImpl {
                     profile.getBMI() != null ? profile.getBMI() : 0.0,
                     profile.getDiabetesPedigreeFunction() != null ? profile.getDiabetesPedigreeFunction() : 0.0,
                     profile.getAge() != null ? profile.getAge() : 0,
-                    (profile.getSymptoms() != null ? profile.getSymptoms().replace("\"", "\"\"") : ""), // 转义双引号
-                    profile.getCreateTime()
+                    (profile.getSymptoms() != null ? profile.getSymptoms().replace("\"", "\"\"") : ""),
+                    profile.getCreateTime(),
+                    profile.getRiskLevel() != null ? profile.getRiskLevel() : "",
+                    profile.getRiskProbability() != null ? profile.getRiskProbability() : 0.0
             );
         }
 
-        // 更新数据库
         profile.setCsvFilePath(csvFullPath);
-        profile.setStatus("PENDING"); // 确保状态是待诊断
+        profile.setStatus("PENDING");
         healthProfileMapper.updateById(profile);
-
         return csvFileName;
     }
 
@@ -135,7 +129,8 @@ public class HealthProfileServiceImpl {
      */
     public List<HealthProfile> getListByUserId(Long userId) {
         QueryWrapper<HealthProfile> wrapper = new QueryWrapper<>();
-        wrapper.eq("user_id", userId).orderByDesc("create_time");
+        wrapper.select(HealthProfile.class, i -> !i.getProperty().equals("predictionJson"));
+        wrapper.eq("user_id", userId).orderByDesc("create_time").last("LIMIT 100");
         return healthProfileMapper.selectList(wrapper);
     }
 
@@ -153,5 +148,82 @@ public class HealthProfileServiceImpl {
      */
     public HealthProfile getById(Long id) {
         return healthProfileMapper.selectById(id);
+    }
+
+    /**
+     * 更新预测结果到健康档案
+     */
+    public void updatePrediction(Long profileId, String riskLevel, Double riskProbability, String predictionJson) {
+        HealthProfile profile = healthProfileMapper.selectById(profileId);
+        if (profile == null) throw new RuntimeException("档案不存在");
+        profile.setRiskLevel(riskLevel);
+        profile.setRiskProbability(riskProbability);
+        profile.setPredictionJson(predictionJson);
+        healthProfileMapper.updateById(profile);
+    }
+
+    /**
+     * 更新AI健康建议
+     */
+    public void updateAiAdvice(Long profileId, String advice) {
+        HealthProfile profile = healthProfileMapper.selectById(profileId);
+        if (profile == null) throw new RuntimeException("档案不存在");
+        profile.setAiAdvice(advice);
+        healthProfileMapper.updateById(profile);
+    }
+
+    /**
+     * 根据ID删除健康档案
+     */
+    public void deleteById(Long id) {
+        healthProfileMapper.deleteById(id);
+    }
+
+    /**
+     * 保存完整健康档案（含生活方式字段）
+     */
+    public Long saveProfileFull(Integer pregnancies, Double glucose, Integer bloodPressure,
+                                Integer skinThickness, Double insulin, Double bmi,
+                                Double diabetesPedigreeFunction, Integer age,
+                                String symptoms, MultipartFile file,
+                                Double height, Double weight,
+                                String exerciseFrequency, String dietHabit,
+                                String smoking, String drinking, String gender) throws IOException {
+
+        HealthProfile profile = new HealthProfile();
+        profile.setPregnancies(pregnancies);
+        profile.setGlucose(glucose);
+        profile.setBloodPressure(bloodPressure);
+        profile.setSkinThickness(skinThickness);
+        profile.setInsulin(insulin);
+        profile.setBMI(bmi);
+        profile.setDiabetesPedigreeFunction(diabetesPedigreeFunction);
+        profile.setAge(age);
+        profile.setSymptoms(symptoms);
+
+        profile.setHeight(height);
+        profile.setWeight(weight);
+        profile.setExerciseFrequency(exerciseFrequency);
+        profile.setDietHabit(dietHabit);
+        profile.setSmoking(smoking);
+        profile.setDrinking(drinking);
+        profile.setGender(gender);
+
+        profile.setUserId(1L); // TODO: 替换为当前登录用户ID
+        profile.setStatus("PENDING");
+        profile.setCreateTime(LocalDateTime.now());
+
+        if (file != null && !file.isEmpty()) {
+            File dir = new File(UPLOAD_DIR);
+            if (!dir.exists()) dir.mkdirs();
+            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            fileName = fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
+            File dest = new File(UPLOAD_DIR + "\\" + fileName);
+            file.transferTo(dest);
+            profile.setFileUrl(fileName);
+        }
+
+        healthProfileMapper.insert(profile);
+        return profile.getId();
     }
 }

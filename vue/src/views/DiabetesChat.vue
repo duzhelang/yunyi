@@ -178,6 +178,9 @@
                 </div>
               </div>
             </div>
+            <button v-if="healthPlan" @click="savePlanToRecord" class="feature-btn feature-btn-outline-green" style="margin-top: 12px;">
+              💾 保存到诊疗档案
+            </button>
           </div>
         </div>
 
@@ -770,6 +773,7 @@ export default {
         if (fromSidebar) this.isRecipeLoading = false
         else this.isLoading = false
       }
+      this.$nextTick(() => this.saveRecipeToRecord())
     },
     parseRecipeText(text) {
       const result = { meals: [] }
@@ -955,6 +959,57 @@ export default {
     },
     resumeMarquee() {
       this.marqueePaused = false;
+    },
+    async savePlanToRecord() {
+      if (!this.healthPlan || this.healthPlan.length === 0) {
+        ElMessage.warning('暂无健康计划可保存')
+        return
+      }
+      try {
+        const planText = this.healthPlan.map((day, i) =>
+          `第${i + 1}天:\n  饮食: ${day.diet}\n  运动: ${day.exercise}\n  注意: ${day.notes}`
+        ).join('\n\n')
+        const summary = `基于风险等级(${this.riskLevel === 'high' ? '高' : this.riskLevel === 'medium' ? '中' : '低'})生成的${this.healthPlan.length}天健康计划`
+        const payload = {
+          recordType: 'ai_plan',
+          recordDate: new Date().toISOString().replace('T', ' ').substring(0, 19),
+          diagnosis: summary,
+          treatmentPlan: planText
+        }
+        const res = await request.post('/api/patient-visit', payload)
+        if (res && res.code === '200') {
+          ElMessage.success('已保存到诊疗档案')
+        } else {
+          ElMessage.error(res?.msg || '保存失败')
+        }
+      } catch (e) {
+        console.error('保存计划失败', e)
+        ElMessage.error('保存失败')
+      }
+    },
+    formatRecipeForSave(recipe) {
+      if (!recipe || !recipe.meals) return ''
+      return recipe.meals.map(meal => {
+        const foods = meal.foods.map(f => `${f.name} ${f.portion} ${f.cal}`).join(' · ')
+        return `${meal.icon} ${meal.label}\n  ${foods}\n  📊 ${meal.gi} · 🔥 ${meal.totalCal}`
+      }).join('\n\n')
+    },
+    async saveRecipeToRecord() {
+      if (!this.recipeData || !this.recipeData.meals) return
+      try {
+        const recipeText = this.formatRecipeForSave(this.recipeData)
+        const mealCount = this.recipeData.meals.length
+        const prefs = this.selectedDietPrefs.length > 0 ? this.selectedDietPrefs.join('、') : '低GI、高纤维'
+        const payload = {
+          recordType: 'ai_plan',
+          recordDate: new Date().toISOString().replace('T', ' ').substring(0, 19),
+          diagnosis: `控糖食谱 - ${mealCount}餐${this.tastePref}饮食方案（${prefs}）`,
+          treatmentPlan: recipeText
+        }
+        await request.post('/api/patient-visit', payload)
+      } catch (e) {
+        console.error('自动保存食谱失败', e)
+      }
     }
   },
   beforeDestroy() {
@@ -2021,6 +2076,24 @@ export default {
 
 .feature-btn-green:hover:not(:disabled) {
   box-shadow: 0 5px 16px rgba(16, 185, 129, 0.3);
+}
+
+.feature-btn-outline-green {
+  background: transparent;
+  border: 1.5px solid #10b981;
+  color: #059669;
+  box-shadow: none;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.feature-btn-outline-green:hover {
+  background: rgba(16, 185, 129, 0.08);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
 }
 
 .report-result {
