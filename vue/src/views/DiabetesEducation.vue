@@ -20,6 +20,7 @@
       </div>
       <div class="video-container">
         <iframe 
+          ref="bilibiliIframe"
           :src="videoList[currentVideoIndex].src" 
           scrolling="no" 
           border="0" 
@@ -41,7 +42,7 @@
     <!-- 主要内容 -->
     <div class="main-content">
       <!-- 基础认知篇 -->
-      <section id="basic" class="section">
+      <section id="basic" class="section section-basic">
         <div class="section-header">
           <h2 class="section-title">一、基础认知篇</h2>
           <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">
@@ -102,7 +103,7 @@
       </section>
 
       <!-- 症状识别篇 -->
-      <section id="symptoms" class="section">
+      <section id="symptoms" class="section section-symptoms">
         <div class="section-header">
           <h2 class="section-title">二、症状识别篇</h2>
           <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">
@@ -140,7 +141,7 @@
       </section>
 
       <!-- 饮食管理篇 -->
-      <section id="diet" class="section">
+      <section id="diet" class="section section-diet">
         <div class="section-header">
           <h2 class="section-title">三、饮食管理篇</h2>
           <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">
@@ -206,7 +207,7 @@
       </section>
 
       <!-- 运动治疗篇 -->
-      <section id="exercise" class="section">
+      <section id="exercise" class="section section-exercise">
         <div class="section-header">
           <h2 class="section-title">四、运动治疗篇</h2>
           <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">
@@ -264,7 +265,7 @@
       </section>
 
       <!-- 药物治疗篇 -->
-      <section id="medication" class="section">
+      <section id="medication" class="section section-medication">
         <div class="section-header">
           <h2 class="section-title">五、药物治疗篇</h2>
           <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">
@@ -341,7 +342,7 @@
       </section>
 
       <!-- 血糖监测篇 -->
-      <section id="monitoring" class="section">
+      <section id="monitoring" class="section section-monitoring">
         <div class="section-header">
           <h2 class="section-title">六、血糖监测篇</h2>
           <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">
@@ -398,7 +399,7 @@
       </section>
 
       <!-- 并发症防治篇 -->
-      <section id="complications" class="section">
+      <section id="complications" class="section section-complications">
         <div class="section-header">
           <h2 class="section-title">七、并发症防治篇</h2>
           <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">
@@ -453,7 +454,7 @@
       </section>
 
       <!-- 特殊人群篇 -->
-      <section id="special" class="section">
+      <section id="special" class="section section-special">
         <div class="section-header">
           <h2 class="section-title">八、特殊人群篇</h2>
           <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">
@@ -487,7 +488,7 @@
       </section>
 
       <!-- 生活方式干预篇 -->
-      <section id="lifestyle" class="section">
+      <section id="lifestyle" class="section section-lifestyle">
         <div class="section-header">
           <h2 class="section-title">九、生活方式干预篇</h2>
           <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">
@@ -519,7 +520,7 @@
       </section>
 
       <!-- 前沿进展与误区澄清 -->
-      <section id="advance" class="section">
+      <section id="advance" class="section section-advance">
         <div class="section-header">
           <h2 class="section-title">十、前沿进展与误区澄清</h2>
           <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">
@@ -576,48 +577,48 @@
       </section>
 
       <!-- 视频科普篇 -->
-      <section id="video" class="section">
-        <div class="section-header">
-          <h2 class="section-title">十一、视频科普篇</h2>
-          <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">
-            {{ editMode ? '退出编辑' : '编辑' }}
-          </el-button>
-        </div>
-        
-        <div class="section-content">
-          <!-- 封面区域(未播放时显示) -->
-          <div v-if="!isPlaying" class="video-section">
-            <div class="video-cover" @click="playFullScreen">
-              <img src="/111.jpg" alt="糖尿病科普视频封面">
-              <div class="play-icon">
-                <i class="el-icon-caret-right"></i>
-              </div>
-            </div>
-            <div class="video-info">
-              <h3 class="video-title">糖尿病科普视频</h3>
-              <p class="video-desc">本视频详细讲解糖尿病的成因、症状、预防及日常管理知识,帮助您全面了解糖尿病.</p>
-              <el-tag size="small">科普教育</el-tag>
-            </div>
-          </div>
+<!--      <section id="video" class="section section-video">-->
+<!--        <div class="section-header">-->
+<!--          <h2 class="section-title">十一、视频科普篇</h2>-->
+<!--          <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">-->
+<!--            {{ editMode ? '退出编辑' : '编辑' }}-->
+<!--          </el-button>-->
+<!--        </div>-->
 
-          <!-- 全屏视频区域(播放时显示) -->
-          <div v-else ref="videoContainer" class="fullscreen-video">
-            <video
-                ref="videoPlayer"
-                src="/1111.mp4"
-                controls
-                @ended="onVideoEnded"
-            ></video>
-            <!-- 退出按钮 -->
-            <div class="exit-btn" @click="exitVideo">
-              <i class="el-icon-close"></i>
-            </div>
-          </div>
-        </div>
-      </section>
+<!--        <div class="section-content">-->
+<!--          &lt;!&ndash; 封面区域(未播放时显示) &ndash;&gt;-->
+<!--          <div v-if="!isPlaying" class="video-section">-->
+<!--            <div class="video-cover" @click="playFullScreen">-->
+<!--              <img src="/111.jpg" alt="糖尿病科普视频封面">-->
+<!--              <div class="play-icon">-->
+<!--                <i class="el-icon-caret-right"></i>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--            <div class="video-info">-->
+<!--              <h3 class="video-title">糖尿病科普视频</h3>-->
+<!--              <p class="video-desc">本视频详细讲解糖尿病的成因、症状、预防及日常管理知识,帮助您全面了解糖尿病.</p>-->
+<!--              <el-tag size="small">科普教育</el-tag>-->
+<!--            </div>-->
+<!--          </div>-->
+
+<!--          &lt;!&ndash; 全屏视频区域(播放时显示) &ndash;&gt;-->
+<!--          <div v-else ref="videoContainer" class="fullscreen-video">-->
+<!--            <video-->
+<!--                ref="videoPlayer"-->
+<!--                src="/1111.mp4"-->
+<!--                controls-->
+<!--                @ended="onVideoEnded"-->
+<!--            ></video>-->
+<!--            &lt;!&ndash; 退出按钮 &ndash;&gt;-->
+<!--            <div class="exit-btn" @click="exitVideo">-->
+<!--              <i class="el-icon-close"></i>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--      </section>-->
 
       <!-- 核心建议总结 -->
-      <section id="summary" class="section">
+      <section id="summary" class="section section-summary">
         <div class="section-header">
           <h2 class="section-title">核心建议总结</h2>
           <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">
@@ -638,7 +639,7 @@
       </section>
 
       <!-- 留言区 -->
-      <section id="comments" class="section">
+      <section id="comments" class="section section-comments">
         <div class="section-header">
           <h2 class="section-title">留言讨论</h2>
           <el-button v-if="isAdmin" type="primary" size="small" @click="toggleEditMode" class="edit-btn">
@@ -685,211 +686,337 @@
     <!-- 返回顶部控件 -->
     <transition name="fade">
       <div v-show="showBackToTop" class="back-to-top" @click="scrollToTop">
-        <i class="el-icon-arrow-up"></i>
+        <el-icon :size="26">
+          <ArrowUp />
+        </el-icon>
       </div>
     </transition>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import request from '@/utils/request'
 import { ElMessage } from 'element-plus'
 
-export default {
-  name: 'DiabetesEducation',
-  data() {
-    return {
-      sections: [
-        { id: 'basic', title: '基础认知' },
-        { id: 'symptoms', title: '症状识别' },
-        { id: 'diet', title: '饮食管理' },
-        { id: 'exercise', title: '运动治疗' },
-        { id: 'medication', title: '药物治疗' },
-        { id: 'monitoring', title: '血糖监测' },
-        { id: 'complications', title: '并发症防治' },
-        { id: 'special', title: '特殊人群' },
-        { id: 'lifestyle', title: '生活方式' },
-        { id: 'advance', title: '前沿进展' },
-        { id: 'video', title: '视频科普' },
-        { id: 'summary', title: '核心建议' },
-        { id: 'comments', title: '留言讨论' }
-      ],
-      videoList: [
-        { 
-          title: '糖尿病基础知识',
-          src: '//player.bilibili.com/player.html?isOutside=true&aid=525373118&bvid=BV1iM411x7a3&cid=1033141128&p=1&danmaku=0&muted=0'
-        },
-        { 
-          title: '糖尿病预防与控制',
-          src: '//player.bilibili.com/player.html?isOutside=true&aid=961181150&bvid=BV1sH4y1S7wc&cid=1272479110&p=1&danmaku=0&muted=0'
-        },
-        { 
-          title: '糖尿病饮食管理',
-          src: '//player.bilibili.com/player.html?isOutside=true&aid=114566306464087&bvid=BV1ebjuzGEoQ&cid=30138435449&p=1&danmaku=0&muted=0'
-        },
-        { 
-          title: '糖尿病运动治疗',
-          src: '//player.bilibili.com/player.html?isOutside=true&aid=729648895&bvid=BV1ES4y1W7s9&cid=808685182&p=1&danmaku=0&muted=0'
-        },
-        { 
-          title: '糖尿病药物治疗',
-          src: '//player.bilibili.com/player.html?isOutside=true&aid=627196236&bvid=BV15t4y1q77H&cid=236854129&p=1&danmaku=0&muted=0'
-        },
-        { 
-          title: '血糖监测指南',
-          src: '//player.bilibili.com/player.html?isOutside=true&aid=287244587&bvid=BV1Ff4y1Q7tE&cid=236853503&p=1&danmaku=0&muted=0'
-        },
-        { 
-          title: '糖尿病并发症防治',
-          src: '//player.bilibili.com/player.html?isOutside=true&aid=113597556464857&bvid=BV1ddiDYPEFg&cid=27185578468&p=1&danmaku=0&muted=0'
-        },
-        { 
-          title: '糖尿病日常护理',
-          src: '//player.bilibili.com/player.html?isOutside=true&aid=112963746793555&bvid=BV1awexeTEnG&cid=500001649938450&p=1&danmaku=0&muted=0'
-        }
-      ],
-      currentVideoIndex: 0,
-      isPlaying: false,
-      editMode: false,
-      isAdmin: false,
-      commentContent: '',
-      comments: [],
-      showFloatingNav: false,
-      currentSection: '',
-      showBackToTop: false
+const sections = ref([
+  { id: 'basic', title: '基础认知' },
+  { id: 'symptoms', title: '症状识别' },
+  { id: 'diet', title: '饮食管理' },
+  { id: 'exercise', title: '运动治疗' },
+  { id: 'medication', title: '药物治疗' },
+  { id: 'monitoring', title: '血糖监测' },
+  { id: 'complications', title: '并发症防治' },
+  { id: 'special', title: '特殊人群' },
+  { id: 'lifestyle', title: '生活方式' },
+  { id: 'advance', title: '前沿进展' },
+  { id: 'video', title: '视频科普' },
+  { id: 'summary', title: '核心建议' },
+  { id: 'comments', title: '留言讨论' }
+])
+
+const videoList = ref([
+  { 
+    title: '糖尿病基础知识',
+    src: '//player.bilibili.com/player.html?isOutside=true&aid=525373118&bvid=BV1iM411x7a3&cid=1033141128&p=1&danmaku=0&muted=0'
+  },
+  { 
+    title: '糖尿病预防与控制',
+    src: '//player.bilibili.com/player.html?isOutside=true&aid=961181150&bvid=BV1sH4y1S7wc&cid=1272479110&p=1&danmaku=0&muted=0'
+  },
+  { 
+    title: '糖尿病饮食管理',
+    src: '//player.bilibili.com/player.html?isOutside=true&aid=114566306464087&bvid=BV1ebjuzGEoQ&cid=30138435449&p=1&danmaku=0&muted=0'
+  },
+  { 
+    title: '糖尿病运动治疗',
+    src: '//player.bilibili.com/player.html?isOutside=true&aid=729648895&bvid=BV1ES4y1W7s9&cid=808685182&p=1&danmaku=0&muted=0'
+  },
+  { 
+    title: '糖尿病药物治疗',
+    src: '//player.bilibili.com/player.html?isOutside=true&aid=627196236&bvid=BV15t4y1q77H&cid=236854129&p=1&danmaku=0&muted=0'
+  },
+  { 
+    title: '血糖监测指南',
+    src: '//player.bilibili.com/player.html?isOutside=true&aid=287244587&bvid=BV1Ff4y1Q7tE&cid=236853503&p=1&danmaku=0&muted=0'
+  },
+  { 
+    title: '糖尿病并发症防治',
+    src: '//player.bilibili.com/player.html?isOutside=true&aid=113597556464857&bvid=BV1ddiDYPEFg&cid=27185578468&p=1&danmaku=0&muted=0'
+  },
+  { 
+    title: '糖尿病日常护理',
+    src: '//player.bilibili.com/player.html?isOutside=true&aid=112963746793555&bvid=BV1awexeTEnG&cid=500001649938450&p=1&danmaku=0&muted=0'
+  }
+])
+
+const currentVideoIndex = ref(0)
+const isPlaying = ref(false)
+const editMode = ref(false)
+const isAdmin = ref(false)
+const commentContent = ref('')
+const comments = ref([])
+const showFloatingNav = ref(false)
+const currentSection = ref('')
+const showBackToTop = ref(false)
+const videoContainer = ref(null)
+const videoPlayer = ref(null)
+const bilibiliIframe = ref(null)
+
+// 音频上下文用于生成音效
+let audioContext = null
+
+// 播放滑动音效（侧边栏导航）
+const playScrollSound = () => {
+  try {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)()
     }
-  },
-  mounted() {
-    this.isAdmin = true;
-    this.loadComments();
     
-    window.addEventListener('scroll', this.handleScroll);
-    this.updateCurrentSection();
-  },
-  beforeDestroy() {
-    window.removeEventListener('scroll', this.handleScroll);
-  },
-  methods: {
-    selectVideo(index) {
-      this.currentVideoIndex = index;
-    },
-    async loadComments() {
-      try {
-        const res = await request.get('/education-comment/list');
-        if (res.code === '200' || res.code === 200) {
-          this.comments = res.data || [];
-        }
-      } catch (error) {
-        console.error('加载留言失败:', error);
-        this.comments = [];
-      }
-    },
-    scrollToTop() {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    },
-    handleScroll() {
-      const scrollY = window.scrollY;
-      this.showFloatingNav = scrollY > 600;
-      this.showBackToTop = scrollY > 500;
-      this.updateCurrentSection();
-    },
-    scrollToSection(sectionId) {
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
-    },
-    async submitComment() {
-      if (!this.commentContent.trim()) {
-        ElMessage.warning('请输入留言内容');
-        return;
-      }
-      
-      try {
-        const res = await request.post('/education-comment/add', {
-          content: this.commentContent
-        });
-        
-        if (res.code === '200' || res.code === 200) {
-          ElMessage.success('留言成功');
-          this.commentContent = '';
-          this.loadComments();
-        } else {
-          ElMessage.error(res.msg || '留言失败');
-        }
-      } catch (error) {
-        ElMessage.error('留言失败');
-        console.error(error);
-      }
-    },
-    async playFullScreen() {
-      this.isPlaying = true;
-      this.$nextTick(() => {
-        const video = this.$refs.videoPlayer;
-        const container = this.$refs.videoContainer;
+    // 创建振荡器
+    const oscillator = audioContext.createOscillator()
+    const gainNode = audioContext.createGain()
+    
+    // 连接节点
+    oscillator.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+    
+    // 设置音效参数 - 短促的滑动声
+    oscillator.type = 'sine'
+    oscillator.frequency.setValueAtTime(700, audioContext.currentTime)
+    oscillator.frequency.exponentialRampToValueAtTime(350, audioContext.currentTime + 0.12)
+    
+    // 设置音量渐变
+    gainNode.gain.setValueAtTime(0.12, audioContext.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.12)
+    
+    // 播放并在结束后清理
+    oscillator.start(audioContext.currentTime)
+    oscillator.stop(audioContext.currentTime + 0.12)
+    
+    // 确保音频上下文是激活状态
+    if (audioContext.state === 'suspended') {
+      audioContext.resume()
+    }
+  } catch (error) {
+    console.log('音效播放失败（可选功能）:', error)
+  }
+}
 
-        if (!video || !container) return;
+// 播放返回顶部音效
+const playBackToTopSound = () => {
+  try {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)()
+    }
+    
+    // 创建两个振荡器形成和声效果
+    const oscillator1 = audioContext.createOscillator()
+    const oscillator2 = audioContext.createOscillator()
+    const gainNode = audioContext.createGain()
+    
+    // 连接节点
+    oscillator1.connect(gainNode)
+    oscillator2.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+    
+    // 设置音效参数 - 上升的愉悦音效
+    oscillator1.type = 'sine'
+    oscillator2.type = 'sine'
+    oscillator1.frequency.setValueAtTime(400, audioContext.currentTime)
+    oscillator1.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.2)
+    oscillator2.frequency.setValueAtTime(600, audioContext.currentTime)
+    oscillator2.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.2)
+    
+    // 设置音量渐变
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+    
+    // 播放并在结束后清理
+    oscillator1.start(audioContext.currentTime)
+    oscillator2.start(audioContext.currentTime)
+    oscillator1.stop(audioContext.currentTime + 0.2)
+    oscillator2.stop(audioContext.currentTime + 0.2)
+    
+    // 确保音频上下文是激活状态
+    if (audioContext.state === 'suspended') {
+      audioContext.resume()
+    }
+  } catch (error) {
+    console.log('音效播放失败（可选功能）:', error)
+  }
+}
 
-        // 尝试播放
-        const playPromise = video.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            // 自动播放被阻止时,用户需手动点击播放(保留 controls 即可)
-            console.warn('自动播放被阻止,请手动点击播放按钮');
-          });
-        }
+const selectVideo = (index) => {
+  currentVideoIndex.value = index
+  // 切换视频后再次确保不静音
+  nextTick(() => {
+    setBilibiliMuted(false)
+  })
+}
 
-        // 请求全屏
-        if (container.requestFullscreen) {
-          container.requestFullscreen();
-        } else if (container.webkitRequestFullscreen) {
-          container.webkitRequestFullscreen();
-        } else if (container.mozRequestFullScreen) {
-          container.mozRequestFullScreen();
-        }
-      });
-    },
-
-    onVideoEnded() {
-      this.exitVideo();
-    },
-
-    exitVideo() {
-      this.exitFullscreen();
-      this.isPlaying = false;
-    },
-
-    exitFullscreen() {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
+// 使用 postMessage API 设置 B 站播放器静音状态
+const setBilibiliMuted = (muted) => {
+  if (!bilibiliIframe.value || !bilibiliIframe.value.contentWindow) return
+  
+  try {
+    // B 站播放器 postMessage API 消息格式
+    const message = {
+      type: 'cmd',
+      data: {
+        cmd: 'setMuted',
+        value: muted
       }
-    },
-    updateCurrentSection() {
-      const sections = this.sections;
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const section = sections[i];
-        const element = document.getElementById(section.id);
-        if (element) {
-          const rect = element.getBoundingClientRect();
-          if (rect.top <= 100) {
-            this.currentSection = section.id;
-            break;
-          }
-        }
+    }
+    bilibiliIframe.value.contentWindow.postMessage(message, 'https://player.bilibili.com')
+  } catch (error) {
+    console.error('设置 B 站播放器静音失败:', error)
+  }
+}
+
+const loadComments = async () => {
+  try {
+    const res = await request.get('/education-comment/list');
+    if (res.code === '200' || res.code === 200) {
+      comments.value = res.data || [];
+    }
+  } catch (error) {
+    console.error('加载留言失败:', error);
+    comments.value = [];
+  }
+}
+
+const scrollToTop = () => {
+  playBackToTopSound();
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  })
+}
+
+const handleScroll = () => {
+  const scrollY = window.scrollY;
+  showFloatingNav.value = scrollY > 600;
+  showBackToTop.value = scrollY > 500;
+  updateCurrentSection();
+}
+
+const scrollToSection = (sectionId) => {
+  const element = document.getElementById(sectionId);
+  if (element) {
+    playScrollSound();
+    element.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+const submitComment = async () => {
+  if (!commentContent.value.trim()) {
+    ElMessage.warning('请输入留言内容');
+    return;
+  }
+  
+  try {
+    const res = await request.post('/education-comment/add', {
+      content: commentContent.value
+    });
+    
+    if (res.code === '200' || res.code === 200) {
+      ElMessage.success('留言成功');
+      commentContent.value = '';
+      loadComments();
+    } else {
+      ElMessage.error(res.msg || '留言失败');
+    }
+  } catch (error) {
+    ElMessage.error('留言失败');
+    console.error(error);
+  }
+}
+
+const playFullScreen = async () => {
+  isPlaying.value = true;
+  await nextTick()
+  const video = videoPlayer.value;
+  const container = videoContainer.value;
+
+  if (!video || !container) return;
+
+  const playPromise = video.play();
+  if (playPromise !== undefined) {
+    playPromise.catch(() => {
+      console.warn('自动播放被阻止,请手动点击播放按钮');
+    });
+  }
+
+  if (container.requestFullscreen) {
+    container.requestFullscreen();
+  } else if (container.webkitRequestFullscreen) {
+    container.webkitRequestFullscreen();
+  } else if (container.mozRequestFullScreen) {
+    container.mozRequestFullScreen();
+  }
+}
+
+const onVideoEnded = () => {
+  exitVideo();
+}
+
+const exitVideo = () => {
+  exitFullscreen();
+  isPlaying.value = false;
+}
+
+const exitFullscreen = () => {
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+  } else if (document.webkitExitFullscreen) {
+    document.webkitExitFullscreen();
+  } else if (document.mozCancelFullScreen) {
+    document.mozCancelFullScreen();
+  }
+}
+
+const updateCurrentSection = () => {
+  const secs = sections.value;
+  for (let i = secs.length - 1; i >= 0; i--) {
+    const section = secs[i];
+    const element = document.getElementById(section.id);
+    if (element) {
+      const rect = element.getBoundingClientRect();
+      if (rect.top <= 100) {
+        currentSection.value = section.id;
+        break;
       }
-    },
-    toggleEditMode() {
-      this.editMode = !this.editMode;
     }
   }
 }
+
+const toggleEditMode = () => {
+  editMode.value = !editMode.value;
+}
+
+onMounted(() => {
+  isAdmin.value = true;
+  loadComments();
+  window.addEventListener('scroll', handleScroll);
+  updateCurrentSection();
+  
+  // 页面加载后设置 B 站播放器不静音
+  setTimeout(() => {
+    setBilibiliMuted(false);
+  }, 1000);
+  
+  // 监听 iframe 加载完成，再次设置不静音
+  if (bilibiliIframe.value) {
+    bilibiliIframe.value.onload = () => {
+      setBilibiliMuted(false);
+    };
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll);
+})
 </script>
 
 <style scoped>
@@ -944,31 +1071,58 @@ body, .diabetes-education-container {
 
 .video-selector {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: 12px;
   margin-bottom: 20px;
+  padding: 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(64, 128, 255, 0.5) transparent;
+}
+
+.video-selector::-webkit-scrollbar {
+  height: 6px;
+}
+
+.video-selector::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.video-selector::-webkit-scrollbar-thumb {
+  background: rgba(64, 128, 255, 0.4);
+  border-radius: 3px;
+}
+
+.video-selector::-webkit-scrollbar-thumb:hover {
+  background: rgba(64, 128, 255, 0.6);
 }
 
 .video-tab {
-  padding: 8px 16px;
+  padding: 8px 20px;
   border: none;
-  border-radius: 20px;
-  background: #F3F4F6;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
   color: #4B5563;
   font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .video-tab:hover {
-  background: rgba(64, 128, 255, 0.1);
-  color: #4080FF;
+  background: linear-gradient(135deg, rgba(64, 128, 255, 0.15) 0%, rgba(64, 128, 255, 0.08) 100%);
+  color: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 128, 255, 0.2);
 }
 
 .video-tab.active {
-  background: linear-gradient(135deg, #4080FF, #3366CC);
+  background: linear-gradient(135deg, #4080FF 0%, #2563EB 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(64, 128, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(64, 128, 255, 0.4);
+  transform: translateY(-1px);
 }
 
 .video-container {
@@ -995,47 +1149,64 @@ body, .diabetes-education-container {
   display: flex;
   overflow-x: auto;
   gap: 12px;
-  padding: 16px 0;
-  margin-bottom: 32px;
-  background: #FFFFFF;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   padding: 16px;
+  margin-bottom: 32px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(64, 128, 255, 0.3) transparent;
+}
+
+.navigation::-webkit-scrollbar {
+  height: 4px;
+}
+
+.navigation::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.navigation::-webkit-scrollbar-thumb {
+  background: rgba(64, 128, 255, 0.3);
+  border-radius: 2px;
 }
 
 .nav-item {
   white-space: nowrap;
-  padding: 8px 16px;
-  background: #F3F4F6;
-  border-radius: 20px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
+  border-radius: 24px;
   font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: #4B5563;
   border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .nav-item:hover {
-  background: rgba(64, 128, 255, 0.1);
-  color: #4080FF;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(64, 128, 255, 0.2);
+  background: linear-gradient(135deg, rgba(64, 128, 255, 0.18) 0%, rgba(64, 128, 255, 0.08) 100%);
+  color: #1d4ed8;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(64, 128, 255, 0.25);
 }
 
 /* 章节样式 */
 .section {
-  background: #FFFFFF;
-  padding: 24px;
-  margin: 16px 0;
-  border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-  border: none;
-  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #FFFFFF 0%, #FDFEFE 100%);
+  padding: 28px;
+  margin: 18px 0;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(64, 128, 255, 0.05);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .section:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(64, 128, 255, 0.12);
+  transform: translateY(-4px);
+  border-color: rgba(64, 128, 255, 0.15);
 }
 
 .section-title {
@@ -1238,19 +1409,27 @@ body, .diabetes-education-container {
 }
 
 .submit-btn {
-  margin-top: 10px;
-  padding: 10px 20px;
-  background: #4080FF;
+  margin-top: 12px;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #4080FF 0%, #2563EB 100%);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(64, 128, 255, 0.3);
 }
 
 .submit-btn:hover {
-  background: #3366CC;
+  background: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(64, 128, 255, 0.4);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
 }
 
 .comment-list h3 {
@@ -1267,17 +1446,20 @@ body, .diabetes-education-container {
 }
 
 .comment-item {
-  padding: 16px;
-  margin-bottom: 12px;
-  background: #F9FAFB;
-  border-radius: 8px;
-  border-left: 3px solid #E5E7EB;
-  transition: all 0.2s ease;
+  padding: 18px;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+  border-radius: 12px;
+  border-left: 4px solid #E5E7EB;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .comment-item:hover {
-  background: #F3F4F6;
+  background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
   border-left-color: #4080FF;
+  transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(64, 128, 255, 0.12);
 }
 
 .comment-header {
@@ -1306,8 +1488,9 @@ body, .diabetes-education-container {
 /* 章节头部样式 */
 .section-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 12px;
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(64, 128, 255, 0.2);
@@ -1321,17 +1504,21 @@ body, .diabetes-education-container {
 }
 
 .edit-btn {
-  background: #4080FF;
-  border-color: #4080FF;
+  background: linear-gradient(135deg, #4080FF 0%, #5A8FFF 100%);
+  border: none;
   font-size: 12px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
+  padding: 6px 14px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(64, 128, 255, 0.3);
 }
 
 .edit-btn:hover {
-  background: #3366CC;
-  border-color: #3366CC;
+  background: linear-gradient(135deg, #3366CC 0%, #4A7FEF 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(64, 128, 255, 0.4);
 }
 
 /* 右侧悬浮导航栏 - 精修版 */
@@ -1342,7 +1529,7 @@ body, .diabetes-education-container {
   bottom: 32px;
   width: 190px;
   padding: 20px 16px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(248, 250, 252, 0.15));
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-radius: 20px;
@@ -1407,17 +1594,18 @@ body, .diabetes-education-container {
 .floating-nav a {
   display: flex;
   align-items: center;
-  padding: 12px 14px;
-  color: #475569;
+  padding: 10px 12px;
+  color: #1e293b;
   text-decoration: none;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: transparent;
   border: 1px solid transparent;
   position: relative;
   overflow: hidden;
+  background: linear-gradient(180deg, rgba(193, 208, 241, 0.3), rgba(149, 167, 201, 0.4));
 }
 .floating-nav a::before {
   content: '';
@@ -1469,31 +1657,47 @@ body, .diabetes-education-container {
 /* 返回顶部按钮 */
 .back-to-top {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
-  width: 44px;
-  height: 44px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  right: 28px;
+  bottom: 28px;
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 50%;
-  box-shadow: 0 4px 16px rgba(64, 128, 255, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 28px rgba(64, 128, 255, 0.35);
+  border: 1px solid rgba(64, 128, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 1001;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   color: #4080FF;
-  font-size: 18px;
+}
+
+.back-to-top .el-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
 }
 
 .back-to-top:hover {
-  background: #4080FF;
+  background: linear-gradient(135deg, #4080FF 0%, #2563EB 100%);
   color: white;
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(64, 128, 255, 0.35);
+  transform: translateY(-4px) scale(1.08);
+  box-shadow: 0 12px 36px rgba(64, 128, 255, 0.5);
+}
+
+.back-to-top:hover .el-icon {
+  transform: translateY(-1px);
+}
+
+.back-to-top:active {
+  transform: translateY(-2px) scale(0.98);
 }
 
 /* 返回顶部按钮动画 */
@@ -1663,5 +1867,178 @@ body, .diabetes-education-container {
   background-color: rgba(229, 62, 62, 0.7);
 }
 
+/* 各篇章卡独特颜色主题 */
+.section-basic {
+  background: linear-gradient(135deg, #F0F7FF 0%, #E8F4FD 50%, #F5F8FF 100%);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-top: 3px solid #3B82F6;
+}
+
+.section-basic:hover {
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+.section-symptoms {
+  background: linear-gradient(135deg, #FFF7ED 0%, #FFFBF5 50%, #FEF3E2 100%);
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  border-top: 3px solid #F97316;
+}
+
+.section-symptoms:hover {
+  box-shadow: 0 8px 32px rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.25);
+}
+
+.section-diet {
+  background: linear-gradient(135deg, #F0FDF4 0%, #F5FFF8 50%, #ECFDF5 100%);
+  border: 1px solid rgba(34, 197, 94, 0.15);
+  border-top: 3px solid #22C55E;
+}
+
+.section-diet:hover {
+  box-shadow: 0 8px 32px rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.section-exercise {
+  background: linear-gradient(135deg, #FEF2F2 0%, #FFF5F5 50%, #FEE2E2 100%);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-top: 3px solid #EF4444;
+}
+
+.section-exercise:hover {
+  box-shadow: 0 8px 32px rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.section-medication {
+  background: linear-gradient(135deg, #FDF4FF 0%, #FBF5FF 50%, #F3E8FF 100%);
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  border-top: 3px solid #A855F7;
+}
+
+.section-medication:hover {
+  box-shadow: 0 8px 32px rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.25);
+}
+
+.section-monitoring {
+  background: linear-gradient(135deg, #FFFBEB 0%, #FFFEF5 50%, #FEF3C7 100%);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-top: 3px solid #F59E0B;
+}
+
+.section-monitoring:hover {
+  box-shadow: 0 8px 32px rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.section-complications {
+  background: linear-gradient(135deg, #F0F9FF 0%, #F5FBFF 50%, #E0F2FE 100%);
+  border: 1px solid rgba(6, 182, 212, 0.15);
+  border-top: 3px solid #06B6D4;
+}
+
+.section-complications:hover {
+  box-shadow: 0 8px 32px rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.25);
+}
+
+.section-special {
+  background: linear-gradient(135deg, #FFF1F2 0%, #FFF5F5 50%, #FFE4E6 100%);
+  border: 1px solid rgba(244, 63, 94, 0.15);
+  border-top: 3px solid #F43F5E;
+}
+
+.section-special:hover {
+  box-shadow: 0 8px 32px rgba(244, 63, 94, 0.15);
+  border-color: rgba(244, 63, 94, 0.25);
+}
+
+.section-lifestyle {
+  background: linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 50%, #D1FAE5 100%);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  border-top: 3px solid #10B981;
+}
+
+.section-lifestyle:hover {
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.section-advance {
+  background: linear-gradient(135deg, #F5F3FF 0%, #FAF9FF 50%, #EDE9FE 100%);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  border-top: 3px solid #8B5CF6;
+}
+
+.section-advance:hover {
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.25);
+}
+
+.section-video {
+  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 50%, #E2E8F0 100%);
+  border: 1px solid rgba(100, 116, 139, 0.15);
+  border-top: 3px solid #64748B;
+}
+
+.section-video:hover {
+  box-shadow: 0 8px 32px rgba(100, 116, 139, 0.15);
+  border-color: rgba(100, 116, 139, 0.25);
+}
+
+.section-summary {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FFFBEB 50%, #FDE68A 100%);
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  border-top: 3px solid #D97706;
+}
+
+.section-summary:hover {
+  box-shadow: 0 8px 32px rgba(217, 119, 6, 0.2);
+  border-color: rgba(217, 119, 6, 0.3);
+}
+
+.section-comments {
+  background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 50%, #F0F9FF 100%);
+  border: 1px solid rgba(14, 165, 233, 0.15);
+  border-top: 3px solid #0EA5E9;
+}
+
+.section-comments:hover {
+  box-shadow: 0 8px 32px rgba(14, 165, 233, 0.15);
+  border-color: rgba(14, 165, 233, 0.25);
+}
+
+/* 章节标题颜色与主题呼应 */
+.section-basic .section-title { color: #1E40AF; }
+.section-symptoms .section-title { color: #9A3412; }
+.section-diet .section-title { color: #166534; }
+.section-exercise .section-title { color: #991B1B; }
+.section-medication .section-title { color: #6B21A8; }
+.section-monitoring .section-title { color: #92400E; }
+.section-complications .section-title { color: #155E75; }
+.section-special .section-title { color: #9F1239; }
+.section-lifestyle .section-title { color: #065F46; }
+.section-advance .section-title { color: #5B21B6; }
+.section-video .section-title { color: #334155; }
+.section-summary .section-title { color: #92400E; }
+.section-comments .section-title { color: #0369A1; }
+
+/* 章节头部边框与主题呼应 */
+.section-basic .section-header { border-bottom-color: rgba(59, 130, 246, 0.2); }
+.section-symptoms .section-header { border-bottom-color: rgba(249, 115, 22, 0.2); }
+.section-diet .section-header { border-bottom-color: rgba(34, 197, 94, 0.2); }
+.section-exercise .section-header { border-bottom-color: rgba(239, 68, 68, 0.2); }
+.section-medication .section-header { border-bottom-color: rgba(168, 85, 247, 0.2); }
+.section-monitoring .section-header { border-bottom-color: rgba(245, 158, 11, 0.2); }
+.section-complications .section-header { border-bottom-color: rgba(6, 182, 212, 0.2); }
+.section-special .section-header { border-bottom-color: rgba(244, 63, 94, 0.2); }
+.section-lifestyle .section-header { border-bottom-color: rgba(16, 185, 129, 0.2); }
+.section-advance .section-header { border-bottom-color: rgba(139, 92, 246, 0.2); }
+.section-video .section-header { border-bottom-color: rgba(100, 116, 139, 0.2); }
+.section-summary .section-header { border-bottom-color: rgba(217, 119, 6, 0.2); }
+.section-comments .section-header { border-bottom-color: rgba(14, 165, 233, 0.2); }
 
 </style>
