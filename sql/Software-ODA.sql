@@ -270,17 +270,20 @@ CREATE TABLE `sys_trainfile` (
   `record_count` int(11) NULL DEFAULT NULL COMMENT '记录条数',
   `column_count` int(11) NULL DEFAULT NULL COMMENT '列数',
   `last_scan_time` timestamp NULL DEFAULT NULL COMMENT '最后扫描时间',
-  `quality_level` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'normal' COMMENT '质量等级: high, normal, low',
+  `quality_level` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'cleaned' COMMENT '数据质量: raw-原始/cleaned-清洗/verified-验证',
+  `sample_count` int(11) NULL DEFAULT 0 COMMENT '样本数量（行数）',
+  `column_info` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '列信息JSON（列名、类型、缺失率）',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '训练文件表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_trainfile (预置数据)
 -- ----------------------------
-INSERT INTO `sys_trainfile` (`id`, `name`, `type`, `size`, `url`, `pythonurl`, `md5`, `is_delete`, `enable`, `user_id`, `remark`, `category`, `file_type`, `file_size`, `record_count`, `column_count`, `last_scan_time`, `quality_level`) VALUES 
-(1, 'diabetes_train_dataset.csv', 'csv', 1048576, 'data/train/diabetes_train_dataset.csv', 'python/train/diabetes_train.py', 'abc123def4567890abcdef1234567890', 0, 1, 1, '糖尿病训练数据集V1.0', 'diabetes', 'csv', 1048576, 768, 9, '2026-03-01 10:00:00', 'high'),
-(2, 'diabetes_features_extended.csv', 'csv', 2097152, 'data/train/diabetes_features_extended.csv', 'python/train/feature_extract.py', '123abc456def7890123abcdef4567890', 0, 1, 1, '扩展特征训练数据集', 'diabetes', 'csv', 2097152, 1536, 12, '2026-03-15 14:30:00', 'high'),
-(3, 'patient_history_data.csv', 'csv', 524288, 'data/train/patient_history_data.csv', 'python/train/history_analysis.py', '9876543210fedcba09876543210fedcba', 0, 1, 2, '患者历史数据', 'history', 'csv', 524288, 512, 8, '2026-03-20 09:15:00', 'normal');
+INSERT INTO `sys_trainfile` (`id`, `name`, `type`, `size`, `url`, `pythonurl`, `md5`, `is_delete`, `enable`, `user_id`, `remark`, `category`, `file_type`, `file_size`, `record_count`, `column_count`, `last_scan_time`, `quality_level`, `sample_count`, `column_info`, `update_time`) VALUES 
+(1, 'diabetes_train_dataset.csv', 'csv', 1048576, 'data/train/diabetes_train_dataset.csv', 'python/train/diabetes_train.py', 'abc123def4567890abcdef1234567890', 0, 1, 1, '糖尿病训练数据集V1.0', 'diabetes', 'csv', 1048576, 768, 9, '2026-03-01 10:00:00', 'cleaned', 768, NULL, '2026-03-01 10:00:00'),
+(2, 'diabetes_features_extended.csv', 'csv', 2097152, 'data/train/diabetes_features_extended.csv', 'python/train/feature_extract.py', '123abc456def7890123abcdef4567890', 0, 1, 1, '扩展特征训练数据集', 'diabetes', 'csv', 2097152, 1536, 12, '2026-03-15 14:30:00', 'cleaned', 10000, NULL, '2026-03-15 14:30:00'),
+(3, 'patient_history_data.csv', 'csv', 524288, 'data/train/patient_history_data.csv', 'python/train/history_analysis.py', '9876543210fedcba09876543210fedcba', 0, 1, 2, '患者历史数据', 'history', 'csv', 524288, 512, 8, '2026-03-20 09:15:00', 'cleaned', 1000, NULL, '2026-03-20 09:15:00');
 
 -- ----------------------------
 -- Table structure for sys_train_task
@@ -327,15 +330,15 @@ CREATE TABLE `sys_model_version` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '模型版本ID',
   `model_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '模型名称',
   `version` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '版本号',
-  `source` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'manual' COMMENT '来源: manual, online_train',
-  `file_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '模型文件路径',
+  `source` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'online_train' COMMENT '来源: online_train/manual_upload',
+  `file_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '.pth文件路径',
   `scaler_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '标准化器路径',
   `encoder_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '编码器路径',
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模型描述',
   `metrics` json NULL DEFAULT NULL COMMENT '模型性能指标JSON',
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'inactive' COMMENT '状态: active, inactive, archived',
-  `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'inactive' COMMENT '状态: active, inactive',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_model_name` (`model_name`) USING BTREE,
   INDEX `idx_status` (`status`) USING BTREE,
@@ -347,7 +350,7 @@ CREATE TABLE `sys_model_version` (
 -- Records of sys_model_version (预置数据)
 -- ----------------------------
 INSERT INTO `sys_model_version` (`id`, `model_name`, `version`, `source`, `file_path`, `scaler_path`, `encoder_path`, `description`, `metrics`, `status`, `create_time`) VALUES 
-(1, 'diabetes_model', 'v1.0.0', 'manual', 'data/models/pth_models/diabetes_model.pth', 'data/models/scaler/diabetes_scaler.pkl', 'data/models/encoder/diabetes_encoder.pkl', '基础糖尿病预测模型，使用逻辑回归算法', '{\"accuracy\": 0.85, \"precision\": 0.83, \"recall\": 0.87, \"f1\": 0.85}', 'inactive', '2026-02-20 10:00:00'),
+(1, 'diabetes_model', 'v1.0.0', 'online_train', 'data/models/pth_models/diabetes_model.pth', 'data/models/scaler/diabetes_scaler.pkl', 'data/models/encoder/diabetes_encoder.pkl', '基础糖尿病预测模型，使用逻辑回归算法', '{\"accuracy\": 0.85, \"precision\": 0.83, \"recall\": 0.87, \"f1\": 0.85}', 'inactive', '2026-02-20 10:00:00'),
 (2, 'diabetes_model', 'v1.1.0', 'online_train', 'data/models/pth_models/diabetes_model_v1.1.pth', 'data/models/scaler/diabetes_scaler_v1.1.pkl', 'data/models/encoder/diabetes_encoder_v1.1.pkl', '优化版糖尿病预测模型，使用随机森林算法', '{\"accuracy\": 0.875, \"precision\": 0.89, \"recall\": 0.85, \"f1\": 0.87}', 'active', '2026-03-02 10:30:00'),
 (3, 'diabetes_model', 'v2.0.0', 'online_train', 'data/models/pth_models/diabetes_model_v2.0.pth', 'data/models/scaler/diabetes_scaler_v2.0.pkl', 'data/models/encoder/diabetes_encoder_v2.0.pkl', '扩展特征版糖尿病预测模型，使用XGBoost算法', '{\"accuracy\": 0.892, \"precision\": 0.908, \"recall\": 0.875, \"f1\": 0.891}', 'inactive', '2026-03-16 16:45:00');
 
@@ -405,35 +408,6 @@ INSERT INTO `diabetes_education` (`id`, `section_id`, `section_title`, `content`
 -- ----------------------------
 INSERT INTO `education_comment` (`id`, `user_id`, `user_name`, `content`) VALUES (1, 1, '用户1', '这篇科普文章非常详细，对我帮助很大！');
 INSERT INTO `education_comment` (`id`, `user_id`, `user_name`, `content`) VALUES (2, 2, '用户2', '希望能看到更多关于糖尿病食谱的具体推荐。');
-
--- ----------------------------
--- Table structure for treatment_record
--- ----------------------------
-DROP TABLE IF EXISTS `treatment_record`;
-CREATE TABLE `treatment_record` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `patient_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '患者姓名',
-  `id_card` varchar(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '身份证号',
-  `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '联系电话',
-  `gender` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '性别',
-  `age` int(11) NULL DEFAULT NULL COMMENT '年龄',
-  `blood_sugar` decimal(10,2) NULL DEFAULT NULL COMMENT '血糖值(mmol/L)',
-  `diagnosis_result` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '诊断结果',
-  `treatment_plan` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '治疗方案',
-  `doctor_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '负责医生',
-  `remark` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
-  `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '诊疗档案表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of treatment_record (预置数据)
--- ----------------------------
-INSERT INTO `treatment_record` (`id`, `patient_name`, `id_card`, `phone`, `gender`, `age`, `blood_sugar`, `diagnosis_result`, `treatment_plan`, `doctor_name`, `remark`, `create_time`) VALUES 
-(1, '张三', '110101198801011234', '13800138001', '男', 38, 8.50, '2型糖尿病，中度', '1. 二甲双胍 500mg 每日三次；2. 饮食控制，每日热量摄入控制在1500kcal以内；3. 每周运动不少于150分钟；4. 定期监测血糖', '张医生', '患者依从性较好，建议每月复查一次', '2026-03-01 10:00:00'),
-(2, '李四', '120102199002022345', '13900139002', '女', 36, 10.20, '2型糖尿病，重度', '1. 胰岛素治疗，每日两次注射；2. 严格饮食控制；3. 每日监测血糖4次；4. 内分泌科定期随访', '王医生', '患者血糖控制不佳，需加强管理', '2026-03-05 14:30:00'),
-(3, '王五', '310103197503033456', '13700137003', '男', 51, 7.80, '2型糖尿病，轻度', '1. 饮食调整，减少碳水化合物摄入；2. 每周运动3-4次；3. 每三个月复查糖化血红蛋白', '张医生', '早期发现，控制良好', '2026-03-10 09:15:00');
 
 -- ----------------------------
 -- Table structure for diabetes_video
@@ -1280,31 +1254,72 @@ CREATE TABLE `user_health_profiles` (
   `BMI` double NULL DEFAULT NULL COMMENT 'BMI',
   `DiabetesPedigreeFunction` double NULL DEFAULT NULL COMMENT '糖尿病谱系功能',
   `Age` int(11) NULL DEFAULT NULL COMMENT '年龄',
-  `symptoms` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '症状描述',
-  `file_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '原始上传的文件名',
+  `height` double NULL DEFAULT NULL COMMENT '身高(cm)',
+  `weight` double NULL DEFAULT NULL COMMENT '体重(kg)',
+  `exercise_frequency` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '运动频率:0=少于1次/周,1=1-2次/周,2=3-4次/周,3=5次以上',
+  `diet_habit` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '饮食习惯:0=清淡,1=适中,2=偏咸偏油',
+  `smoking` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '吸烟情况:不吸烟/偶尔吸烟/经常吸烟',
+  `drinking` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '饮酒情况:不饮酒/偶尔饮酒/经常饮酒',
+  `gender` varchar(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '性别:男/女',
+  `symptoms` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '症状描述',
+  `file_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '原始上传的文件名',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `csv_file_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '生成的CSV文件在服务器的绝对路径',
+  `csv_file_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '生成的CSV文件在服务器的绝对路径',
   `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'PENDING' COMMENT '状态:PENDING待诊断, DONE已完成',
   `diagnosis_result` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '诊断员填写的最终结果',
   `diagnose_time` timestamp NULL DEFAULT NULL COMMENT '诊断完成的时间',
+  `risk_level` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '预测风险等级: low/medium/high',
+  `risk_probability` double NULL DEFAULT NULL COMMENT '预测患病概率(0-100)',
+  `prediction_json` json NULL DEFAULT NULL COMMENT '预测完整结果JSON',
+  `ai_advice` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'AI生成个性化健康建议',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '健康档案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of user_health_profiles (预置数据)
 -- ----------------------------
+INSERT INTO `user_health_profiles` (`id`, `user_id`, `Pregnancies`, `Glucose`, `BloodPressure`, `SkinThickness`, `Insulin`, `BMI`, `DiabetesPedigreeFunction`, `Age`, `height`, `weight`, `exercise_frequency`, `diet_habit`, `smoking`, `drinking`, `gender`, `symptoms`, `file_url`, `csv_file_path`, `status`, `diagnosis_result`, `diagnose_time`, `risk_level`, `risk_probability`, `prediction_json`, `ai_advice`) VALUES 
+(1, 3, 2, 120.5, 75, 30, 85.5, 28.5, 0.456, 35, 165.0, 68.0, '2', '1', '不吸烟', '不饮酒', '女', '偶尔口渴、疲劳', 'uploads/health/profile_1.csv', 'data/health/profile_1.csv', 'DONE', '经诊断，目前血糖控制在正常范围，建议继续保持健康的生活方式，定期监测血糖。', '2026-03-15 11:30:00', NULL, NULL, NULL, NULL),
+(2, 3, 0, 145.2, 80, 35, 0, 32.1, 0.623, 40, 170.0, 78.0, '1', '2', '不吸烟', '偶尔饮酒', '男', '多饮、多尿、体重下降', 'uploads/health/profile_2.csv', 'data/health/profile_2.csv', 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL),
+(3, 2, 1, 95.8, 68, 25, 72.3, 24.8, 0.289, 28, 160.0, 55.0, '3', '0', '不吸烟', '不饮酒', '女', '无明显症状，常规体检', 'uploads/health/profile_3.csv', 'data/health/profile_3.csv', 'DONE', '血糖正常，身体状况良好，建议每年体检一次。', '2026-03-10 16:00:00', NULL, NULL, NULL, NULL);
 
--- 修复 user_health_profiles 表字段长度
-ALTER TABLE user_health_profiles
-  MODIFY COLUMN symptoms VARCHAR(255) COMMENT '症状描述',
-  MODIFY COLUMN file_url VARCHAR(255) COMMENT '文件URL',
-  MODIFY COLUMN csv_file_path VARCHAR(255) COMMENT 'CSV文件路径',
-  MODIFY COLUMN diagnosis_result TEXT COMMENT '诊断结果（长文本）';
-	
-INSERT INTO `user_health_profiles` (`id`, `user_id`, `Pregnancies`, `Glucose`, `BloodPressure`, `SkinThickness`, `Insulin`, `BMI`, `DiabetesPedigreeFunction`, `Age`, `symptoms`, `file_url`, `csv_file_path`, `status`, `diagnosis_result`, `diagnose_time`) VALUES 
-(1, 3, 2, 120.5, 75, 30, 85.5, 28.5, 0.456, 35, '偶尔口渴、疲劳', 'uploads/health/profile_1.csv', 'data/health/profile_1.csv', 'DONE', '经诊断，目前血糖控制在正常范围，建议继续保持健康的生活方式，定期监测血糖。', '2026-03-15 11:30:00'),
-(2, 3, 0, 145.2, 80, 35, 0, 32.1, 0.623, 40, '多饮、多尿、体重下降', 'uploads/health/profile_2.csv', 'data/health/profile_2.csv', 'PENDING', NULL, NULL),
-(3, 2, 1, 95.8, 68, 25, 72.3, 24.8, 0.289, 28, '无明显症状，常规体检', 'uploads/health/profile_3.csv', 'data/health/profile_3.csv', 'DONE', '血糖正常，身体状况良好，建议每年体检一次。', '2026-03-10 16:00:00');
+-- ----------------------------
+-- Table structure for patient_visit_record
+-- ----------------------------
+DROP TABLE IF EXISTS `patient_visit_record`;
+CREATE TABLE `patient_visit_record` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键，自增',
+  `user_id` int(11) NOT NULL COMMENT '患者用户ID，关联 sys_user.id',
+  `record_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '记录类型：visit/self_check/ai_plan',
+  `record_date` datetime NOT NULL COMMENT '记录日期',
+  `hospital` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '就诊医院（仅就诊类型）',
+  `doctor_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '医生姓名（仅就诊类型）',
+  `chief_complaint` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '主诉/问题描述',
+  `diagnosis` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '诊断结论/自查结果',
+  `treatment_plan` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '治疗方案/AI饮食计划/AI运动计划',
+  `glucose_fasting` decimal(5,2) NULL DEFAULT NULL COMMENT '空腹血糖(mmol/L)',
+  `glucose_postprandial` decimal(5,2) NULL DEFAULT NULL COMMENT '餐后血糖(mmol/L)',
+  `hba1c` decimal(4,2) NULL DEFAULT NULL COMMENT '糖化血红蛋白(%)',
+  `blood_pressure_systolic` int(3) NULL DEFAULT NULL COMMENT '收缩压(mmHg)',
+  `blood_pressure_diastolic` int(3) NULL DEFAULT NULL COMMENT '舒张压(mmHg)',
+  `weight` decimal(5,2) NULL DEFAULT NULL COMMENT '体重(kg)',
+  `bmi` decimal(4,2) NULL DEFAULT NULL COMMENT 'BMI',
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0 COMMENT '软删除标记：0=正常 1=已删除',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_user_id` (`user_id`) USING BTREE,
+  INDEX `idx_record_type` (`record_type`) USING BTREE,
+  INDEX `idx_create_time` (`create_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '患者就诊记录表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of patient_visit_record
+-- ----------------------------
+INSERT INTO `patient_visit_record` (`user_id`, `record_type`, `record_date`, `hospital`, `doctor_name`, `chief_complaint`, `diagnosis`, `treatment_plan`, `glucose_fasting`, `glucose_postprandial`, `hba1c`, `blood_pressure_systolic`, `blood_pressure_diastolic`, `weight`, `bmi`) VALUES
+(3, 'visit', '2026-03-01 09:30:00', '东方医院内分泌科', '王医生', '多饮、多尿、体重下降1个月', '2型糖尿病，空腹血糖受损', '1. 二甲双胍 0.5g 每日两次；2. 控制饮食；3. 每周运动150分钟；4. 每月复查血糖', 8.5, 12.3, 7.2, 135, 85, 78.5, 26.5),
+(3, 'self_check', '2026-03-15 08:00:00', NULL, NULL, '自我监测血糖', '空腹血糖：7.2mmol/L', '继续按医嘱服药', 7.2, NULL, NULL, 130, 82, 77.8, 26.2),
+(2, 'ai_plan', '2026-03-20 10:00:00', NULL, NULL, '获取糖尿病AI健康计划', 'BMI正常，血糖处于正常高值，建议预防', '饮食计划：低糖、高纤维；运动计划：每周3次，每次30分钟快走', 5.8, 7.5, 5.5, 120, 75, 65.0, 22.5),
+(3, 'visit', '2026-04-01 10:00:00', '东方医院内分泌科', '王医生', '定期复查', '血糖控制良好，HbA1c达标', '1. 维持原治疗方案；2. 继续保持健康生活方式；3. 3个月后复查', 6.8, 8.9, 6.5, 125, 80, 76.5, 25.8);
 
 -- ----------------------------
 -- Table structure for sys_config
