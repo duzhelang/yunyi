@@ -219,23 +219,24 @@
 				</el-col>
 			</el-row>
 		</div>
+    <!-- 5. 底部 Footer -->
+    <footer class="site-footer">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <i class="el-icon-s-medal"></i>
+          <span>云医智护——全场景糖尿病健康服务一体化系统</span>
+        </div>
+        <p class="disclaimer">
+          免责声明:本系统仅为辅助诊断工具,基于算法模型生成预测结果,<br />
+          不能替代专业医生的临床诊断.如有不适,请及时前往正规医院就诊.
+        </p>
+        <div class="copyright">
+          2026 智能医疗实验室 | 技术栈:Vue.js + PyTorch
+        </div>
+      </div>
 
-		<!-- 5. 底部 Footer -->
-		<footer class="site-footer">
-			<div class="footer-content">
-				<div class="footer-logo">
-					<i class="el-icon-s-medal"></i>
-					<span>云医智护——全场景糖尿病健康服务一体化系统</span>
-				</div>
-				<p class="disclaimer">
-					免责声明:本系统仅为辅助诊断工具,基于算法模型生成预测结果,<br />
-					不能替代专业医生的临床诊断.如有不适,请及时前往正规医院就诊.
-				</p>
-				<div class="copyright">
-					 2026 智能医疗实验室 | 技术栈:Vue.js + PyTorch
-				</div>
-			</div>
-		</footer>
+    </footer>
+
 		<!-- 回到顶部按钮-->
 		<div class="back-top" @click="backToTop" v-show="isShow">
 			<span class="icon">↑</span>
@@ -942,3 +943,5 @@
 		}
 	}
 </style>
+<script lang="ts">
+</script>

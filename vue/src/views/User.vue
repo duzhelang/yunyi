@@ -21,7 +21,7 @@
           <el-button type="danger">批量删除</el-button>
         </template>
       </el-popconfirm>
-      <el-upload :action="'http://' + serverIp + ':9090/user/import'" :show-file-list="false" accept="xlsx" :on-success="handleExcelImportSuccess" style="display: inline-block">
+      <el-upload :action="'http://' + serverIp + ':9090/user/import'" :headers="uploadHeaders" :show-file-list="false" accept="xlsx" :on-success="handleExcelImportSuccess" style="display: inline-block">
       </el-upload>
       <el-button type="primary" @click="exp" class="ml-5">导出</el-button>
     </div>
@@ -136,8 +136,14 @@ import { ElMessage } from "element-plus";
 export default {
   name: "User",
   data() {
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user')
+    let token = ''
+    if (userStr) {
+      try { token = JSON.parse(userStr).token || '' } catch (e) {}
+    }
     return {
       serverIp: window.config ? window.config.serverIp : 'localhost',
+      uploadHeaders: { token: token },
       tableData: [],
       total: 0,
       pageNum: 1,

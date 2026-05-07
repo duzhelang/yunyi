@@ -11,6 +11,7 @@
     <div style="margin: 10px 0">
       <el-upload
           :action="'http://' + serverIp + ':9090/DataTest/upload'"
+          :headers="uploadHeaders"
           :show-file-list="false"
           accept=".xlsx,.xls,.csv"
           :on-success="handleFileUploadSuccess"
@@ -138,8 +139,14 @@ import { ElMessage } from "element-plus";
 export default {
   name: "TestFile",
   data() {
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user')
+    let token = ''
+    if (userStr) {
+      try { token = JSON.parse(userStr).token || '' } catch (e) {}
+    }
     return {
       serverIp: window.config ? window.config.serverIp : 'localhost',
+      uploadHeaders: { token: token },
       tableData: [],
       name: '',
       multipleSelection: [],

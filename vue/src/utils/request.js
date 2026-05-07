@@ -11,7 +11,9 @@ const request = axios.create({
 
 // 请求拦截器
 request.interceptors.request.use(config => {
-    config.headers['Content-Type'] = 'application/json;charset=utf-8';
+    if (!(config.data instanceof FormData)) {
+        config.headers['Content-Type'] = 'application/json;charset=utf-8';
+    }
 
     const userStr = CacheHelper.get('user')
     let user = null

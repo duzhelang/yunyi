@@ -112,6 +112,7 @@ public class FileController {
         switch (type) {
             case "avatar": basePath = avatarUploadPath; break;
             case "common": basePath = commonUploadPath; break;
+            case "repair": basePath = fileUploadPath + "repair" + File.separator; break;
             default: basePath = fileUploadPath;
         }
 

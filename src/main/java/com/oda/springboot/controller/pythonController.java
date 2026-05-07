@@ -104,48 +104,61 @@ public class pythonController {
             return Result.error("506", "CSV 文件不存在");
         }
 
-        // [核心修改]使用配置文件中的模型路径
+        // [核心修改]使用配置文件中的模型基础路径
         String modelSavePath = propertyUtil.getPythonModelPath();
-        if (modelSavePath == null || modelSavePath.isEmpty()) {
-            modelSavePath = System.getProperty("user.dir") + "/models/diabetes_model.pth";
+        String projectRoot = System.getProperty("user.dir");
+        String modelsBasePath = projectRoot + File.separator + "data" + File.separator + "models";
+        String modelName = "diabetes_model";
+        
+        // 提取模型名称（如果传入了完整路径）
+        if (modelSavePath != null && !modelSavePath.isEmpty()) {
+            File f = new File(modelSavePath);
+            modelName = f.getName().replace(".pth", "");
+        }
+        
+        // 构建分类路径
+        String pthPath = modelsBasePath + File.separator + "pth_models" + File.separator + modelName + ".pth";
+        String pklPath = modelsBasePath + File.separator + "pkl_files" + File.separator + modelName;
+        
+        // 确保目录存在
+        for (String dir : new String[]{"pth_models", "pkl_files", "npy_data"}) {
+            File d = new File(modelsBasePath, dir);
+            if (!d.exists()) {
+                d.mkdirs();
+            }
         }
 
-        // 确保模型目录存在
-        File modelFile = new File(modelSavePath);
-        File modelDir = modelFile.getParentFile();
-        if (modelDir != null && !modelDir.exists()) {
-            modelDir.mkdirs();
-        }
+        File modelFile = new File(pthPath);
 
         try {
             // (python 和脚本路径)
             // 0: python.exe
             // 1: train.py
             // 2: 输入 CSV
-            // 3: 输出模型路径 (.pth)
+            // 3: 输出模型基础路径
             int exitCode = UsePythonUtils.callPython(new String[]{
                     propertyUtil.getPythonExe(),
                     propertyUtil.getPythonTrainMain(),
                     csvFile.getAbsolutePath(),
-                    modelFile.getAbsolutePath()
+                    pthPath
             });
 
             if (exitCode != 0) {
                 return Result.error("507", "训练失败,Python 返回值" + exitCode);
             }
 
-            // [核心修改]验证PyTorch 生成的三个文件
-            String encoderPath = modelSavePath.replace(".pth", "_encoder.pkl");
-            String scalerPath = modelSavePath.replace(".pth", "_scaler.pkl");
+            // [核心修改]验证PyTorch 生成的三个文件（按分类目录）
+            String encoderPath = modelsBasePath + File.separator + "pkl_files" + File.separator + modelName + "_encoder.pkl";
+            String scalerPath = modelsBasePath + File.separator + "pkl_files" + File.separator + modelName + "_scaler.pkl";
 
             if (!modelFile.exists()) {
-                return Result.error("508", "训练完成但未生成主模型文件(.pth)");
+                return Result.error("508", "训练完成但未生成主模型文件(.pth): " + pthPath);
             }
             if (!new File(encoderPath).exists()) {
-                return Result.error("508", "训练完成但未生成编码器文件(_encoder.pkl)");
+                return Result.error("508", "训练完成但未生成编码器文件(_encoder.pkl): " + encoderPath);
             }
             if (!new File(scalerPath).exists()) {
-                return Result.error("508", "训练完成但未生成缩放器文件(_scaler.pkl)");
+                return Result.error("508", "训练完成但未生成缩放器文件(_scaler.pkl): " + scalerPath);
             }
 
         } catch (InterruptedException e) {

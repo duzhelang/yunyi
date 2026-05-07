@@ -56,22 +56,42 @@ if not os.path.exists(input_csv_path):
     print(f"[错误] 训练数据文件不存在：{input_csv_path}")
     sys.exit(1)
 
-# 准备输出路径 (衍生出 encoder 和 scaler 的路径)
-# 如果传入的是 D:\...\model.pth
-# 则 encoder 为 D:\...\model_encoder.pkl
-# 则 scaler 为 D:\...\model_scaler.pkl
-base_name = model_output_path.rsplit('.', 1)[0] # 去掉 .pth
-encoder_path = f"{base_name}_encoder.pkl"
-scaler_path = f"{base_name}_scaler.pkl"
+# 准备输出路径 - 按类型分类保存
+# 解析基础路径：data/models/
+# 分类目录：
+#   data/models/pth_models/ - .pth 文件
+#   data/models/pkl_files/ - .pkl 文件
+#   data/models/npy_data/ - .npy 文件
 
-output_dir = os.path.dirname(model_output_path)
-if output_dir and not os.path.exists(output_dir):
-    os.makedirs(output_dir)
-    print(f"[系统] 已创建模型目录：{output_dir}")
+# 获取模型名称（不含扩展名
+model_name = os.path.basename(model_output_path).rsplit('.', 1)[0]
+
+# 获取基础目录（data/models/）
+base_dir = os.path.dirname(model_output_path)
+if not base_dir:
+    base_dir = os.getcwd()
+
+# 构建分类目录
+pth_dir = os.path.join(base_dir, 'pth_models')
+pkl_dir = os.path.join(base_dir, 'pkl_files')
+npy_dir = os.path.join(base_dir, 'npy_data')
+
+# 确保目录存在
+for dir_path in [pth_dir, pkl_dir, npy_dir]:
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+        print(f"[系统] 已创建目录：{dir_path}")
+
+# 构建各文件的保存路径
+model_output_path = os.path.join(pth_dir, f"{model_name}.pth")
+encoder_path = os.path.join(pkl_dir, f"{model_name}_encoder.pkl")
+scaler_path = os.path.join(pkl_dir, f"{model_name}_scaler.pkl")
+background_path = os.path.join(npy_dir, f"{model_name}_background.npy")
 
 print(f"[信息] 模型将保存至：{model_output_path}")
 print(f"[信息] 编码器将保存至：{encoder_path}")
 print(f"[信息] 缩放器将保存至：{scaler_path}")
+print(f"[信息] 背景数据将保存至：{background_path}")
 
 # 1. 读取数据
 try:
@@ -188,7 +208,6 @@ print(f"[结果] 编码器已保存至：{encoder_path}")
 
 # 保存背景数据供 SHAP 使用
 background_sample = X_train_tensor[:200].numpy()  # 取前200个训练样本
-background_path = model_output_path.replace('.pth', '_background.npy')
 np.save(background_path, background_sample)
 print(f"[结果] 背景数据已保存至: {background_path}")
 

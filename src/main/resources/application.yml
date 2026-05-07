@@ -66,13 +66,13 @@ files:
     path: ${base.path}/
   # Json文件下载
   JsonDownload:
-    path: ${base.path}/json/
+    path: ${base.path}/data/json/
   # 预测数据上传
   pythonDataTestUpload:
-    path: ${base.path}/OnlinePredict/
+    path: ${base.path}/data/test/
   # 模型文件目录
   models:
-    path: ${base.path}/models/
+    path: ${base.path}/data/models/
   # 训练日志目录
   trainLogs:
     path: ${base.path}/logs/
@@ -90,7 +90,7 @@ files:
     path: ${base.path}/python/diabetes_chat.py
   # 模型文件路径（默认，实际从 sys_model_version 表读取激活模型）
   pythonModelPath:
-    path: ${base.path}/models/diabetes_model.pth
+    path: ${base.path}/data/models/diabetes_model.pth
 
 
 zhipu:

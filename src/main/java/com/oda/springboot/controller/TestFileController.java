@@ -5,6 +5,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
+import com.auth0.jwt.JWT;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.URLEncoder;
@@ -50,7 +52,7 @@ public class TestFileController {
     private ResultMapper resultMapper;
 
     @PostMapping("/upload")
-    public Result upload(@RequestParam MultipartFile file) throws IOException, InterruptedException {
+    public Result upload(@RequestParam MultipartFile file, HttpServletRequest request) throws IOException, InterruptedException {
         String originalFilename = file.getOriginalFilename();
         // 防止文件名空指针
         if (StrUtil.isBlank(originalFilename)) {
@@ -93,7 +95,16 @@ public class TestFileController {
 
         url = "http://localhost:9090/DataTest/" + fileUUID;
 
-        String userId = stringRedisTemplate.opsForValue().get("userId");
+        // 从 JWT token 解析 userId
+        String token = request.getHeader("token");
+        String userId = null;
+        if (StrUtil.isNotBlank(token)) {
+            try {
+                userId = JWT.decode(token).getAudience().get(0);
+            } catch (Exception e) {
+                return Result.error("401", "身份凭证异常，请重新登录");
+            }
+        }
         System.out.println("---------------------------------- 上传用户 ID: " + userId);
 
         TestFiles saveFile = new TestFiles();
@@ -105,7 +116,7 @@ public class TestFileController {
         saveFile.setMd5(md5);
         // 防止 userId 为空或格式错误
         if (StrUtil.isBlank(userId)) {
-            return Result.error("401", "用户未登录");
+            return Result.error("401", "用户未登录，请重新登录");
         }
         saveFile.setUserid(Integer.parseInt(userId));
         saveFile.setEnable(0);

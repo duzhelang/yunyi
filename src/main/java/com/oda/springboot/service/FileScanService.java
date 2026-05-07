@@ -39,95 +39,107 @@ public class FileScanService {
     }
 
     public Map<String, Object> scanFiles() {
+        return scanFiles("data/train");
+    }
+
+    /**
+     * 扫描指定目录的文件
+     * @param targetPath 相对于项目根目录的路径，例如 "data/train"
+     * @return
+     */
+    public Map<String, Object> scanFiles(String targetPath) {
         Map<String, Object> result = new HashMap<>();
         result.put("newFiles", 0);
         result.put("updatedFiles", 0);
         result.put("totalFiles", 0);
 
         String projectRoot = System.getProperty("user.dir");
-        String[] scanPaths = {
-            projectRoot + File.separator + "data",
-            projectRoot + File.separator + "data" + File.separator + "train",
-            projectRoot + File.separator + "data" + File.separator + "test",
-            projectRoot + File.separator + "python" + File.separator + "data"
-        };
+        String fullPath = projectRoot + File.separator + targetPath;
 
-        for (String scanPath : scanPaths) {
-            File dir = new File(scanPath);
-            if (!dir.exists()) {
-                dir.mkdirs();
-                log.info("创建扫描目录: {}", scanPath);
-            }
+        File dir = new File(fullPath);
+        if (!dir.exists()) {
+            dir.mkdirs();
+            log.info("创建扫描目录: {}", fullPath);
         }
 
-        for (String scanPath : scanPaths) {
-            File baseDir = new File(scanPath);
-            if (!baseDir.exists() || !baseDir.isDirectory()) {
-                continue;
-            }
+        File baseDir = new File(fullPath);
+        if (!baseDir.exists() || !baseDir.isDirectory()) {
+            log.warn("扫描目录不存在: {}", fullPath);
+            return result;
+        }
 
-            File[] files = baseDir.listFiles();
-            if (files == null) {
-                continue;
-            }
+        File[] files = baseDir.listFiles();
+        if (files == null) {
+            return result;
+        }
 
-            String category;
-            if (scanPath.contains("python" + File.separator + "data")) {
-                category = "test";
-            } else if (scanPath.contains("data" + File.separator + "test")) {
-                category = "test";
-            } else {
-                category = "train";
-            }
+        String category;
+        if (targetPath.contains("test")) {
+            category = "test";
+        } else {
+            category = "train";
+        }
 
-            log.info("开始扫描目录: {}, 发现 {} 个文件", scanPath, files.length);
+        log.info("开始扫描目录: {}, 发现 {} 个文件", fullPath, files.length);
 
-            for (File file : files) {
+        for (File file : files) {
+            try {
                 if (file.isFile()) {
                     String fileName = file.getName();
+                    
+                    // 跳过 .gitkeep 等隐藏文件
+                    if (fileName.startsWith(".")) {
+                        continue;
+                    }
+                    
                     String extension = getFileExtension(fileName);
-
+                    
                     if (FILE_TYPE_MAP.containsKey(extension)) {
                         processFile(file, extension, category, result);
                     }
                 }
+            } catch (Exception e) {
+                log.error("处理文件时出错: {}", file.getName(), e);
             }
         }
 
-        log.info("文件扫描完成: 新增 {} 个文件, 更新 {} 个文件",
-                result.get("newFiles"), result.get("updatedFiles"));
+        log.info("数据集扫描完成：新增 {}，更新 {}，总数 {}", result.get("newFiles"), result.get("updatedFiles"), result.get("totalFiles"));
 
         return result;
     }
 
     private void processFile(File file, String extension, String category, Map<String, Object> result) {
-        String fileName = file.getName();
-        String relativePath = getRelativePath(file);
+        try {
+            String fileName = file.getName();
+            String relativePath = getRelativePath(file);
 
-        LambdaQueryWrapper<Files> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Files::getName, fileName);
-        queryWrapper.eq(Files::getUrl, relativePath);
-        Files existingFile = fileMapper.selectOne(queryWrapper);
+            LambdaQueryWrapper<Files> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Files::getName, fileName);
+            queryWrapper.eq(Files::getUrl, relativePath);
+            Files existingFile = fileMapper.selectOne(queryWrapper);
 
-        if (existingFile == null) {
-            Files newFile = createFileRecord(file, relativePath, extension, category);
-            fileMapper.insert(newFile);
-            result.put("newFiles", (Integer) result.get("newFiles") + 1);
-            log.debug("新增文件记录: {}", fileName);
-        } else {
-            updateFileRecord(existingFile, file);
-            fileMapper.updateById(existingFile);
-            result.put("updatedFiles", (Integer) result.get("updatedFiles") + 1);
-            log.debug("更新文件记录: {}", fileName);
+            if (existingFile == null) {
+                Files newFile = createFileRecord(file, relativePath, extension, category);
+                fileMapper.insert(newFile);
+                result.put("newFiles", (Integer) result.get("newFiles") + 1);
+                log.info("新增文件记录: {}", fileName);
+            } else {
+                updateFileRecord(existingFile, file);
+                fileMapper.updateById(existingFile);
+                result.put("updatedFiles", (Integer) result.get("updatedFiles") + 1);
+                log.info("更新文件记录: {}", fileName);
+            }
+
+            result.put("totalFiles", (Integer) result.get("totalFiles") + 1);
+        } catch (Exception e) {
+            log.error("处理文件记录时出错: {}", file.getName(), e);
         }
-
-        result.put("totalFiles", (Integer) result.get("totalFiles") + 1);
     }
 
     private Files createFileRecord(File file, String relativePath, String extension, String category) {
         Files record = new Files();
         record.setName(file.getName());
-        record.setType(extension);
+        record.setType(FILE_TYPE_MAP.get(extension)); // 使用不带点的扩展名
         record.setUrl(relativePath);
         record.setPythonurl(relativePath);
         record.setSize(file.length());
@@ -158,7 +170,7 @@ public class FileScanService {
         record.setMd5(calculateFileHash(file));
         record.setSampleCount((int) countLines(file));
         record.setFileSize(formatFileSize(file.length()));
-        record.setColumnInfo(buildColumnInfo(file, record.getType()));
+        record.setColumnInfo(buildColumnInfo(file, "." + record.getType()));
         int lineCount = record.getSampleCount();
         String category = record.getCategory();
         String remark = String.format("自动扫描 | 来源: %s | 分类: %s | 行数: %d | 大小: %s",
@@ -189,13 +201,25 @@ public class FileScanService {
             sb.append("]");
             return sb.toString();
         } catch (Exception e) {
+            log.warn("构建列信息时出错: {}", file.getName(), e);
             return null;
         }
     }
 
     private long countLines(File file) {
         try {
-            return FileUtil.readLines(file, StandardCharsets.UTF_8).size();
+            List<String> lines = FileUtil.readLines(file, StandardCharsets.UTF_8);
+            int count = 0;
+            for (String line : lines) {
+                if (line != null && !line.trim().isEmpty()) {
+                    count++;
+                }
+            }
+            // CSV文件减去表头行，只返回数据条数
+            if (file.getName().toLowerCase().endsWith(".csv") && count > 0) {
+                count = count - 1;
+            }
+            return count;
         } catch (Exception e) {
             return 0;
         }
@@ -225,9 +249,10 @@ public class FileScanService {
         String projectRoot = System.getProperty("user.dir");
         String fullPath = file.getAbsolutePath();
         if (fullPath.startsWith(projectRoot)) {
-            return fullPath.substring(projectRoot.length());
+            String relative = fullPath.substring(projectRoot.length());
+            return relative.replace('\\', '/');
         }
-        return fullPath;
+        return fullPath.replace('\\', '/');
     }
 
     private String calculateFileHash(File file) {

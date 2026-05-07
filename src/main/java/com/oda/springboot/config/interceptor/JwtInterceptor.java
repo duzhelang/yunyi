@@ -39,26 +39,26 @@ public class JwtInterceptor implements HandlerInterceptor {
         }
         // 执行认证
         if (StrUtil.isBlank(token)) {
-            throw new ServiceException(Constants.CODE_401, "无token,请重新登录");
+            throw new ServiceException(Constants.CODE_401, "登录状态已失效,为保障您的数据安全，请重新登录");
         }
         // 获取 token 中的 user id
         String userId;
         try {
             userId = JWT.decode(token).getAudience().get(0);
         } catch (JWTDecodeException j) {
-            throw new ServiceException(Constants.CODE_401, "token验证失败,请重新登录");
+            throw new ServiceException(Constants.CODE_401, "身份凭证异常,请重新登录");
         }
         // 根据token中的userid查询数据
         User user = userService.getById(userId);
         if (user == null) {
-            throw new ServiceException(Constants.CODE_401, "用户不存在,请重新登录");
+            throw new ServiceException(Constants.CODE_401, "账号信息异常,请联系管理员");
         }
         // 用户密码加签验证 token
         JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(user.getPassword())).build();
         try {
             jwtVerifier.verify(token); // 验证token
         } catch (JWTVerificationException e) {
-            throw new ServiceException(Constants.CODE_401, "token验证失败,请重新登录");
+            throw new ServiceException(Constants.CODE_401, "您的身份验证未通过,请再次登录");
         }
         return true;
     }

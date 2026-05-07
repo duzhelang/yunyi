@@ -13,6 +13,7 @@
           <el-upload
             class="upload-demo"
             :action="uploadUrl"
+            :headers="uploadHeaders"
             :on-success="handleFileUploadSuccess"
             :on-error="handleFileUploadError"
             :show-file-list="true"
@@ -199,9 +200,15 @@ export default {
   name: "DataCollection",
   components: { Upload, Edit, Link, Refresh },
   data() {
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user')
+    let token = ''
+    if (userStr) {
+      try { token = JSON.parse(userStr).token || '' } catch (e) {}
+    }
     return {
       serverIp: window.config ? window.config.serverIp : 'localhost',
       uploadUrl: 'http://' + this.serverIp + ':9090/DataTest/upload',
+      uploadHeaders: { token: token },
       showManualInput: false,
       fillStrategy: 'mean',
       scaleOption: 'standard',

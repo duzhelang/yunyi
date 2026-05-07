@@ -72,8 +72,8 @@ INSERT INTO `sys_menu` VALUES (5, '用户管理', '/user', 'el-icon-user', '用�
 INSERT INTO `sys_menu` VALUES (6, '角色管理', '/role', 'el-icon-s-custom', '角色管理', 4, 'Role', 2);
 INSERT INTO `sys_menu` VALUES (7, '菜单管理', '/menu', 'el-icon-menu', '菜单管理', 4, 'Menu', 3);
 INSERT INTO `sys_menu` VALUES (46, 'AI模型中心', NULL, 'el-icon-s-grid', 'AI模型训练与管理中心', NULL, NULL, 2);
-INSERT INTO `sys_menu` VALUES (45, '训练集管理', '/dataset-management', 'el-icon-document', '训练数据集管理中心', 46, 'DatasetManagement', 1);
-INSERT INTO `sys_menu` VALUES (76, '模型管理', '/model-manager', 'el-icon-s-data', '模型资产统一管理中心', 46, 'ModelManagement', 2);
+INSERT INTO `sys_menu` VALUES (76, '模型管理', '/model-manager', 'el-icon-s-data', '模型资产统一管理中心', 46, 'ModelManagement', 1);
+INSERT INTO `sys_menu` VALUES (45, '数据集管理', '/dataset-management', 'el-icon-document', '训练集、测试集与预测结果统一管理', 46, 'DatasetManagement', 2);
 INSERT INTO `sys_menu` VALUES (8, '在线模型训练', '/online-training', 'el-icon-document', '训练任务启动器和历史记录看板', 46, 'OnlineTraining', 3);
 INSERT INTO `sys_menu` VALUES (85, '用户服务', NULL, 'el-icon-user', '用户服务模块', NULL, NULL, 3);
 INSERT INTO `sys_menu` VALUES (86, '风险快检', '/risk-quick', 'el-icon-alert', '风险评估快捷入口', 85, 'HealthCheck', 1);
@@ -266,7 +266,7 @@ CREATE TABLE `sys_trainfile` (
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
   `category` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分类',
   `file_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'csv' COMMENT '文件类型',
-  `file_size` bigint(20) NULL DEFAULT NULL COMMENT '文件大小(字节)',
+  `file_size` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '格式化文件大小',
   `record_count` int(11) NULL DEFAULT NULL COMMENT '记录条数',
   `column_count` int(11) NULL DEFAULT NULL COMMENT '列数',
   `last_scan_time` timestamp NULL DEFAULT NULL COMMENT '最后扫描时间',
@@ -281,9 +281,9 @@ CREATE TABLE `sys_trainfile` (
 -- Records of sys_trainfile (预置数据)
 -- ----------------------------
 INSERT INTO `sys_trainfile` (`id`, `name`, `type`, `size`, `url`, `pythonurl`, `md5`, `is_delete`, `enable`, `user_id`, `remark`, `category`, `file_type`, `file_size`, `record_count`, `column_count`, `last_scan_time`, `quality_level`, `sample_count`, `column_info`, `update_time`) VALUES 
-(1, 'diabetes_train_dataset.csv', 'csv', 1048576, 'data/train/diabetes_train_dataset.csv', 'python/train/diabetes_train.py', 'abc123def4567890abcdef1234567890', 0, 1, 1, '糖尿病训练数据集V1.0', 'diabetes', 'csv', 1048576, 768, 9, '2026-03-01 10:00:00', 'cleaned', 768, NULL, '2026-03-01 10:00:00'),
-(2, 'diabetes_features_extended.csv', 'csv', 2097152, 'data/train/diabetes_features_extended.csv', 'python/train/feature_extract.py', '123abc456def7890123abcdef4567890', 0, 1, 1, '扩展特征训练数据集', 'diabetes', 'csv', 2097152, 1536, 12, '2026-03-15 14:30:00', 'cleaned', 10000, NULL, '2026-03-15 14:30:00'),
-(3, 'patient_history_data.csv', 'csv', 524288, 'data/train/patient_history_data.csv', 'python/train/history_analysis.py', '9876543210fedcba09876543210fedcba', 0, 1, 2, '患者历史数据', 'history', 'csv', 524288, 512, 8, '2026-03-20 09:15:00', 'cleaned', 1000, NULL, '2026-03-20 09:15:00');
+(1, 'diabetes_train_dataset.csv', 'csv', 1048576, 'data/train/diabetes_train_dataset.csv', 'python/train/diabetes_train.py', 'abc123def4567890abcdef1234567890', 0, 1, 1, '糖尿病训练数据集V1.0', 'diabetes', 'csv', '1.00 MB', 768, 9, '2026-03-01 10:00:00', 'cleaned', 768, NULL, '2026-03-01 10:00:00'),
+(2, 'diabetes_features_extended.csv', 'csv', 2097152, 'data/train/diabetes_features_extended.csv', 'python/train/feature_extract.py', '123abc456def7890123abcdef4567890', 0, 1, 1, '扩展特征训练数据集', 'diabetes', 'csv', '2.00 MB', 1536, 12, '2026-03-15 14:30:00', 'cleaned', 10000, NULL, '2026-03-15 14:30:00'),
+(3, 'patient_history_data.csv', 'csv', 524288, 'data/train/patient_history_data.csv', 'python/train/history_analysis.py', '9876543210fedcba09876543210fedcba', 0, 1, 2, '患者历史数据', 'history', 'csv', '512.00 KB', 512, 8, '2026-03-20 09:15:00', 'cleaned', 1000, NULL, '2026-03-20 09:15:00');
 
 -- ----------------------------
 -- Table structure for sys_train_task
@@ -304,6 +304,7 @@ CREATE TABLE `sys_train_task` (
   `f1_score` decimal(10,6) NULL DEFAULT NULL COMMENT 'F1分数',
   `log_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '训练日志路径',
   `model_output_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模型输出路径',
+  `python_script` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '使用的Python训练脚本文件名',
   `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '错误信息',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `start_time` timestamp NULL DEFAULT NULL COMMENT '开始时间',
@@ -317,10 +318,10 @@ CREATE TABLE `sys_train_task` (
 -- ----------------------------
 -- Records of sys_train_task (预置数据)
 -- ----------------------------
-INSERT INTO `sys_train_task` (`id`, `task_name`, `train_file_id`, `train_file_name`, `model_name`, `hyper_params`, `status`, `accuracy`, `loss`, `recall_rate`, `precision_rate`, `f1_score`, `log_path`, `model_output_path`, `create_time`, `start_time`, `end_time`) VALUES 
-(1, '糖尿病预测模型V1训练', 1, 'diabetes_train_dataset.csv', 'diabetes_model', '{\"epochs\": 100, \"batch_size\": 32, \"learning_rate\": 0.001}', 'completed', 0.875000, 0.325000, 0.850000, 0.890000, 0.870000, 'logs/train/task_1.log', 'models/diabetes_model_v1.pth', '2026-03-02 09:00:00', '2026-03-02 09:05:00', '2026-03-02 10:30:00'),
-(2, '扩展特征模型训练', 2, 'diabetes_features_extended.csv', 'diabetes_model', '{\"epochs\": 150, \"batch_size\": 64, \"learning_rate\": 0.0005}', 'completed', 0.892000, 0.298000, 0.875000, 0.908000, 0.891000, 'logs/train/task_2.log', 'models/diabetes_model_v2.pth', '2026-03-16 14:00:00', '2026-03-16 14:05:00', '2026-03-16 16:45:00'),
-(3, '历史数据分析模型', 3, 'patient_history_data.csv', 'history_model', '{\"epochs\": 80, \"batch_size\": 16, \"learning_rate\": 0.002}', 'running', NULL, NULL, NULL, NULL, NULL, 'logs/train/task_3.log', NULL, '2026-03-21 10:00:00', '2026-03-21 10:05:00', NULL);
+INSERT INTO `sys_train_task` (`id`, `task_name`, `train_file_id`, `train_file_name`, `model_name`, `hyper_params`, `status`, `accuracy`, `loss`, `recall_rate`, `precision_rate`, `f1_score`, `log_path`, `model_output_path`, `python_script`, `create_time`, `start_time`, `end_time`) VALUES 
+(1, '糖尿病预测模型V1训练', 1, 'diabetes_train_dataset.csv', 'diabetes_model', '{\"epochs\": 100, \"batch_size\": 32, \"learning_rate\": 0.001}', 'completed', 0.875000, 0.325000, 0.850000, 0.890000, 0.870000, 'logs/train/task_1.log', 'models/diabetes_model_v1.pth', 'python/train/diabetes_train.py', '2026-03-02 09:00:00', '2026-03-02 09:05:00', '2026-03-02 10:30:00'),
+(2, '扩展特征模型训练', 2, 'diabetes_features_extended.csv', 'diabetes_model', '{\"epochs\": 150, \"batch_size\": 64, \"learning_rate\": 0.0005}', 'completed', 0.892000, 0.298000, 0.875000, 0.908000, 0.891000, 'logs/train/task_2.log', 'models/diabetes_model_v2.pth', 'python/train/feature_extract.py', '2026-03-16 14:00:00', '2026-03-16 14:05:00', '2026-03-16 16:45:00'),
+(3, '历史数据分析模型', 3, 'patient_history_data.csv', 'history_model', '{\"epochs\": 80, \"batch_size\": 16, \"learning_rate\": 0.002}', 'running', NULL, NULL, NULL, NULL, NULL, 'logs/train/task_3.log', NULL, 'python/train/history_analysis.py', '2026-03-21 10:00:00', '2026-03-21 10:05:00', NULL);
 
 -- ----------------------------
 -- Table structure for sys_model_version
@@ -1336,5 +1337,114 @@ CREATE TABLE `sys_config` (
 -- Records of sys_config
 -- ----------------------------
 INSERT INTO `sys_config` (`config_key`, `config_value`) VALUES ('default_ai_model', 'zhipu') ON DUPLICATE KEY UPDATE config_value = VALUES(config_value);
+
+-- ----------------------------
+-- Table structure for sys_treatment_record
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_treatment_record`;
+CREATE TABLE `sys_treatment_record`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `patient_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '患者姓名',
+  `id_card` varchar(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '身份证号',
+  `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '联系电话',
+  `gender` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '性别',
+  `age` int NULL DEFAULT NULL COMMENT '年龄',
+  `blood_sugar` decimal(5, 2) NULL DEFAULT NULL COMMENT '血糖值(mmol/L)',
+  `diagnosis_result` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '诊断结果',
+  `treatment_plan` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '治疗方案',
+  `doctor_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '负责医生',
+  `remark` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_id_card` (`id_card`) USING BTREE,
+  INDEX `idx_patient_name` (`patient_name`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '诊疗档案表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for sys_repair_order
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_repair_order`;
+CREATE TABLE `sys_repair_order` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `order_no` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '工单编号',
+  `title` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '工单标题',
+  `fault_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '故障类型',
+  `fault_sub_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '故障子类型',
+  `urgency` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '一般' COMMENT '紧急程度',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '故障描述',
+  `repro_steps` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '重现步骤',
+  `page_path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '发生页面/模块',
+  `attachments` json DEFAULT NULL COMMENT '附件路径数组',
+  `contact_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '联系手机',
+  `contact_email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '联系邮箱',
+  `accept_remote` tinyint(1) DEFAULT 0 COMMENT '是否接受远程协助',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '待处理' COMMENT '工单状态',
+  `submit_user_id` int NOT NULL COMMENT '提交人ID',
+  `submit_user_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '提交人用户名',
+  `submit_real_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '提交人真实姓名',
+  `assign_user_id` int DEFAULT NULL COMMENT '指派运维人员ID',
+  `assign_user_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '指派运维人员用户名',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_order_no` (`order_no`),
+  KEY `idx_submit_user` (`submit_user_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_assign_user` (`assign_user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='报修工单表';
+
+-- ----------------------------
+-- Table structure for sys_repair_log
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_repair_log`;
+CREATE TABLE `sys_repair_log` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `order_id` int NOT NULL COMMENT '工单ID',
+  `operator_id` int NOT NULL COMMENT '操作人ID',
+  `operator_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '操作人姓名',
+  `action` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '操作类型',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '操作内容',
+  `attachments` json DEFAULT NULL COMMENT '附件路径数组',
+  `is_visible_to_user` tinyint(1) DEFAULT 1 COMMENT '是否对用户可见',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_order_id` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='工单处理日志表';
+
+-- ----------------------------
+-- Table structure for sys_repair_evaluation
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_repair_evaluation`;
+CREATE TABLE `sys_repair_evaluation` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `order_id` int NOT NULL COMMENT '工单ID',
+  `user_id` int NOT NULL COMMENT '评价人ID',
+  `user_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '评价人姓名',
+  `rating` int NOT NULL COMMENT '星级评分(1-5)',
+  `comment` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '评价内容',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '评价时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_order_id` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='工单满意度评价表';
+
+-- ----------------------------
+-- Records of sys_repair_order (sample data)
+-- ----------------------------
+INSERT INTO `sys_repair_order` (`order_no`, `title`, `fault_type`, `fault_sub_type`, `urgency`, `description`, `page_path`, `status`, `submit_user_id`, `submit_user_name`, `submit_real_name`, `create_time`) VALUES
+('RO20260401001', '预测工作台图表加载缓慢', '性能问题', '图表加载缓慢', '紧急', '在预测工作台页面，ECharts图表加载时间超过30秒，偶尔出现白屏现象。', 'prediction-workbench', '待处理', 2, 'admin', '管理员', '2026-04-01 10:00:00'),
+('RO20260401002', '血糖数据显示异常', '数据错误', '数据显示不正确', '非常紧急', '健康管理中心的血糖数据显示为NaN，无法正常查看历史数据。', 'health-profile', '处理中', 58, 'upload', '上传用户', '2026-04-01 14:30:00'),
+('RO20260402001', '登录页面样式错乱', '界面问题', '布局错乱', '一般', '登录页面在Chrome浏览器下，输入框与按钮重叠，样式异常。', 'login', '已解决', 2, 'admin', '管理员', '2026-04-02 09:15:00');
+
+-- ----------------------------
+-- Records of sys_repair_log (sample data)
+-- ----------------------------
+INSERT INTO `sys_repair_log` (`order_id`, `operator_id`, `operator_name`, `action`, `content`, `is_visible_to_user`) VALUES
+(2, 2, 'admin', '认领', '已认领该工单，开始排查问题。', 1),
+(3, 2, 'admin', '处理', '已修复CSS样式兼容性问题，清除了浏览器缓存后恢复正常。', 1),
+(3, 58, 'upload', '确认', '问题已解决，页面显示正常。', 1);
+
+-- 更新工单2的指派人
+UPDATE `sys_repair_order` SET `assign_user_id` = 2, `assign_user_name` = 'admin' WHERE `id` = 2;
 
 SET FOREIGN_KEY_CHECKS = 1;

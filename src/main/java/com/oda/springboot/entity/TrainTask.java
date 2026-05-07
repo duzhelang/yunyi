@@ -38,6 +38,8 @@ public class TrainTask {
 
     private String modelOutputPath;
 
+    private String pythonScript;
+
     private String errorMessage;
 
     private Date createTime;
@@ -156,6 +158,14 @@ public class TrainTask {
 
     public void setModelOutputPath(String modelOutputPath) {
         this.modelOutputPath = modelOutputPath;
+    }
+
+    public String getPythonScript() {
+        return pythonScript;
+    }
+
+    public void setPythonScript(String pythonScript) {
+        this.pythonScript = pythonScript;
     }
 
     public String getErrorMessage() {

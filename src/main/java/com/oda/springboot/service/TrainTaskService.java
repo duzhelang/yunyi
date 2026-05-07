@@ -45,6 +45,7 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
         Integer trainFileId = (Integer) params.get("trainFileId");
         String modelName = (String) params.get("modelName");
         Map<String, Object> hyperParams = (Map<String, Object>) params.get("hyperParams");
+        String pythonScript = (String) params.get("pythonScript");
 
         // 获取训练文件信息
         Files trainFile = fileMapper.selectById(trainFileId);
@@ -59,6 +60,7 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
         task.setTrainFileName(trainFile.getName());
         task.setModelName(modelName);
         task.setHyperParams(JSONUtil.toJsonStr(hyperParams));
+        task.setPythonScript(pythonScript != null ? pythonScript : "train.py");
         task.setStatus("pending");
         task.setCreateTime(new Date());
 
@@ -82,7 +84,7 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
             task.setStatus("running");
             task.setStartTime(new Date());
             trainTaskMapper.updateById(task);
-            log.info("训练任务开始执行: {}", task.getTaskName());
+            log.info("训练任务开始执行: {}, 使用脚本: {}", task.getTaskName(), task.getPythonScript());
 
             // 构建训练参数
             String processId = UUID.randomUUID().toString();
@@ -97,9 +99,9 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
             task.setStatus("completed");
             task.setEndTime(new Date());
 
-            // 设置模型输出路径（使用新的 models/ 目录）
+            // 设置模型输出路径（使用 data/models/pth_models/ 目录）
             String projectRoot = System.getProperty("user.dir");
-            String modelPath = projectRoot + File.separator + "models" + File.separator + task.getModelName() + ".pth";
+            String modelPath = projectRoot + File.separator + "data" + File.separator + "models" + File.separator + "pth_models" + File.separator + task.getModelName() + ".pth";
             task.setModelOutputPath(modelPath);
             
             // 设置模拟性能指标（实际项目中应该从训练输出中解析）
@@ -131,13 +133,38 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
      */
     private String[] buildTrainingArguments(TrainTask task) {
         String projectRoot = System.getProperty("user.dir");
-        String csvPath = task.getTrainFileName() != null ? task.getTrainFileName() : "";
+        
+        // 获取 Python 脚本路径
+        String pythonScriptPath = projectRoot + File.separator + "python" + File.separator + 
+                                  (task.getPythonScript() != null ? task.getPythonScript() : "train.py");
+        
+        // 获取 CSV 文件完整路径
+        String csvPath;
+        Files trainFile = fileMapper.selectById(task.getTrainFileId());
+        if (trainFile != null && trainFile.getUrl() != null) {
+            csvPath = projectRoot + trainFile.getUrl();
+        } else {
+            // 如果找不到文件记录，尝试直接使用文件名
+            csvPath = projectRoot + File.separator + "data" + File.separator + "train" + File.separator + 
+                      (task.getTrainFileName() != null ? task.getTrainFileName() : "");
+        }
+        
         String modelName = task.getModelName() != null ? task.getModelName() : "diabetes_model";
-        String modelOutputPath = projectRoot + File.separator + "models" + File.separator + modelName + ".pth";
+        String modelOutputPath = projectRoot + File.separator + "data" + File.separator + "models" + File.separator + modelName + ".pth";
 
-        String[] args = new String[2];
-        args[0] = csvPath;
-        args[1] = modelOutputPath;
+        // 构建完整的命令行参数
+        // 格式: [python, script_path, csv_path, model_output_path]
+        String[] args = new String[4];
+        args[0] = "python";
+        args[1] = pythonScriptPath;
+        args[2] = csvPath;
+        args[3] = modelOutputPath;
+        
+        log.info("构建训练参数:");
+        for (int i = 0; i < args.length; i++) {
+            log.info("  参数[{}]: {}", i, args[i]);
+        }
+        
         return args;
     }
 
@@ -149,18 +176,22 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
             // 检查是否已存在相同版本
             String version = "v" + System.currentTimeMillis() % 10000;
             
+            String projectRoot = System.getProperty("user.dir");
+            String modelName = task.getModelName();
+            String modelsBasePath = projectRoot + File.separator + "data" + File.separator + "models";
+            
+            // 按分类设置路径
+            String modelFilePath = modelsBasePath + File.separator + "pth_models" + File.separator + modelName + ".pth";
+            String scalerPath = modelsBasePath + File.separator + "pkl_files" + File.separator + modelName + "_scaler.pkl";
+            String encoderPath = modelsBasePath + File.separator + "pkl_files" + File.separator + modelName + "_encoder.pkl";
+            
             ModelVersion modelVersion = new ModelVersion();
             modelVersion.setModelName(task.getModelName());
             modelVersion.setVersion(version);
             modelVersion.setSource("online_train");
-            modelVersion.setFilePath(task.getModelOutputPath());
-
-            // 设置 scaler 和 encoder 路径
-            String projectRoot = System.getProperty("user.dir");
-            String modelName = task.getModelName();
-            modelVersion.setScalerPath(projectRoot + File.separator + "models" + File.separator + modelName + "_scaler.pkl");
-            modelVersion.setEncoderPath(projectRoot + File.separator + "models" + File.separator + modelName + "_encoder.pkl");
-
+            modelVersion.setFilePath(modelFilePath);
+            modelVersion.setScalerPath(scalerPath);
+            modelVersion.setEncoderPath(encoderPath);
             modelVersion.setDescription("通过在线训练任务创建: " + task.getTaskName());
             
             // 设置性能指标
@@ -178,6 +209,9 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
             modelVersionMapper.insert(modelVersion);
             
             log.info("模型已自动注册到版本表: {}", task.getModelName());
+            log.info("  模型路径: {}", modelFilePath);
+            log.info("  缩放器路径: {}", scalerPath);
+            log.info("  编码器路径: {}", encoderPath);
             
         } catch (Exception e) {
             log.error("模型注册失败", e);

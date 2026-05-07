@@ -19,7 +19,7 @@ import traceback
 # ==========================================
 # 注意：如果你的 Java 配置改了路径，这里也需要同步修改，或者最好由 Java 传入该路径
 # OUTPUT_DIRECTORY = r'D:\Software-DZL125\json'
-OUTPUT_DIRECTORY = os.path.join(os.getcwd(), 'json')
+OUTPUT_DIRECTORY = os.path.join(os.getcwd(), 'data', 'json')
 # 定义和训练脚本一致的模型结构
 class DiabetesModel(nn.Module):
     def __init__(self, input_dim):
@@ -101,13 +101,60 @@ def main():
         sys.exit(1)
     print(f"[成功] 输入文件存在：{predict_file_path}")
 
-    # 4. 验证模型文件
-    encoder_path = model_path.replace('.pth', '_encoder.pkl')
-    scaler_path = model_path.replace('.pth', '_scaler.pkl')
+    # 4. 验证模型文件（支持分类路径）
+    # 先检查传入的 model_path 是否直接存在
+    model_exists = os.path.exists(model_path)
+    
+    # 如果不存在，可能需要从分类目录查找
+    if not model_exists:
+        # 尝试解析路径，判断是否应该使用分类结构
+        model_name = os.path.basename(model_path).replace('.pth', '')
+        base_dir = os.path.dirname(model_path)
+        
+        # 检查是否在 data/models 根目录下
+        if base_dir and 'models' in base_dir and not ('pth_models' in base_dir or 'pkl_files' in base_dir):
+            # 尝试构建分类路径
+            print(f"[调试] 尝试从分类目录加载模型，模型名: {model_name}")
+            
+            pth_path = os.path.join(base_dir, 'pth_models', f"{model_name}.pth")
+            encoder_path = os.path.join(base_dir, 'pkl_files', f"{model_name}_encoder.pkl")
+            scaler_path = os.path.join(base_dir, 'pkl_files', f"{model_name}_scaler.pkl")
+            
+            # 检查分类路径文件是否存在
+            if os.path.exists(pth_path) and os.path.exists(encoder_path) and os.path.exists(scaler_path):
+                model_path = pth_path
+                model_exists = True
+                print(f"[成功] 从分类目录找到模型文件")
+            else:
+                # 如果分类路径也不存在，尝试原来的方式
+                encoder_path = model_path.replace('.pth', '_encoder.pkl')
+                scaler_path = model_path.replace('.pth', '_scaler.pkl')
+        else:
+            # 不在 data/models 根目录，使用原来的方式
+            encoder_path = model_path.replace('.pth', '_encoder.pkl')
+            scaler_path = model_path.replace('.pth', '_scaler.pkl')
+    else:
+        # model_path 存在，构建对应的 encoder 和 scaler 路径
+        model_dir = os.path.dirname(model_path)
+        model_name = os.path.basename(model_path).replace('.pth', '')
+        
+        # 检查是否在 pth_models 目录中
+        if 'pth_models' in model_dir:
+            # 在分类目录中，构建对应的 pkl 路径
+            base_dir = os.path.dirname(model_dir)
+            encoder_path = os.path.join(base_dir, 'pkl_files', f"{model_name}_encoder.pkl")
+            scaler_path = os.path.join(base_dir, 'pkl_files', f"{model_name}_scaler.pkl")
+        else:
+            # 不在分类目录，使用原来的方式
+            encoder_path = model_path.replace('.pth', '_encoder.pkl')
+            scaler_path = model_path.replace('.pth', '_scaler.pkl')
+    
     model_files = [model_path, encoder_path, scaler_path]
-
+    print(f"[信息] 检查模型文件:")
     for path in model_files:
-        if not os.path.exists(path):
+        exists = os.path.exists(path)
+        print(f"  - {path}: {'存在' if exists else '缺失'}")
+        if not exists:
             write_error_json(output_predict_file_name, f"模型文件缺失：{path}", {"checked_paths": model_files})
             sys.exit(1)
     print("[成功] 所有模型文件均存在")
