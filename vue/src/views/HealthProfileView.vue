@@ -2,7 +2,7 @@
   <div class="health-hub-pro">
     <!-- 欢迎横幅 -->
     <div class="welcome-banner">
-      <h1>🏥 健康管理中心</h1>
+      <h1>🏥 健康档案</h1>
       <p>智能自查 · 趋势追踪 · 医生协同</p>
     </div>
     <el-row :gutter="20">

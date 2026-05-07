@@ -119,7 +119,9 @@ export default {
         'el-icon-menu': 'Menu',
         'el-icon-s-data': 'DataLine',
         'el-icon-info': 'InfoFilled',
-        'el-icon-book': 'Reading'
+        'el-icon-book': 'Reading',
+        'el-icon-alert': 'Warning',
+        'el-icon-s-marketing': 'DataAnalysis'
       };
       return iconMap[iconName] || 'Menu';
     }

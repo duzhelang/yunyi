@@ -186,7 +186,8 @@ export default {
         'el-icon-menu': 'MenuIcon',
         'el-icon-s-data': 'DataLine',
         'el-icon-info': 'InfoFilled',
-        'el-icon-s-marketing': 'DataAnalysis'
+        'el-icon-s-marketing': 'DataAnalysis',
+        'el-icon-alert': 'Warning'
       };
       return iconMap[iconName] || 'MenuIcon';
     },

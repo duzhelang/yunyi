@@ -75,23 +75,21 @@ INSERT INTO `sys_menu` VALUES (46, 'AI模型中心', NULL, 'el-icon-s-grid', 'AI
 INSERT INTO `sys_menu` VALUES (76, '模型管理', '/model-manager', 'el-icon-s-data', '模型资产统一管理中心', 46, 'ModelManagement', 1);
 INSERT INTO `sys_menu` VALUES (45, '数据集管理', '/dataset-management', 'el-icon-document', '训练集、测试集与预测结果统一管理', 46, 'DatasetManagement', 2);
 INSERT INTO `sys_menu` VALUES (8, '在线模型训练', '/online-training', 'el-icon-document', '训练任务启动器和历史记录看板', 46, 'OnlineTraining', 3);
+INSERT INTO `sys_menu` VALUES (41, '数据采集日志', '/data-test', 'el-icon-s-marketing', '在线测试模型数据', 46, 'DataTest', 4);
+INSERT INTO `sys_menu` VALUES (79, '预测工作台', '/diabetes/workbench', 'el-icon-dashboard', '预测任务的全生命周期管理中心', 46, 'PredictionWorkbench', 5);
 INSERT INTO `sys_menu` VALUES (85, '用户服务', NULL, 'el-icon-user', '用户服务模块', NULL, NULL, 3);
 INSERT INTO `sys_menu` VALUES (86, '风险快检', '/risk-quick', 'el-icon-alert', '风险评估快捷入口', 85, 'HealthCheck', 1);
-INSERT INTO `sys_menu` VALUES (73, '健康管理中心', '/health-profile', 'el-icon-s-custom', '个人健康档案查询', 85, 'HealthProfileView', 2);
-INSERT INTO `sys_menu` VALUES (87, '智能问答', '/diabetes/chat', 'el-icon-chat-dot-round', '糖尿病健康咨询与报告解读', 85, 'DiabetesChat', 3);
-INSERT INTO `sys_menu` VALUES (75, '诊疗档案', '/treatment-record', 'el-icon-document', '患者诊疗档案查询与批量导', 85, 'TreatmentRecord', 4);
-INSERT INTO `sys_menu` VALUES (88, '糖尿病科普', '/diabetes-education', 'el-icon-book', '糖尿病知识科普教育', 85, 'DiabetesEducation', 5);
+INSERT INTO `sys_menu` VALUES (73, '健康档案', '/health-profile', 'el-icon-s-custom', '个人健康档案查询', 85, 'HealthProfileView', 2);
+INSERT INTO `sys_menu` VALUES (53, '家庭预测', '/test-file', 'el-icon-document', '家庭成员数据批量预测', 85, 'TestFile', 3);
+INSERT INTO `sys_menu` VALUES (2, '我的报告', '/dashbord', 'el-icon-s-marketing', '个人历史预测报告与健康趋势', 85, 'Dashbord', 4);
+INSERT INTO `sys_menu` VALUES (87, '智能问答', '/diabetes/chat', 'el-icon-chat-dot-round', '糖尿病健康咨询与报告解读', 85, 'DiabetesChat', 5);
+INSERT INTO `sys_menu` VALUES (75, '诊疗档案', '/treatment-record', 'el-icon-document', '患者诊疗档案查询与批量导', 85, 'TreatmentRecord', 6);
+INSERT INTO `sys_menu` VALUES (88, '糖尿病科普', '/diabetes-education', 'el-icon-book', '糖尿病知识科普教育', 85, 'DiabetesEducation', 7);
 INSERT INTO `sys_menu` VALUES (90, '诊断员服务', NULL, 'el-icon-s-custom', '诊断员服务模块', NULL, NULL, 4);
-INSERT INTO `sys_menu` VALUES (91, '组合分析', '/diabetes/group', 'el-icon-pie-chart', '基于预测结果的宏观统计与对比分析', 90, 'GroupAnalysis', 1);
+INSERT INTO `sys_menu` VALUES (74, '诊断工作台', '/doctor-workbench', 'el-icon-s-custom', '诊断医生工作台，处理患者', 90, 'DoctorWorkbench', 1);
 INSERT INTO `sys_menu` VALUES (92, '个体洞察', '/diabetes/individual', 'el-icon-user', '单一样本或单文件的深度归因分析', 90, 'IndividualInsight', 2);
-INSERT INTO `sys_menu` VALUES (78, '数据采集', '/diabetes/collection', 'el-icon-upload', '原始数据资产的统一管理入口', 90, 'DataCollection', 3);
-INSERT INTO `sys_menu` VALUES (79, '预测工作台', '/diabetes/workbench', 'el-icon-dashboard', '预测任务的全生命周期管理中心', 90, 'PredictionWorkbench', 4);
-INSERT INTO `sys_menu` VALUES (74, '诊断工作台', '/doctor-workbench', 'el-icon-s-custom', '诊断医生工作台，处理患者', 90, 'DoctorWorkbench', 5);
-INSERT INTO `sys_menu` VALUES (77, '糖尿病预测中心', NULL, 'el-icon-data-analysis', '糖尿病预测与分析中心', NULL, NULL, 5);
-INSERT INTO `sys_menu` VALUES (41, '采集日志', '/data-test', 'el-icon-s-marketing', '在线测试模型数据', 77, 'DataTest', 1);
-INSERT INTO `sys_menu` VALUES (53, '在线预测', '/test-file', 'el-icon-document', '在线预测功能', 77, 'TestFile', 2);
-INSERT INTO `sys_menu` VALUES (2, '数据报表', '/dashbord', 'el-icon-s-marketing', '数据报表', 77, 'Dashbord', 3);
-INSERT INTO `sys_menu` VALUES (49, '详细报表', '/detailbord', 'el-icon-s-marketing', '详细报表', 77, 'Detailbord', 4);
+INSERT INTO `sys_menu` VALUES (91, '组合分析', '/diabetes/group', 'el-icon-pie-chart', '基于预测结果的宏观统计与对比分析', 90, 'GroupAnalysis', 3);
+INSERT INTO `sys_menu` VALUES (78, '数据采集', '/diabetes/collection', 'el-icon-upload', '原始数据资产的统一管理入口', 90, 'DataCollection', 4);
 INSERT INTO `sys_menu` VALUES (54, '运维中心', NULL, 'el-icon-s-grid', '运维管理中心', NULL, NULL, 6);
 INSERT INTO `sys_menu` VALUES (51, '故障报修', '/send', 'el-icon-document', '故障报修', 54, 'Send', 1);
 INSERT INTO `sys_menu` VALUES (52, '报修详情', '/list', 'el-icon-s-marketing', '报修详情', 54, 'List', 2);
@@ -215,9 +213,10 @@ CREATE TABLE `sys_role_menu` (
 -- ----------------------------
 -- Records of sys_role_menu
 -- ----------------------------
-INSERT INTO `sys_role_menu` VALUES (1, 10), (1, 4), (1, 5), (1, 6), (1, 7), (1, 46), (1, 45), (1, 76), (1, 8), (1, 85), (1, 87), (1, 88), (1, 73), (1, 86), (1, 75), (1, 90), (1, 91), (1, 92), (1, 78), (1, 79), (1, 74), (1, 77), (1, 41), (1, 53), (1, 2), (1, 49), (1, 54), (1, 51), (1, 52), (1, 55), (1, 56), (1, 93);
-INSERT INTO `sys_role_menu` VALUES (2, 10), (2, 85), (2, 87), (2, 88), (2, 73), (2, 86), (2, 75), (2, 90), (2, 91), (2, 92), (2, 78), (2, 79), (2, 74), (2, 77), (2, 41), (2, 53), (2, 2), (2, 49);
-INSERT INTO `sys_role_menu` VALUES (3, 10), (3, 85), (3, 87), (3, 88), (3, 73), (3, 86), (3, 77), (3, 41), (3, 53);
+INSERT INTO `sys_role_menu` VALUES (1, 10), (1, 4), (1, 5), (1, 6), (1, 7), (1, 46), (1, 76), (1, 45), (1, 8), (1, 41), (1, 79), (1, 85), (1, 86), (1, 73), (1, 53), (1, 2), (1, 87), (1, 75), (1, 88), (1, 90), (1, 74), (1, 92), (1, 91), (1, 78), (1, 54), (1, 51), (1, 52), (1, 55), (1, 56), (1, 93);
+INSERT INTO `sys_role_menu` VALUES (2, 10), (2, 85), (2, 86), (2, 73), (2, 53), (2, 2), (2, 87), (2, 75), (2, 88);
+INSERT INTO `sys_role_menu` VALUES (3, 10), (3, 85), (3, 86), (3, 73), (3, 53), (3, 87), (3, 88), (3, 54), (3, 51), (3, 52), (3, 55), (3, 56);
+INSERT INTO `sys_role_menu` VALUES (18, 10), (18, 85), (18, 86), (18, 73), (18, 53), (18, 2), (18, 87), (18, 75), (18, 88), (18, 90), (18, 74), (18, 92), (18, 91), (18, 78);
 
 -- ----------------------------
 -- Table structure for sys_testfile

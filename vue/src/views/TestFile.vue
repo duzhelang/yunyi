@@ -57,7 +57,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="在线预测" width="90">
+      <el-table-column label="家庭预测" width="90">
         <template v-slot="scope">
           <el-button
               type="primary"
