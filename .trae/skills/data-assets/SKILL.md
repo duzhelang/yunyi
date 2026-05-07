@@ -20,9 +20,10 @@ Software-ODA125/
 │   ├── similar_cases.npy      # 相似病例历史数据
 │   └── Untitled-1.js          # 临时文件
 ├── sql/
-│   ├── Software-ODA.sql       # 主数据库初始化脚本（19张表 + 预置数据）
-│   └── add_python_script_field.sql  # 迁移脚本（向sys_train_task添加python_script字段）
+│   └── Software-ODA.sql       # 主数据库初始化脚本（19张表 + 预置数据，已整合所有迁移）
 ├── data/                        # 运行时数据目录（已存在于项目根目录）
+│   ├── json/                    # JSON预测结果输出
+│   ├── test/                    # 预测数据上传（测试集）
 │   └── models/                  # 模型文件目录
 │       ├── npy_data/            # SHAP背景数据(.npy)
 │       └── pth_models/          # PyTorch模型文件(.pth)
@@ -44,9 +45,9 @@ Software-ODA125/
 |------|---------|---------|
 | `./data/` | **已存在** | 含 `models/` 子目录（npy_data/ + pth_models/）、`test/`（.gitkeep）、`train/`（.gitkeep） |
 | `./data/models/` | **已存在** | 存储训练产出的模型文件 |
+| `./data/test/` | **已存在** | 预测数据上传目录（测试集CSV文件） |
+| `./data/json/` | **已存在** | JSON预测结果输出目录 |
 | `./logs/` | **已存在** | 仅包含 `.gitkeep` 占位文件 |
-| `./OnlinePredict/` | 不存在 | 预测数据上传目录，application.yml 已配置，需要时自动创建 |
-| `./json/` | 不存在 | JSON结果下载目录，application.yml 已配置，需要时自动创建 |
 | `./files/` | 不存在 | 通用文件上传目录，application.yml 已配置，需要时自动创建 |
 
 ---
@@ -125,8 +126,8 @@ files:
   avatar.path: ${files.upload.path}avatar/
   common.path: ${files.upload.path}common/
   pythonUpload.path: ${base.path}/data/
-  pythonDataTestUpload.path: ${base.path}/OnlinePredict/
-  JsonDownload.path: ${base.path}/json/
+  pythonDataTestUpload.path: ${base.path}/data/test/
+  JsonDownload.path: ${base.path}/data/json/
   models.path: ${base.path}/data/models/
   trainLogs.path: ${base.path}/logs/
   pythonExe.path: python
@@ -155,8 +156,7 @@ spring.config.import: optional:classpath:secrets/application-secrets.yml
 ### 4.1 数据库配置
 - 数据库名: `dongfang`
 - 字符集: `utf8mb4`
-- 初始化脚本: `sql/Software-ODA.sql`
-- 迁移脚本: `sql/add_python_script_field.sql`
+- 初始化脚本: `sql/Software-ODA.sql`（已整合所有迁移）
 
 ### 4.2 核心数据表（共19张）
 
@@ -170,8 +170,8 @@ spring.config.import: optional:classpath:secrets/application-secrets.yml
 | 4 | **sys_role_menu** | 角色-菜单关联表 | RBAC权限控制 |
 | 5 | **sys_dict** | 数据字典表 | 图标配置 |
 | 6 | **sys_message** | 消息/故障报修表 | 运维消息 |
-| 7 | **sys_trainfile** | 训练文件表 | 训练数据集元数据 |
-| 8 | **sys_train_task** | 训练任务表 | 训练任务记录（含python_script字段，由迁移脚本添加） |
+| 7 | **sys_trainfile** | 训练文件表 | 训练数据集元数据（含quality_level、sample_count、column_info、update_time字段，已整合到主SQL） |
+| 8 | **sys_train_task** | 训练任务表 | 训练任务记录（含python_script字段，已整合到主SQL） |
 | 9 | **sys_model_version** | 模型版本表 | 模型版本管理，包含激活模型标记 |
 | 10 | **sys_testfile** | 测试文件表 | 测试数据文件 |
 | 11 | **sys_config** | 系统配置表 | 默认模型配置等 |
@@ -334,9 +334,9 @@ shap~=0.46.0
     → 记录到 sys_model_version 表
 
 【批量预测流程】
-用户上传预测CSV → 保存到 ./OnlinePredict/ 目录
+用户上传预测CSV → 保存到 ./data/test/ 目录
     → 调用 python/predict.py
-    → 输出预测结果 JSON → 保存到 ./json/ 目录
+    → 输出预测结果 JSON → 保存到 ./data/json/ 目录
     → 结果记录到 sys_result 表
 
 【健康档案预测流程】
@@ -358,16 +358,14 @@ shap~=0.46.0
 
 ### 7.1 数据库初始化
 1. 创建数据库 `dongfang`（字符集 utf8mb4）
-2. 执行 `sql/Software-ODA.sql`（18张表 + 预置数据）
+2. 执行 `sql/Software-ODA.sql`（19张表 + 预置数据，已整合所有迁移）
 3. 手动创建 `sys_treatment_record` 表（该表未在初始化脚本中定义）
-4. 如有需要，执行迁移脚本 `sql/add_python_script_field.sql`
 
 ### 7.2 迁移脚本说明
 
-`add_python_script_field.sql`：
-- 向 `sys_train_task` 表添加 `python_script` 字段（VARCHAR(255)）
-- 添加索引 `idx_python_script` 提高查询性能
-- 使用动态SQL判断字段/索引是否存在，避免重复执行
+所有迁移已整合到 `sql/Software-ODA.sql` 主脚本中：
+- `python_script` 字段已包含在 `sys_train_task` 表定义中
+- `quality_level`、`sample_count`、`column_info`、`update_time` 字段已包含在 `sys_trainfile` 表定义中
 
 ---
 
@@ -377,8 +375,8 @@ shap~=0.46.0
 项目运行时会根据需要自动创建以下目录：
 - `./data/` — 已存在
 - `./data/models/` — 已存在
-- `./OnlinePredict/` — 需要时自动创建
-- `./json/` — 需要时自动创建
+- `./data/test/` — 已存在（预测数据上传）
+- `./data/json/` — 已存在（JSON预测结果输出）
 - `./logs/` — 已存在（.gitkeep）
 - `./files/` — 需要时自动创建
 - `./files/avatar/` — 需要时自动创建
