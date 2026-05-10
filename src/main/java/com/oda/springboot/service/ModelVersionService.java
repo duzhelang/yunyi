@@ -75,6 +75,27 @@ public class ModelVersionService extends ServiceImpl<ModelVersionMapper, ModelVe
     }
 
     /**
+     * 取消激活指定模型
+     */
+    public boolean deactivateModel(Integer modelId) {
+        ModelVersion model = modelVersionMapper.selectById(modelId);
+        if (model == null) {
+            throw new RuntimeException("模型不存在");
+        }
+
+        if (!"active".equals(model.getStatus())) {
+            throw new RuntimeException("该模型未处于激活状态");
+        }
+
+        model.setStatus("inactive");
+        model.setUpdateTime(new Date());
+        int result = modelVersionMapper.updateById(model);
+        
+        log.info("模型已取消激活: {} - {}", model.getModelName(), model.getVersion());
+        return result > 0;
+    }
+
+    /**
      * 删除模型
      */
     public boolean deleteModel(Integer modelId) {

@@ -1,10 +1,17 @@
 package com.oda.springboot.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.oda.springboot.common.Result;
 import com.oda.springboot.controller.dto.SaveAndPredictRequest;
 import com.oda.springboot.entity.HealthProfile;
+import com.oda.springboot.entity.User;
+import com.oda.springboot.mapper.HealthProfileMapper;
+import com.oda.springboot.service.ISinglePredictService;
 import com.oda.springboot.service.impl.HealthProfileServiceImpl;
+import com.oda.springboot.utils.TokenUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -13,23 +20,40 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/health-profile")
 @CrossOrigin(origins = "*")
 public class HealthProfileController {
 
+    private static final Logger log = LoggerFactory.getLogger(HealthProfileController.class);
+
     @Autowired
     private HealthProfileServiceImpl healthProfileService;
 
     @Autowired
-    private SinglePredictController singlePredictController;
+    private HealthProfileMapper healthProfileMapper;
+
+    @Autowired
+    private ISinglePredictService singlePredictService;
 
     private static final ConcurrentHashMap<String, String> ADVICE_CACHE = new ConcurrentHashMap<>();
+
+    @Value("${files.pythonExe.path}")
+    private String pythonPath;
+
+    @Value("${files.pythonChatScript.path}")
+    private String pythonChatScriptPath;
+
+    @Value("${zhipu.api.key:}")
+    private String zhipuApiKey;
 
     @Value("${file.csv.root-path:#{systemProperties['user.dir'] + '/data/csv_for_doctor'}}")
     private String csvRootPath;
@@ -51,13 +75,15 @@ public class HealthProfileController {
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
         try {
+            User currentUser = TokenUtils.getCurrentUser();
+            Long userId = currentUser != null ? currentUser.getId().longValue() : null;
             Long savedId = healthProfileService.saveProfile(
                     Pregnancies, Glucose, BloodPressure, SkinThickness,
-                    Insulin, BMI, DiabetesPedigreeFunction, Age, symptoms, file
+                    Insulin, BMI, DiabetesPedigreeFunction, Age, symptoms, file, userId
             );
             return Result.success(String.valueOf(savedId), "档案保存成功,请点击发送诊断");
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("保存健康档案失败", e);
             return Result.error("保存失败:" + e.getMessage());
         }
     }
@@ -237,12 +263,30 @@ public class HealthProfileController {
     @GetMapping("/list")
     public Result<List<HealthProfile>> list() {
         try {
-            Long currentUserId = 1L;
+            User currentUser = TokenUtils.getCurrentUser();
+            if (currentUser == null) {
+                return Result.error("401", "请先登录");
+            }
+            Long currentUserId = currentUser.getId().longValue();
             List<HealthProfile> list = healthProfileService.getListByUserId(currentUserId);
             return Result.success(list);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("查询健康档案列表失败", e);
             return Result.error("查询失败: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取所有患者列表（医生使用，阶段四完善医生-患者关联后可改为按医生过滤）
+     */
+    @GetMapping("/list/by-doctor")
+    public Result<List<HealthProfile>> listByDoctor() {
+        try {
+            List<HealthProfile> list = healthProfileService.getAllProfiles();
+            return Result.success(list);
+        } catch (Exception e) {
+            log.error("查询患者列表失败", e);
+            return Result.error("查询失败: " + e.getMessage());
         }
     }
 
@@ -273,6 +317,9 @@ public class HealthProfileController {
     @PostMapping("/save-and-predict")
     public Result saveAndPredict(@RequestBody SaveAndPredictRequest request) {
         try {
+            User currentUser = TokenUtils.getCurrentUser();
+            Long userId = currentUser != null ? currentUser.getId().longValue() : null;
+
             Long profileId = healthProfileService.saveProfileFull(
                 request.getPregnancies(), request.getGlucose(),
                 request.getBloodPressure(), request.getSkinThickness(),
@@ -282,7 +329,7 @@ public class HealthProfileController {
                 request.getHeight(), request.getWeight(),
                 request.getExerciseFrequency(), request.getDietHabit(),
                 request.getSmoking(), request.getDrinking(),
-                request.getGender()
+                request.getGender(), userId
             );
 
             Map<String, Object> features = new HashMap<>();
@@ -295,7 +342,7 @@ public class HealthProfileController {
             features.put("diabetesPedigreeFunction", request.getDiabetesPedigreeFunction() != null ? request.getDiabetesPedigreeFunction() : 0.0);
             features.put("age", request.getAge() != null ? request.getAge() : 0);
 
-            Result predictResult = singlePredictController.singlePredict(features);
+            Result predictResult = singlePredictService.singlePredict(features);
             Map<String, Object> predictionData = new HashMap<>();
             if ("200".equals(predictResult.getCode()) && predictResult.getData() != null) {
                 predictionData = (Map<String, Object>) predictResult.getData();
@@ -318,7 +365,7 @@ public class HealthProfileController {
             result.put("prediction", predictionData);
             return Result.success(result);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("保存并预测失败", e);
             return Result.error("500", "保存并预测失败: " + e.getMessage());
         }
     }
@@ -329,13 +376,13 @@ public class HealthProfileController {
             healthProfileService.deleteById(id);
             return Result.success();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("删除健康档案失败", e);
             return Result.error("500", "删除失败: " + e.getMessage());
         }
     }
 
     /**
-     * 静态AI建议（使用本地缓存避免重复生成）
+     * AI智能建议（优先调用AI模型，失败时回退到静态规则）
      */
     private String generateStaticAdvice(Map<String, Object> predictionData) {
         String riskLevel = (String) predictionData.getOrDefault("risk_level", "low");
@@ -346,6 +393,12 @@ public class HealthProfileController {
         String cacheKey = riskLevel + "_" + String.format("%.1f", probability);
         String cached = ADVICE_CACHE.get(cacheKey);
         if (cached != null) return cached;
+
+        String aiAdvice = callAiForAdvice(riskLevel, probability, predictionData);
+        if (aiAdvice != null && !aiAdvice.isBlank()) {
+            ADVICE_CACHE.put(cacheKey, aiAdvice);
+            return aiAdvice;
+        }
 
         StringBuilder advice = new StringBuilder();
         if ("high".equals(riskLevel)) {
@@ -362,5 +415,105 @@ public class HealthProfileController {
 
         ADVICE_CACHE.put(cacheKey, advice.toString());
         return advice.toString();
+    }
+
+    private String callAiForAdvice(String riskLevel, Double probability, Map<String, Object> predictionData) {
+        if (zhipuApiKey == null || zhipuApiKey.isBlank()) {
+            return null;
+        }
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("你是一位糖尿病专科医生，请根据以下预测结果生成个性化健康建议（150字以内）：\n");
+        prompt.append("风险等级：").append(riskLevel).append("，预测概率：").append(String.format("%.1f", probability)).append("%\n");
+        Object glucose = predictionData.get("glucose");
+        Object bmi = predictionData.get("bmi");
+        Object age = predictionData.get("age");
+        if (glucose != null) prompt.append("血糖：").append(glucose).append(" mg/dL\n");
+        if (bmi != null) prompt.append("BMI：").append(bmi).append("\n");
+        if (age != null) prompt.append("年龄：").append(age).append("岁\n");
+
+        Process process = null;
+        try {
+            String[] command = {
+                pythonPath,
+                pythonChatScriptPath,
+                "glm-4-flash",
+                zhipuApiKey,
+                prompt.toString()
+            };
+            process = new ProcessBuilder(command)
+                .redirectErrorStream(true)
+                .start();
+
+            StringBuilder output = new StringBuilder();
+            InputStream processInput = process.getInputStream();
+            Thread outputThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(processInput, StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        output.append(line).append("\n");
+                    }
+                } catch (IOException ignored) {}
+            });
+            outputThread.start();
+
+            boolean finished = process.waitFor(30, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                outputThread.interrupt();
+                return null;
+            }
+            outputThread.join(2000);
+
+            String result = output.toString().trim();
+            if (process.exitValue() == 0 && !result.isEmpty()) {
+                log.info("AI建议生成成功，长度: {}", result.length());
+                return result;
+            }
+        } catch (Exception e) {
+            log.warn("AI建议生成失败，回退到静态建议: {}", e.getMessage());
+            if (Thread.currentThread().isInterrupted()) {
+                log.warn("AI调用被中断");
+            }
+        } finally {
+            if (process != null && process.isAlive()) {
+                process.destroyForcibly();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 7. 家庭预测历史查询
+     */
+    @GetMapping("/dpf-history")
+    public Result getDpfHistory() {
+        try {
+            Long userId = TokenUtils.getCurrentUser().getId().longValue();
+            QueryWrapper<HealthProfile> wrapper = new QueryWrapper<>();
+            wrapper.eq("user_id", userId)
+                .isNotNull("DiabetesPedigreeFunction")
+                .orderByDesc("create_time")
+                .last("LIMIT 20");
+            List<HealthProfile> profiles = healthProfileMapper.selectList(wrapper);
+
+            List<Map<String, Object>> history = new ArrayList<>();
+            for (HealthProfile p : profiles) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", p.getId());
+                item.put("dpf", p.getDiabetesPedigreeFunction());
+                item.put("age", p.getAge());
+                item.put("glucose", p.getGlucose());
+                item.put("bmi", p.getBMI());
+                item.put("riskLevel", p.getRiskLevel());
+                item.put("probability", p.getRiskProbability());
+                item.put("createTime", p.getCreateTime());
+                history.add(item);
+            }
+            return Result.success(history);
+        } catch (Exception e) {
+            log.error("查询DPF历史失败", e);
+            return Result.error("500", "查询失败: " + e.getMessage());
+        }
     }
 }

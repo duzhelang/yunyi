@@ -42,9 +42,7 @@ public class TestFiles {
     @TableField("user_id")
     private int userid;
 
-    // [核心修复]确保数据库列名确实?"jsonUrl" (驼峰)?
-    // 如果数据库列名是 "json_url" (下划?,请改为 @TableField("json_url")
-    @TableField("jsonUrl")
+    @TableField("json_url")
     private String jsonUrl;
 
     // 映射数据库的 file_name 字段

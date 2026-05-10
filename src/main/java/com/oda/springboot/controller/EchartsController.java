@@ -3,9 +3,13 @@ package com.oda.springboot.controller;
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.oda.springboot.entity.DiabetesRecord; // 替换为糖尿病实体
+import com.oda.springboot.entity.DiabetesRecord;
+import com.oda.springboot.entity.HealthProfile;
+import com.oda.springboot.entity.Files;
 import com.oda.springboot.common.Result;
-import com.oda.springboot.mapper.DiabetesRecordMapper; // 替换为糖尿病Mapper
+import com.oda.springboot.mapper.DiabetesRecordMapper;
+import com.oda.springboot.mapper.HealthProfileMapper;
+import com.oda.springboot.mapper.FileMapper;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,7 +22,46 @@ import java.util.*;
 public class EchartsController {
 
     @Resource
-    private DiabetesRecordMapper diabetesMapper; // 注入糖尿病Mapper,替换为ResultMapper
+    private DiabetesRecordMapper diabetesMapper;
+
+    @Resource
+    private HealthProfileMapper healthProfileMapper;
+
+    @Resource
+    private FileMapper fileMapper;
+
+    @GetMapping("/dashboard")
+    public Result dashboard() {
+        Map<String, Object> data = new HashMap<>();
+
+        Long totalRecords = diabetesMapper.selectCount(null);
+        Long totalProfiles = healthProfileMapper.selectCount(null);
+
+        LambdaQueryWrapper<DiabetesRecord> todayWrapper = new LambdaQueryWrapper<>();
+        todayWrapper.ge(DiabetesRecord::getCreateTime, cn.hutool.core.date.DateUtil.beginOfDay(new java.util.Date()))
+            .le(DiabetesRecord::getCreateTime, cn.hutool.core.date.DateUtil.endOfDay(new java.util.Date()));
+        long todayCount = diabetesMapper.selectCount(todayWrapper);
+
+        LambdaQueryWrapper<DiabetesRecord> normalWrapper = new LambdaQueryWrapper<>();
+        normalWrapper.eq(DiabetesRecord::getOutcome, 0);
+        long normalCount = diabetesMapper.selectCount(normalWrapper);
+
+        LambdaQueryWrapper<DiabetesRecord> diseaseWrapper = new LambdaQueryWrapper<>();
+        diseaseWrapper.eq(DiabetesRecord::getOutcome, 1);
+        long diseaseCount = diabetesMapper.selectCount(diseaseWrapper);
+
+        LambdaQueryWrapper<Files> fileWrapper = new LambdaQueryWrapper<>();
+        fileWrapper.eq(Files::getIsDelete, false);
+        Long totalFiles = fileMapper.selectCount(fileWrapper);
+
+        data.put("totalRecords", totalRecords);
+        data.put("totalProfiles", totalProfiles);
+        data.put("todayCount", todayCount);
+        data.put("normalCount", normalCount);
+        data.put("diseaseCount", diseaseCount);
+        data.put("totalFiles", totalFiles);
+        return Result.success(data);
+    }
 
     // 1. 统计未患病患病人数(对应前端图表的核心数据)
     @GetMapping("/members")

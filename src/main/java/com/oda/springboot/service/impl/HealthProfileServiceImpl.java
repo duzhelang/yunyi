@@ -28,10 +28,9 @@ public class HealthProfileServiceImpl {
     public Long saveProfile(Integer pregnancies, Double glucose, Integer bloodPressure,
                             Integer skinThickness, Double insulin, Double bmi,
                             Double diabetesPedigreeFunction, Integer age,
-                            String symptoms, MultipartFile file) throws IOException {
+                            String symptoms, MultipartFile file, Long userId) throws IOException {
 
         HealthProfile profile = new HealthProfile();
-        // 设置大驼峰字
         profile.setPregnancies(pregnancies);
         profile.setGlucose(glucose);
         profile.setBloodPressure(bloodPressure);
@@ -40,10 +39,9 @@ public class HealthProfileServiceImpl {
         profile.setBMI(bmi);
         profile.setDiabetesPedigreeFunction(diabetesPedigreeFunction);
         profile.setAge(age);
-
         profile.setSymptoms(symptoms);
-        profile.setUserId(1L); // TODO: 替换为当前登录用户ID
-        profile.setStatus("PENDING"); // 初始状态:待诊
+        profile.setUserId(userId != null ? userId : 1L);
+        profile.setStatus("PENDING");
         profile.setCreateTime(LocalDateTime.now());
 
         // 处理文件上传
@@ -55,7 +53,7 @@ public class HealthProfileServiceImpl {
             // 防止中文文件名问题,简单处?
             fileName = fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
 
-            File dest = new File(UPLOAD_DIR + "\\" + fileName);
+            File dest = new File(UPLOAD_DIR + File.separator + fileName);
             file.transferTo(dest);
             profile.setFileUrl(fileName);
         }
@@ -75,7 +73,7 @@ public class HealthProfileServiceImpl {
         if (!dir.exists()) dir.mkdirs();
 
         String csvFileName = "patient_" + profileId + "_" + System.currentTimeMillis() + ".csv";
-        String csvFullPath = CSV_DIR + "\\" + csvFileName;
+        String csvFullPath = CSV_DIR + File.separator + csvFileName;
 
         try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(csvFullPath), StandardCharsets.UTF_8))) {
             writer.println("ID,Pregnancies,Glucose,BloodPressure,SkinThickness,Insulin,BMI,DiabetesPedigreeFunction,Age,Symptoms,CreateTime,RiskLevel,RiskProbability");
@@ -135,6 +133,16 @@ public class HealthProfileServiceImpl {
     }
 
     /**
+     * 获取所有健康档案（医生使用）
+     */
+    public List<HealthProfile> getAllProfiles() {
+        QueryWrapper<HealthProfile> wrapper = new QueryWrapper<>();
+        wrapper.select(HealthProfile.class, i -> !i.getProperty().equals("predictionJson"));
+        wrapper.orderByDesc("create_time").last("LIMIT 200");
+        return healthProfileMapper.selectList(wrapper);
+    }
+
+    /**
      * 获取所有待诊断列表 (医生专用)
      */
     public List<HealthProfile> getPendingList() {
@@ -188,7 +196,7 @@ public class HealthProfileServiceImpl {
                                 String symptoms, MultipartFile file,
                                 Double height, Double weight,
                                 String exerciseFrequency, String dietHabit,
-                                String smoking, String drinking, String gender) throws IOException {
+                                String smoking, String drinking, String gender, Long userId) throws IOException {
 
         HealthProfile profile = new HealthProfile();
         profile.setPregnancies(pregnancies);
@@ -209,7 +217,7 @@ public class HealthProfileServiceImpl {
         profile.setDrinking(drinking);
         profile.setGender(gender);
 
-        profile.setUserId(1L); // TODO: 替换为当前登录用户ID
+        profile.setUserId(userId != null ? userId : 1L);
         profile.setStatus("PENDING");
         profile.setCreateTime(LocalDateTime.now());
 
@@ -218,7 +226,7 @@ public class HealthProfileServiceImpl {
             if (!dir.exists()) dir.mkdirs();
             String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
             fileName = fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
-            File dest = new File(UPLOAD_DIR + "\\" + fileName);
+            File dest = new File(UPLOAD_DIR + File.separator + fileName);
             file.transferTo(dest);
             profile.setFileUrl(fileName);
         }

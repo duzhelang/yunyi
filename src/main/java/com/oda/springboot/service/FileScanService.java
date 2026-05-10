@@ -250,7 +250,11 @@ public class FileScanService {
         String fullPath = file.getAbsolutePath();
         if (fullPath.startsWith(projectRoot)) {
             String relative = fullPath.substring(projectRoot.length());
-            return relative.replace('\\', '/');
+            relative = relative.replace('\\', '/');
+            if (relative.startsWith("/")) {
+                relative = relative.substring(1);
+            }
+            return relative;
         }
         return fullPath.replace('\\', '/');
     }

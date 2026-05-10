@@ -101,6 +101,24 @@ public class ModelVersionController {
     }
 
     /**
+     * 取消激活指定模型
+     */
+    @PostMapping("/{id}/deactivate")
+    public Result<Void> deactivateModel(@PathVariable Integer id) {
+        try {
+            boolean success = modelVersionService.deactivateModel(id);
+            if (success) {
+                return Result.success(null);
+            } else {
+                return Result.error("取消激活失败");
+            }
+        } catch (Exception e) {
+            log.error("取消激活模型失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
      * 删除模型
      */
     @DeleteMapping("/{id}")

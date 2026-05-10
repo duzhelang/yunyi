@@ -142,7 +142,12 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
         String csvPath;
         Files trainFile = fileMapper.selectById(task.getTrainFileId());
         if (trainFile != null && trainFile.getUrl() != null) {
-            csvPath = projectRoot + trainFile.getUrl();
+            String filePath = trainFile.getUrl();
+            if (filePath.startsWith("/") || filePath.startsWith("\\") || filePath.contains(":")) {
+                csvPath = filePath;
+            } else {
+                csvPath = projectRoot + File.separator + filePath;
+            }
         } else {
             // 如果找不到文件记录，尝试直接使用文件名
             csvPath = projectRoot + File.separator + "data" + File.separator + "train" + File.separator + 

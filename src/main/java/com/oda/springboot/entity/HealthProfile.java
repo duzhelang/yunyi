@@ -2,6 +2,7 @@ package com.oda.springboot.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 
 @TableName(value = "user_health_profiles", autoResultMap = true)
@@ -123,6 +124,7 @@ public class HealthProfile {
         Insulin = insulin;
     }
 
+    @JsonProperty("bmi")
     public Double getBMI() {
         return BMI;
     }

@@ -334,7 +334,7 @@ public class DatasetController {
             File destFile = new File(fullPath, safeName);
             file.transferTo(destFile);
 
-            String relativePath = File.separator + targetDir + File.separator + safeName;
+            String relativePath = targetDir + "/" + safeName;
 
             Files record = new Files();
             record.setName(originalFilename);

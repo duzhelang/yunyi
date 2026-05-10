@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class UsePythonUtils {
@@ -14,6 +16,16 @@ public class UsePythonUtils {
     // 回调接口
     public interface PythonOutputCallback {
         void onOutput(String line, boolean isError);
+    }
+
+    // 获取带UTF-8编码的环境变量
+    private static String[] getUtf8Environment() {
+        Map<String, String> env = new HashMap<>(System.getenv());
+        env.put("PYTHONIOENCODING", "utf-8");
+        env.put("PYTHONUTF8", "1");
+        return env.entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .toArray(String[]::new);
     }
 
     // 调用Python脚本并返回输出内容
@@ -31,7 +43,7 @@ public class UsePythonUtils {
 
         Process process = null;
         try {
-            process = Runtime.getRuntime().exec(arguments);
+            process = Runtime.getRuntime().exec(arguments, getUtf8Environment());
             System.out.println("Python进程已启动,PID:" + getProcessId(process));
 
             // 读取标准输出
@@ -92,7 +104,7 @@ public class UsePythonUtils {
 
         Process process = null;
         try {
-            process = Runtime.getRuntime().exec(arguments);
+            process = Runtime.getRuntime().exec(arguments, getUtf8Environment());
 
             // 读取标准输出
             try (InputStream stdout = process.getInputStream();
@@ -137,7 +149,7 @@ public class UsePythonUtils {
 
         Process process = null;
         try {
-            process = Runtime.getRuntime().exec(arguments);
+            process = Runtime.getRuntime().exec(arguments, getUtf8Environment());
             return process.waitFor();
         } finally {
             if (process != null) {
