@@ -61,9 +61,13 @@
         <el-table-column label="操作" width="220" align="center" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="viewModel(row)">详情</el-button>
-            <el-button size="small" :type="row.status === 'active' ? 'warning' : 'success'"
-                       @click="activateModel(row)" :disabled="row.status === 'active'">
-              {{ row.status === 'active' ? '已激活' : '激活' }}
+            <el-button v-if="row.status === 'active'" size="small" type="warning"
+                       @click="deactivateModel(row)">
+              取消激活
+            </el-button>
+            <el-button v-else size="small" type="success"
+                       @click="activateModel(row)">
+              激活
             </el-button>
             <el-popconfirm title="确定删除该模型？" @confirm="deleteModel(row.id)" confirm-button-text="删除"
                            cancel-button-text="取消" :disabled="row.status === 'active'">
@@ -207,6 +211,17 @@ const activateModel = (row) => {
       loadModels()
     } else {
       ElMessage.error(res.msg || '激活失败')
+    }
+  })
+}
+
+const deactivateModel = (row) => {
+  request.post(`/api/model/${row.id}/deactivate`).then(res => {
+    if (res.code === '200') {
+      ElMessage.success('已取消激活')
+      loadModels()
+    } else {
+      ElMessage.error(res.msg || '取消激活失败')
     }
   })
 }

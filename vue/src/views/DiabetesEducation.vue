@@ -991,8 +991,31 @@ const updateCurrentSection = () => {
   }
 }
 
-const toggleEditMode = () => {
-  editMode.value = !editMode.value;
+const toggleEditMode = async () => {
+  if (editMode.value) {
+    await saveEducationContent()
+  }
+  editMode.value = !editMode.value
+}
+
+const saveEducationContent = async () => {
+  try {
+    const sectionEls = document.querySelectorAll('.section')
+    const contents = []
+    sectionEls.forEach((el, idx) => {
+      const title = el.querySelector('.section-title')?.textContent || ''
+      const content = el.querySelector('.section-content')?.innerHTML || ''
+      if (title && content) {
+        contents.push({ sectionId: sections.value[idx]?.id || `section_${idx}`, title, content })
+      }
+    })
+    for (const item of contents) {
+      await request.post('/diabetes-education/update', item)
+    }
+    ElMessage.success('科普内容已保存')
+  } catch {
+    ElMessage.error('保存失败')
+  }
 }
 
 onMounted(() => {

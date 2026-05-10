@@ -514,7 +514,7 @@ const scanFiles = async () => {
 const scanTestFiles = async () => {
   scanningTestFiles.value = true
   try {
-    const response = await request.post('/api/dataset/scan')
+    const response = await request.post('/api/dataset/scan-test')
     if (response.code === '200') {
       const data = response.data
       ElMessage.success(`扫描完成：新增 ${data.newFiles}，更新 ${data.updatedFiles}，共 ${data.totalFiles} 个文件`)

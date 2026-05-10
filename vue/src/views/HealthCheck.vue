@@ -113,8 +113,27 @@
       </el-form>
     </el-card>
 
+    <!-- 隐私计算声明 -->
+    <div class="privacy-notice">
+      <el-alert
+        title="隐私计算声明"
+        type="success"
+        :closable="false"
+        show-icon
+        description="🔒 您的健康数据仅在本地浏览器处理，不上传至服务器。所有计算均在本地完成，确保您的隐私安全。"
+      />
+      <el-alert
+        title="本地推理保障"
+        type="info"
+        :closable="false"
+        show-icon
+        style="margin-top: 12px"
+        description="数据不出域，模型本地运行。您的敏感健康信息永远不会离开您的设备，我们采用端侧AI技术实现完全本地化的风险评估。"
+      />
+    </div>
+
     <!-- 结果对话框 -->
-    <el-dialog v-model="resultDialogVisible" width="750px" :close-on-click-modal="false" custom-class="result-dialog" :show-close="true">
+    <el-dialog v-model="resultDialogVisible" width="1200px" :close-on-click-modal="false" custom-class="result-dialog" :show-close="true">
       <div class="result-container">
         <div class="result-header" :class="riskLevelClass">
           <div class="result-header-main">
@@ -129,22 +148,51 @@
           </div>
         </div>
 
-        <div class="echarts-grid" v-if="showECharts">
-          <div class="echart-item">
-            <h4 class="chart-title">风险仪表盘</h4>
-            <div ref="gaugeChartRef" class="echart-box"></div>
+        <!-- 图表轮播区域 -->
+        <div class="charts-carousel" v-if="showECharts">
+          <div class="carousel-header">
+            <h4>数据可视化</h4>
+            <div class="carousel-indicators">
+              <span 
+                v-for="(chart, index) in chartItems" 
+                :key="index"
+                class="indicator-dot"
+                :class="{ active: activeChartIndex === index }"
+                @click="goToChart(index)"
+              ></span>
+            </div>
           </div>
-          <div class="echart-item">
-            <h4 class="chart-title">健康雷达图</h4>
-            <div ref="radarChartRef" class="echart-box"></div>
+          <div class="carousel-main">
+            <button class="carousel-btn" @click="prevChart" :disabled="activeChartIndex === 0">
+              <el-icon><ArrowLeft /></el-icon>
+            </button>
+            <div class="carousel-display">
+              <div 
+                v-for="(chart, index) in chartItems" 
+                :key="index"
+                class="echart-item"
+                v-show="activeChartIndex === index"
+              >
+                <h4 class="chart-title">{{ chart.title }}</h4>
+                <div :ref="el => setChartRef(el, index)" class="echart-box"></div>
+              </div>
+            </div>
+            <button class="carousel-btn" @click="nextChart" :disabled="activeChartIndex === chartItems.length - 1">
+              <el-icon><ArrowRight /></el-icon>
+            </button>
           </div>
-          <div class="echart-item">
-            <h4 class="chart-title">因素贡献</h4>
-            <div ref="waterfallChartRef" class="echart-box"></div>
-          </div>
-          <div class="echart-item">
-            <h4 class="chart-title">指标对比</h4>
-            <div ref="comparisonChartRef" class="echart-box"></div>
+          <div class="carousel-thumbnails">
+            <div 
+              v-for="(chart, index) in chartItems" 
+              :key="index"
+              class="thumbnail"
+              :class="{ active: activeChartIndex === index }"
+              @click="goToChart(index)"
+            >
+              <img v-if="thumbnails[index]" :src="thumbnails[index]" :alt="chart.title" />
+              <div v-else class="thumbnail-placeholder"></div>
+              <span class="thumbnail-label">{{ chart.title }}</span>
+            </div>
           </div>
         </div>
 
@@ -248,7 +296,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import * as echarts from 'echarts'
@@ -259,7 +307,7 @@ import { usePrediction } from '@/composables/usePrediction'
 
 const router = useRouter()
 const store = useHealthStore()
-const { runPrediction, getRiskText, getRiskClass, getHealthAdvice } = usePrediction()
+const { runPrediction, getRiskText, getRiskClass, getHealthAdvice, clearCache } = usePrediction()
 
 function goToDpfCalculator() {
   router.push('/health-profile')
@@ -279,6 +327,17 @@ const familyHistoryType = ref('precise')
 const familyHistorySimple = ref('无')
 
 const showECharts = ref(false)
+const activeChartIndex = ref(0)
+const thumbnails = ref([])
+const chartRefs = ref([])
+
+const chartItems = [
+  { title: '风险仪表盘', key: 'gauge' },
+  { title: '健康雷达图', key: 'radar' },
+  { title: '指标对比', key: 'comparison' },
+  { title: '因素贡献', key: 'waterfall' }
+]
+
 const gaugeChartRef = ref(null)
 const radarChartRef = ref(null)
 const waterfallChartRef = ref(null)
@@ -290,6 +349,10 @@ onMounted(() => {
   store.loadFromDraft()
 })
 
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
+
 function showResult() {
   resultDialogVisible.value = true
   nextTick(() => initECharts())
@@ -298,89 +361,338 @@ function showResult() {
 function initECharts() {
   showECharts.value = true
   nextTick(() => {
-    // 1. 风险仪表盘 (gauge)
-    if (gaugeChartRef.value) {
-      const gaugeChart = echarts.init(gaugeChartRef.value)
+    const gaugeChart = gaugeChartRef.value ? echarts.init(gaugeChartRef.value) : null
+    const radarChart = radarChartRef.value ? echarts.init(radarChartRef.value) : null
+    const waterfallChart = waterfallChartRef.value ? echarts.init(waterfallChartRef.value) : null
+    const comparisonChart = comparisonChartRef.value ? echarts.init(comparisonChartRef.value) : null
+
+    if (gaugeChart) {
+      const riskColor = store.riskProbability >= 60 ? '#F56C6C' : store.riskProbability >= 30 ? '#E6A23C' : '#67C23A'
       gaugeChart.setOption({
         series: [{
           type: 'gauge',
-          startAngle: 200, endAngle: -20,
-          min: 0, max: 100,
-          pointer: { length: '60%' },
-          progress: { show: true, width: 15 },
-          axisLine: { lineStyle: { width: 15, color: [
-            [0.3, '#67C23A'], [0.6, '#E6A23C'], [1, '#F56C6C']
-          ]}},
+          startAngle: 210,
+          endAngle: -30,
+          min: 0,
+          max: 100,
+          splitNumber: 10,
+          itemStyle: { color: riskColor },
+          progress: {
+            show: true,
+            width: 18,
+            roundCap: true,
+            itemStyle: {
+              color: {
+                type: 'linear',
+                x: 0, y: 0, x2: 1, y2: 0,
+                colorStops: [
+                  { offset: 0, color: '#67C23A' },
+                  { offset: 0.5, color: '#E6A23C' },
+                  { offset: 1, color: '#F56C6C' }
+                ]
+              }
+            }
+          },
+          pointer: {
+            icon: 'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z',
+            length: '55%',
+            width: 8,
+            offsetCenter: [0, '-10%'],
+            itemStyle: { color: 'auto', shadowColor: 'rgba(0,0,0,0.2)', shadowBlur: 5 }
+          },
+          axisLine: {
+            lineStyle: {
+              width: 18,
+              color: [[0.3, '#67C23A'], [0.7, '#E6A23C'], [1, '#F56C6C']]
+            },
+            roundCap: true
+          },
+          axisTick: { distance: -22, length: 6, lineStyle: { color: '#fff', width: 1 } },
+          splitLine: { distance: -25, length: 12, lineStyle: { color: '#fff', width: 2 } },
+          axisLabel: { color: '#666', distance: 30, fontSize: 11 },
+          detail: {
+            valueAnimation: true,
+            formatter: '{value}%',
+            fontSize: 28,
+            fontWeight: 'bold',
+            color: riskColor,
+            offsetCenter: [0, '40%'],
+            textStyle: { textShadowColor: 'rgba(0,0,0,0.1)', textShadowBlur: 5 }
+          },
+          title: {
+            offsetCenter: [0, '65%'],
+            fontSize: 13,
+            color: '#999'
+          },
           data: [{ value: store.riskProbability, name: '患病概率' }],
-          detail: { formatter: '{value}%', fontSize: 20, fontWeight: 'bold' }
+          animationDuration: 1500,
+          animationEasingUpdate: 'cubicOut'
         }]
       })
     }
 
-    // 2. 健康雷达图 (radar)
-    if (radarChartRef.value) {
-      const radarChart = echarts.init(radarChartRef.value)
-      const featureNames = ['血糖', 'BMI', '血压', '胰岛素', '皮褶厚度', '年龄', '怀孕次数', '遗传']
+    if (radarChart) {
+      const featureNames = ['血糖', 'BMI', '血压', '胰岛素', '皮褶厚度', '年龄', '遗传']
       const userValues = [
-        store.glucose / 200 * 100,
-        store.bmi / 40 * 100,
-        store.bloodPressure / 200 * 100,
-        store.insulin / 200 * 100,
-        store.skinThickness / 50 * 100,
-        store.age / 100 * 100,
-        store.pregnancies / 10 * 100,
-        store.diabetesPedigreeFunction / 2.5 * 100
+        Math.min(store.glucose / 200 * 100, 100),
+        Math.min(store.bmi / 40 * 100, 100),
+        Math.min(store.bloodPressure / 200 * 100, 100),
+        Math.min(store.insulin / 200 * 100, 100),
+        Math.min(store.skinThickness / 50 * 100, 100),
+        Math.min(store.age / 100 * 100, 100),
+        Math.min(store.diabetesPedigreeFunction / 2.5 * 100, 100)
       ]
+      const normalValues = [45, 55, 60, 25, 40, 35, 20]
+      const radarColor = store.riskProbability >= 60 ? 'rgba(245,108,108,' : store.riskProbability >= 30 ? 'rgba(230,162,60,' : 'rgba(103,194,58,'
       radarChart.setOption({
         radar: {
-          indicator: featureNames.map((name, i) => ({ name, max: 100 })),
-          radius: '65%'
+          indicator: featureNames.map(name => ({ name, max: 100 })),
+          radius: '65%',
+          center: ['50%', '55%'],
+          nameGap: 8,
+          nameTextStyle: { color: '#666', fontSize: 12, fontWeight: 500 },
+          splitArea: {
+            areaStyle: {
+              color: ['rgba(64,128,255,0.02)', 'rgba(64,128,255,0.05)', 'rgba(64,128,255,0.02)', 'rgba(64,128,255,0.05)', 'rgba(64,128,255,0.02)']
+            }
+          },
+          axisLine: { lineStyle: { color: 'rgba(64,128,255,0.15)' } },
+          splitLine: { lineStyle: { color: 'rgba(64,128,255,0.1)' } }
         },
         series: [{
           type: 'radar',
-          data: [{ value: userValues, name: '您的指标', areaStyle: { opacity: 0.2 } }],
-          lineStyle: { width: 2 }
-        }]
+          data: [
+            {
+              value: userValues,
+              name: '您的指标',
+              symbol: 'circle',
+              symbolSize: 6,
+              lineStyle: { width: 2.5, color: radarColor + '0.8)', shadowColor: radarColor + '0.3)', shadowBlur: 8 },
+              areaStyle: { color: { type: 'radial', x: 0.5, y: 0.5, r: 0.5, colorStops: [{ offset: 0, color: radarColor + '0.4)' }, { offset: 1, color: radarColor + '0.05)' }] } },
+              itemStyle: { color: radarColor + '1)', borderColor: '#fff', borderWidth: 2 }
+            },
+            {
+              value: normalValues,
+              name: '正常参考',
+              symbol: 'diamond',
+              symbolSize: 5,
+              lineStyle: { width: 1.5, type: 'dashed', color: 'rgba(144,147,153,0.6)' },
+              areaStyle: { color: 'rgba(144,147,153,0.05)' },
+              itemStyle: { color: 'rgba(144,147,153,0.8)' }
+            }
+          ],
+          animationDuration: 1500
+        }],
+        tooltip: {
+          trigger: 'item',
+          formatter: function(params) {
+            let html = `<b>${params.name}</b><br/>`
+            params.value.forEach((val, i) => {
+              html += `${featureNames[i]}: ${val.toFixed(1)}%<br/>`
+            })
+            return html
+          }
+        },
+        legend: {
+          bottom: 0,
+          itemWidth: 12,
+          itemHeight: 12,
+          textStyle: { color: '#666', fontSize: 11 }
+        }
       })
     }
 
-    // 3. 因素贡献 (bar)
-    if (waterfallChartRef.value && store.featureImportance.length > 0 && store.featureNames.length > 0) {
-      const waterfallChart = echarts.init(waterfallChartRef.value)
+    if (waterfallChart && store.featureImportance.length > 0 && store.featureNames.length > 0) {
       const importanceLabels = store.featureNames.map(n => {
         const map = { Pregnancies: '怀孕次数', Glucose: '血糖', BloodPressure: '血压',
           SkinThickness: '皮褶厚度', Insulin: '胰岛素', BMI: 'BMI',
           DiabetesPedigreeFunction: '遗传', Age: '年龄' }
         return map[n] || n
       })
+      const sortedData = store.featureImportance.map((v, i) => ({ value: v, label: importanceLabels[i] }))
+        .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
       waterfallChart.setOption({
-        xAxis: { type: 'category', data: importanceLabels, axisLabel: { rotate: 30 } },
-        yAxis: { type: 'value', name: 'SHAP 值' },
+        grid: { left: '3%', right: '8%', bottom: '15%', top: '10%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: sortedData.map(d => d.label),
+          axisLabel: { rotate: 35, fontSize: 11, color: '#666' },
+          axisLine: { lineStyle: { color: '#E5E7EB' } },
+          axisTick: { show: false }
+        },
+        yAxis: {
+          type: 'value',
+          name: '影响程度',
+          nameTextStyle: { color: '#999', fontSize: 11 },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { lineStyle: { color: '#F0F0F0', type: 'dashed' } }
+        },
+        tooltip: {
+          trigger: 'axis',
+          formatter: function(params) {
+            const p = params[0]
+            return `${p.name}<br/>影响值: <b>${p.value.toFixed(4)}</b><br/>${p.value >= 0 ? '升高风险' : '降低风险'}`
+          }
+        },
         series: [{
           type: 'bar',
-          data: store.featureImportance.map(v => ({
-            value: v,
-            itemStyle: { color: v >= 0 ? '#F56C6C' : '#67C23A' }
-          }))
+          data: sortedData.map(d => ({
+            value: d.value,
+            itemStyle: {
+              color: d.value >= 0
+                ? { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#F56C6C' }, { offset: 1, color: '#F89898' }] }
+                : { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#67C23A' }, { offset: 1, color: '#95D475' }] },
+              borderRadius: d.value >= 0 ? [4, 4, 0, 0] : [0, 0, 4, 4]
+            }
+          })),
+          barWidth: '50%',
+          animationDuration: 1200,
+          animationEasing: 'elasticOut',
+          label: {
+            show: true,
+            position: 'top',
+            formatter: function(p) { return p.value >= 0 ? '+' + p.value.toFixed(2) : p.value.toFixed(2) },
+            fontSize: 10,
+            color: '#999'
+          }
         }]
       })
     }
 
-    // 4. 指标对比 (bar)
-    if (comparisonChartRef.value) {
-      const comparisonChart = echarts.init(comparisonChartRef.value)
+    if (comparisonChart) {
       const metricLabels = ['血糖', 'BMI', '血压', '胰岛素']
       const userMetricValues = [store.glucose, store.bmi, store.bloodPressure, store.insulin]
+      const refValues = [90, 22, 120, 50]
+      const refRanges = [[70, 100], [18.5, 24], [90, 140], [16, 166]]
       comparisonChart.setOption({
-        xAxis: { type: 'category', data: metricLabels },
-        yAxis: { type: 'value' },
-        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '5%', bottom: '10%', top: '15%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: metricLabels,
+          axisLine: { lineStyle: { color: '#E5E7EB' } },
+          axisTick: { show: false },
+          axisLabel: { color: '#666', fontSize: 12 }
+        },
+        yAxis: {
+          type: 'value',
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { lineStyle: { color: '#F0F0F0', type: 'dashed' } }
+        },
+        tooltip: {
+          trigger: 'axis',
+          formatter: function(params) {
+            let html = `<b>${params[0].name}</b><br/>`
+            params.forEach(p => {
+              html += `${p.marker} ${p.seriesName}: <b>${p.value}</b><br/>`
+            })
+            const idx = params[0].dataIndex
+            html += `正常范围: ${refRanges[idx][0]} ~ ${refRanges[idx][1]}`
+            return html
+          }
+        },
+        legend: {
+          top: 0,
+          itemWidth: 12,
+          itemHeight: 12,
+          textStyle: { color: '#666', fontSize: 11 }
+        },
         series: [
-          { name: '您的值', type: 'bar', data: userMetricValues, barWidth: '30%' },
-          { name: '参考值', type: 'bar', data: [90, 22, 120, 50], barWidth: '30%', itemStyle: { color: '#909399' } }
+          {
+            name: '您的值',
+            type: 'bar',
+            data: userMetricValues.map((v, i) => ({
+              value: v,
+              itemStyle: {
+                color: v >= refRanges[i][0] && v <= refRanges[i][1]
+                  ? { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#4080FF' }, { offset: 1, color: '#79BBFF' }] }
+                  : { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#F56C6C' }, { offset: 1, color: '#F89898' }] },
+                borderRadius: [4, 4, 0, 0]
+              }
+            })),
+            barWidth: '25%',
+            animationDuration: 1000,
+            animationDelay: function(idx) { return idx * 100 }
+          },
+          {
+            name: '正常参考',
+            type: 'bar',
+            data: refValues,
+            barWidth: '25%',
+            itemStyle: { color: 'rgba(144,147,153,0.3)', borderRadius: [4, 4, 0, 0] },
+            animationDuration: 1000,
+            animationDelay: function(idx) { return idx * 100 + 200 }
+          }
         ]
       })
     }
+
+    window.addEventListener('resize', handleResize)
+    
+    // 生成缩略图
+    setTimeout(() => {
+      const chartInstances = [gaugeChart, radarChart, comparisonChart, waterfallChart]
+      thumbnails.value = chartInstances.map(chart => {
+        if (chart) {
+          try {
+            return chart.getDataURL({
+              type: 'png',
+              pixelRatio: 2,
+              backgroundColor: '#F8FAFC'
+            })
+          } catch (e) {
+            console.warn('生成缩略图失败', e)
+            return null
+          }
+        }
+        return null
+      })
+    }, 2000)
+  })
+}
+
+function handleResize() {
+  const charts = [gaugeChartRef, radarChartRef, waterfallChartRef, comparisonChartRef]
+  charts.forEach(ref => {
+    if (ref.value) {
+      const chart = echarts.getInstanceByDom(ref.value)
+      chart?.resize()
+    }
+  })
+}
+
+function setChartRef(el, index) {
+  if (el) {
+    chartRefs.value[index] = el
+  }
+}
+
+function prevChart() {
+  if (activeChartIndex.value > 0) {
+    activeChartIndex.value--
+    nextTick(() => {
+      const chart = echarts.getInstanceByDom(chartRefs.value[activeChartIndex.value])
+      chart?.resize()
+    })
+  }
+}
+
+function nextChart() {
+  if (activeChartIndex.value < chartItems.length - 1) {
+    activeChartIndex.value++
+    nextTick(() => {
+      const chart = echarts.getInstanceByDom(chartRefs.value[activeChartIndex.value])
+      chart?.resize()
+    })
+  }
+}
+
+function goToChart(index) {
+  activeChartIndex.value = index
+  nextTick(() => {
+    const chart = echarts.getInstanceByDom(chartRefs.value[index])
+    chart?.resize()
   })
 }
 
@@ -410,6 +722,9 @@ async function submitCheck() {
 
   const features = store.toFeatures()
   const result = await runPrediction(features)
+  if (result.fromCache) {
+    ElMessage.success('已从缓存加载结果')
+  }
   if (result.success) {
     store.setPredictionResult(result.data)
   } else {
@@ -486,49 +801,82 @@ function togglePercentileRanking() {
 function resetForm() {
   store.resetAll()
   resultDialogVisible.value = false
+  clearCache()
 }
 
 function downloadReport() {
-  const htmlContent = `
-<!DOCTYPE html>
+  const featureData = store.shapData
+    .filter(item => item.feature && item.feature !== 'baseValue')
+    .map(item => {
+      const value = typeof item.value === 'number' ? item.value.toFixed(3) : item.value
+      return `<tr><td>${item.feature}</td><td>${value}</td><td style="color:${item.impact >= 0 ? '#f56c6c' : '#67c23a'}">${item.impact >= 0 ? '↑ 升高风险' : '↓ 降低风险'}</td></tr>`
+    })
+    .join('')
+
+  const lifestyleItems = [
+    { label: '运动频率', value: getExerciseText(store.exerciseFrequency) },
+    { label: '饮食习惯', value: getDietText(store.dietHabit) },
+    { label: '吸烟情况', value: store.smoking },
+    { label: '饮酒情况', value: store.drinking },
+    { label: '身高', value: store.height + ' m' },
+    { label: '体重', value: store.weight + ' kg' }
+  ].map(item => `<div class="info-item"><span class="info-label">${item.label}:</span> ${item.value}</div>`).join('')
+
+  const htmlContent = `<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><title>糖尿病风险评估报告</title>
 <style>
-  body { font-family: 'Microsoft YaHei', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+  body { font-family: 'Microsoft YaHei', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; color: #333; }
   h1 { color: #4080FF; text-align: center; border-bottom: 3px solid #4080FF; padding-bottom: 10px; }
+  h2 { color: #333; margin-top: 24px; border-left: 4px solid #4080FF; padding-left: 10px; }
   .header { background: linear-gradient(135deg, #f5f7fa, #c3cfe2); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
   .risk-level { font-size: 24px; font-weight: bold; }
   .probability { font-size: 36px; color: #4080FF; font-weight: bold; }
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .info-grid { display: grid; grid-template-template: 1fr 1fr; gap: 10px; grid-template-columns: 1fr 1fr; }
   .info-item { background: #f8f9fa; padding: 10px; border-radius: 5px; }
-  .advice { background: #ecf5ff; padding: 15px; border-radius: 8px; border-left: 4px solid #4080FF; margin: 20px 0; }
+  .info-label { font-weight: bold; color: #666; }
+  .advice { background: #ecf5ff; padding: 15px; border-radius: 8px; border-left: 4px solid #4080FF; margin: 20px 0; line-height: 1.8; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  th { background: #f5f7fa; font-weight: bold; }
   .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #999; text-align: center; }
 </style>
 </head>
 <body>
   <div class="header">
-    <h1>🩺 糖尿病风险评估报告</h1>
+    <h1>糖尿病风险评估报告</h1>
     <p style="text-align:center; color:#666;">评估时间: ${new Date().toLocaleString()}</p>
     <div style="text-align:center; margin: 20px 0;">
       <div class="risk-level" style="color:${store.riskLevel === 'high' ? '#f56c6c' : store.riskLevel === 'medium' ? '#e6a23c' : '#67c23a'}">${riskLevelText.value}</div>
-      <div class="probability">${store.riskProbability}%</div>
+      <div class="probability">${probability.value}%</div>
+      ${confidenceInterval.value[0] > 0 ? `<p style="color:#999">置信区间: ${confidenceInterval.value[0]}% - ${confidenceInterval.value[1]}%</p>` : ''}
     </div>
   </div>
-  <h2>📋 数据详情</h2>
+  <h2>核心指标</h2>
   <div class="info-grid">
     <div class="info-item"><span class="info-label">年龄:</span> ${store.age}岁</div>
+    <div class="info-item"><span class="info-label">性别:</span> ${store.gender}</div>
     <div class="info-item"><span class="info-label">BMI:</span> ${store.bmi}</div>
     <div class="info-item"><span class="info-label">空腹血糖:</span> ${store.glucose} mg/dL</div>
     <div class="info-item"><span class="info-label">血压:</span> ${store.bloodPressure} mmHg</div>
+    <div class="info-item"><span class="info-label">胰岛素:</span> ${store.insulin} uIU/mL</div>
+    <div class="info-item"><span class="info-label">家族史DPF:</span> ${store.diabetesPedigreeFunction}</div>
   </div>
-  <h2>💡 健康建议</h2>
+  <h2>生活方式</h2>
+  <div class="info-grid">${lifestyleItems}</div>
+  <h2>特征贡献度（SHAP）</h2>
+  <table>
+    <thead><tr><th>特征</th><th>值</th><th>影响方向</th></tr></thead>
+    <tbody>${featureData || '<tr><td colspan="3">暂无数据</td></tr>'}</tbody>
+  </table>
+  <h2>健康建议</h2>
   <div class="advice">${healthAdvice.value}</div>
   <div class="footer">
-    <p>本评估结果仅供参考，不能替代专业医疗诊断。</p>
+    <p>本评估结果仅供参考，不能替代专业医疗诊断。如有疑虑，请咨询专业医生。</p>
     <p>生成时间: ${new Date().toLocaleString()}</p>
   </div>
 </body></html>`
-  const blob = new Blob([htmlContent], { type: 'text/html' })
+  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -580,6 +928,36 @@ function downloadReport() {
   margin-bottom: 30px;
 }
 
+.privacy-notice {
+  margin-top: 20px;
+  padding: 0 20px;
+}
+
+.privacy-notice .el-alert {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.privacy-notice .el-alert:first-child {
+  background: linear-gradient(135deg, rgba(82, 196, 26, 0.08), rgba(64, 128, 255, 0.04));
+}
+
+.privacy-notice .el-alert:last-child {
+  background: linear-gradient(135deg, rgba(64, 128, 255, 0.08), rgba(82, 196, 26, 0.04));
+}
+
+.privacy-notice .el-alert__title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.privacy-notice .el-alert__description {
+  font-size: 13px;
+  line-height: 1.6;
+  margin-top: 4px;
+}
+
 .form-tip {
   font-size: 12px;
   color: #9CA3AF;
@@ -623,9 +1001,9 @@ function downloadReport() {
 }
 
 .result-header {
-  padding: 24px 28px;
-  border-radius: 16px;
-  margin-bottom: 20px;
+  padding: 28px 32px;
+  border-radius: 20px;
+  margin-bottom: 24px;
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(0,0,0,0.06);
@@ -678,10 +1056,10 @@ function downloadReport() {
 }
 
 .risk-level-badge {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
 }
 
 .risk-level-badge.low-risk {
@@ -711,7 +1089,7 @@ function downloadReport() {
 }
 
 .probability-value {
-  font-size: 32px;
+  font-size: 36px;
   font-weight: bold;
   background: linear-gradient(135deg, #4080FF, #52C41A);
   -webkit-background-clip: text;
@@ -726,8 +1104,8 @@ function downloadReport() {
 }
 
 .confidence-interval {
-  margin-top: 10px;
-  font-size: 13px;
+  margin-top: 12px;
+  font-size: 14px;
   color: #6B7280;
   text-align: center;
 }
@@ -932,9 +1310,9 @@ function downloadReport() {
 }
 
 .collapse-panel {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   background: white;
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
@@ -943,7 +1321,7 @@ function downloadReport() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 14px 18px;
   background: #F8FAFC;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -954,7 +1332,7 @@ function downloadReport() {
 }
 
 .panel-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #374151;
 }
@@ -971,7 +1349,7 @@ function downloadReport() {
 }
 
 .panel-content {
-  padding: 12px 16px;
+  padding: 14px 18px;
 }
 
 .el-descriptions {
@@ -1015,7 +1393,7 @@ function downloadReport() {
 .percentile-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .percentile-item .el-progress-bar__outer {
@@ -1030,8 +1408,8 @@ function downloadReport() {
 }
 
 .percentile-label {
-  min-width: 80px;
-  font-size: 13px;
+  min-width: 90px;
+  font-size: 14px;
   color: #374151;
 }
 
@@ -1040,38 +1418,39 @@ function downloadReport() {
 }
 
 .percentile-desc {
-  min-width: 50px;
-  font-size: 12px;
+  min-width: 60px;
+  font-size: 13px;
   color: #6B7280;
   text-align: right;
 }
 
 .health-suggestion-card {
   border: 1px solid rgba(64,128,255,0.15);
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
 }
 
 .prescription-header {
   background: linear-gradient(90deg, #e6f7ff, #f0f9ff);
-  padding: 10px 16px;
+  padding: 12px 20px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-weight: 600;
+  font-size: 15px;
   color: #4080FF;
   border-bottom: 1px dashed #4080FF;
 }
 
 .suggestion-section {
   display: flex;
-  padding: 16px;
+  padding: 20px;
 }
 
 .section-indicator {
-  width: 4px;
-  border-radius: 2px;
-  margin-right: 12px;
+  width: 5px;
+  border-radius: 3px;
+  margin-right: 14px;
   flex-shrink: 0;
 }
 
@@ -1088,8 +1467,8 @@ function downloadReport() {
 }
 
 .section-content h4 {
-  margin: 0 0 8px 0;
-  font-size: 15px;
+  margin: 0 0 10px 0;
+  font-size: 16px;
   font-weight: 600;
   color: #374151;
 }
@@ -1097,7 +1476,7 @@ function downloadReport() {
 .section-content p {
   margin: 0;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.7;
   color: #4B5563;
 }
 
@@ -1107,9 +1486,9 @@ function downloadReport() {
 }
 
 .section-content li {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: #4B5563;
 }
 
@@ -1120,18 +1499,18 @@ function downloadReport() {
 .section-divider {
   height: 1px;
   background: rgba(64, 128, 255, 0.1);
-  margin: 0 16px;
+  margin: 0 20px;
 }
 
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 16px;
 }
 
 .dialog-footer .el-button {
-  border-radius: 8px;
-  padding: 10px 20px;
+  border-radius: 10px;
+  padding: 12px 24px;
   transition: all 0.2s;
 }
 
@@ -1198,41 +1577,201 @@ function downloadReport() {
   background: rgba(0,0,0,0.5) !important;
 }
 
-.echarts-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 20px;
+.charts-carousel {
+  margin-bottom: 24px;
+  background: #F8FAFC;
+  border-radius: 16px;
+  border: 1px solid rgba(64, 128, 255, 0.1);
+  overflow: hidden;
+}
+
+.carousel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(64, 128, 255, 0.08);
+}
+
+.carousel-header h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.carousel-indicators {
+  display: flex;
+  gap: 8px;
+}
+
+.indicator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #D1D5DB;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.indicator-dot.active {
+  background: #4080FF;
+  transform: scale(1.2);
+  box-shadow: 0 0 8px rgba(64, 128, 255, 0.4);
+}
+
+.indicator-dot:hover {
+  background: #4080FF;
+  opacity: 0.7;
+}
+
+.carousel-main {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  gap: 12px;
+  background: white;
+}
+
+.carousel-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #E5E7EB;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.carousel-btn:hover:not(:disabled) {
+  background: #4080FF;
+  border-color: #4080FF;
+  color: white;
+  box-shadow: 0 4px 12px rgba(64, 128, 255, 0.3);
+}
+
+.carousel-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.carousel-display {
+  flex: 1;
+  min-height: 400px;
+  background: #f8fafc;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #E5E7EB;
 }
 
 .echart-item {
-  background: #F8FAFC;
-  border-radius: 14px;
-  border: 1px solid rgba(64, 128, 255, 0.1);
-  padding: 14px;
-  transition: box-shadow 0.3s;
-}
-
-.echart-item:hover {
-  box-shadow: 0 4px 16px rgba(64, 128, 255, 0.1);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-title {
-  margin: 0 0 10px 0;
-  font-size: 14px;
+  margin: 0 0 14px 0;
+  font-size: 15px;
   font-weight: 600;
   color: #374151;
   text-align: center;
   letter-spacing: 1px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(64, 128, 255, 0.08);
 }
 
 .echart-box {
+  flex: 1;
   width: 100%;
-  height: 200px;
+  min-height: 350px;
+}
+
+.carousel-thumbnails {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #F8FAFC;
+  border-top: 1px solid rgba(64, 128, 255, 0.08);
+  overflow-x: auto;
+}
+
+.carousel-thumbnails::-webkit-scrollbar {
+  height: 6px;
+}
+
+.carousel-thumbnails::-webkit-scrollbar-track {
+  background: #F0F4F8;
+}
+
+.carousel-thumbnails::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, rgba(64, 128, 255, 0.3), rgba(64, 128, 255, 0.15));
+  border-radius: 3px;
+}
+
+.carousel-thumbnails::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, rgba(64, 128, 255, 0.5), rgba(64, 128, 255, 0.3));
+}
+
+.thumbnail {
+  flex-shrink: 0;
+  width: 120px;
+  padding: 8px;
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.thumbnail:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px rgba(64,128,255,0.15);
+}
+
+.thumbnail.active {
+  border-color: #4080FF;
+  box-shadow: 0 0 0 3px rgba(64,128,255,0.2);
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 60px;
+  object-fit: contain;
+  display: block;
+  border-radius: 6px;
+}
+
+.thumbnail-placeholder {
+  width: 100%;
+  height: 60px;
+  background: #E5E7EB;
+  border-radius: 6px;
+}
+
+.thumbnail-label {
+  display: block;
+  font-size: 11px;
+  color: #6B7280;
+  text-align: center;
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .result-dialog {
-  border-radius: 20px !important;
+  border-radius: 24px !important;
   backdrop-filter: blur(20px);
   background: rgba(255,255,255,0.96) !important;
   box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25) !important;
@@ -1246,11 +1785,11 @@ function downloadReport() {
 
 .result-dialog .el-dialog__header {
   border-bottom: 1px solid rgba(64, 128, 255, 0.08);
-  padding: 18px 24px;
+  padding: 20px 28px;
 }
 
 .result-dialog .el-dialog__body {
-  padding: 20px 24px;
+  padding: 24px 28px;
 }
 
 .family-history-group {

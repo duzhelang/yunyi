@@ -20,7 +20,7 @@
             </div>
           </template>
 
-          <el-form :model="form" label-width="140px" size="default" class="health-form">
+          <el-form :model="form" label-width="120px" size="default" class="health-form">
             <el-row :gutter="20">
               <el-col :span="8">
                 <el-form-item label="年龄 (岁)" required>
@@ -748,8 +748,9 @@
     </el-dialog>
 
     <!-- ================= 风险检测结果弹窗 ================= -->
-    <el-dialog v-model="resultDialogVisible" width="750px" :close-on-click-modal="false" custom-class="result-dialog" :show-close="true">
+    <el-dialog v-model="resultDialogVisible" width="1200px" :close-on-click-modal="false" custom-class="result-dialog" :show-close="true">
       <div class="result-container">
+        <!-- 结果头部：风险等级 + 患病概率 -->
         <div class="result-header" :class="getRiskClass(store.riskLevel)">
           <div class="result-header-main">
             <span class="risk-level-badge" :class="getRiskClass(store.riskLevel)">{{ getRiskText(store.riskLevel) }}</span>
@@ -763,66 +764,84 @@
           </div>
         </div>
 
-        <div class="charts-carousel" v-if="availableCharts.length > 0">
-          <div class="carousel-header">
-            <h4>可视化分析</h4>
-            <span class="carousel-indicators">
-              <span v-for="(chart, index) in availableCharts" :key="index"
-                :class="['indicator-dot', { active: currentChartIndex === index }]"
-                @click="goToChart(index)"></span>
-            </span>
-          </div>
-          <div class="carousel-main">
-            <button class="carousel-btn prev" @click="prevChart" :disabled="availableCharts.length <= 1">
-              <el-icon><ArrowLeft /></el-icon>
-            </button>
-            <div class="carousel-display" @click="previewCurrentChart">
-              <img v-if="availableCharts[currentChartIndex]" :src="'data:image/png;base64,' + availableCharts[currentChartIndex].image" :alt="availableCharts[currentChartIndex].label" />
-              <div class="carousel-hint-text">点击查看大图</div>
+        <!-- 主内容区域：双列布局 -->
+        <div class="result-body-two-col">
+          <!-- 左侧：图表轮播区域 -->
+          <div class="result-left-col">
+            <div class="charts-carousel" v-if="availableCharts.length > 0">
+              <div class="carousel-header">
+                <h4>可视化分析</h4>
+                <span class="carousel-indicators">
+                  <span v-for="(chart, index) in availableCharts" :key="index"
+                    :class="['indicator-dot', { active: currentChartIndex === index }]"
+                    @click="goToChart(index)"></span>
+                </span>
+              </div>
+              <div class="carousel-main">
+                <button class="carousel-btn prev" @click="prevChart" :disabled="availableCharts.length <= 1">
+                  <el-icon><ArrowLeft /></el-icon>
+                </button>
+                <div class="carousel-display">
+                  <!-- 使用ECharts图表组件动态渲染 -->
+                  <component 
+                    v-if="availableCharts[currentChartIndex]"
+                    :is="getChartComponent(availableCharts[currentChartIndex].key)"
+                    class="chart-component"
+                  />
+                  <div v-else class="chart-placeholder">
+                    <el-icon class="empty-icon"><TrendCharts /></el-icon>
+                    <p>暂无图表数据</p>
+                  </div>
+                </div>
+                <button class="carousel-btn next" @click="nextChart" :disabled="availableCharts.length <= 1">
+                  <el-icon><ArrowRight /></el-icon>
+                </button>
+              </div>
+              <div class="carousel-thumbnails">
+                <div v-for="(chart, index) in availableCharts" :key="index"
+                  :class="['thumbnail', { active: currentChartIndex === index }]"
+                  @click="goToChart(index)">
+                  <span class="thumbnail-label">{{ chart.label }}</span>
+                </div>
+              </div>
             </div>
-            <button class="carousel-btn next" @click="nextChart" :disabled="availableCharts.length <= 1">
-              <el-icon><ArrowRight /></el-icon>
-            </button>
           </div>
-          <div class="carousel-thumbnails">
-            <div v-for="(chart, index) in availableCharts" :key="index"
-              :class="['thumbnail', { active: currentChartIndex === index }]"
-              @click="goToChart(index)">
-              <img :src="'data:image/png;base64,' + chart.image" :alt="chart.label" />
-              <span class="thumbnail-label">{{ chart.label }}</span>
-            </div>
-          </div>
-        </div>
 
-        <div class="collapse-panel data-details">
-          <div class="panel-header" @click="showDataDetails = !showDataDetails">
-            <span class="panel-title">数据详情</span>
-            <span class="panel-arrow" :class="{ expanded: showDataDetails }"><el-icon><ArrowDown /></el-icon></span>
-          </div>
-          <Transition name="panel-slide">
-            <div class="panel-content" v-show="showDataDetails">
-              <el-descriptions :column="2" size="small" border>
-                <el-descriptions-item label="年龄">{{ store.age }}岁</el-descriptions-item>
-                <el-descriptions-item label="BMI">{{ store.bmi }}</el-descriptions-item>
-                <el-descriptions-item label="空腹血糖">{{ store.glucose }} mg/dL</el-descriptions-item>
-                <el-descriptions-item label="血压">{{ store.bloodPressure }} mmHg</el-descriptions-item>
-                <el-descriptions-item label="胰岛素">{{ store.insulin }} mU/L</el-descriptions-item>
-                <el-descriptions-item label="遗传系数">{{ store.diabetesPedigreeFunction }}</el-descriptions-item>
-              </el-descriptions>
+          <!-- 右侧：数据详情 + AI 健康处方 -->
+          <div class="result-right-col">
+            <!-- 数据详情面板 -->
+            <div class="collapse-panel data-details">
+              <div class="panel-header" @click="showDataDetails = !showDataDetails">
+                <span class="panel-title">数据详情</span>
+                <span class="panel-arrow" :class="{ expanded: showDataDetails }"><el-icon><ArrowDown /></el-icon></span>
+              </div>
+              <Transition name="panel-slide">
+                <div class="panel-content" v-show="showDataDetails">
+                  <el-descriptions :column="1" size="small" border>
+                    <el-descriptions-item label="年龄">{{ store.age }}岁</el-descriptions-item>
+                    <el-descriptions-item label="BMI">{{ store.bmi }}</el-descriptions-item>
+                    <el-descriptions-item label="空腹血糖">{{ store.glucose }} mg/dL</el-descriptions-item>
+                    <el-descriptions-item label="血压">{{ store.bloodPressure }} mmHg</el-descriptions-item>
+                    <el-descriptions-item label="胰岛素">{{ store.insulin }} mU/L</el-descriptions-item>
+                    <el-descriptions-item label="遗传系数">{{ store.diabetesPedigreeFunction }}</el-descriptions-item>
+                  </el-descriptions>
+                </div>
+              </Transition>
             </div>
-          </Transition>
-        </div>
 
-        <div class="health-suggestion-card">
-          <div class="prescription-header">
-            <el-icon><Document /></el-icon>
-            <span>AI 健康处方</span>
-          </div>
-          <div class="suggestion-section health-advice-section">
-            <div class="section-indicator"></div>
-            <div class="section-content">
-              <h4>健康建议</h4>
-              <p>{{ store.aiAdvice || getHealthAdvice(store.riskLevel) }}</p>
+            <!-- AI健康处方 -->
+            <div class="health-suggestion-card">
+              <div class="prescription-header">
+                <el-icon><Document /></el-icon>
+                <span>AI 健康处方</span>
+              </div>
+              <div class="suggestion-section health-advice-section">
+                <div class="section-indicator"></div>
+                <div class="section-content">
+                  <h4>健康建议</h4>
+                  <p>{{ store.aiAdvice || getHealthAdvice(store.riskLevel) }}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -833,11 +852,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="previewDialogVisible" :title="previewTitle" width="900px" append-to-body>
-      <div class="chart-preview" v-if="previewImage">
-        <img :src="'data:image/png;base64,' + previewImage" :alt="previewTitle" />
-      </div>
-    </el-dialog>
+
   </div>
 </template>
 
@@ -853,12 +868,26 @@ import {
 } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import { useHealthStore } from '@/store/healthStore'
+import { useChartStore } from '@/store/chartStore'
 import { useHealthValidator } from '@/composables/useHealthValidator'
 import { usePrediction } from '@/composables/usePrediction'
 import { useDraftPersistence } from '@/composables/useDraftPersistence'
 import DpfCalculator from '@/components/DpfCalculator.vue'
+// 导入ECharts图表组件
+import {
+  RiskGaugeChart,
+  HealthRadarChart,
+  IndicatorCompareChart,
+  HealthScoreChart,
+  RiskHeatmapChart,
+  FactorWaterfallChart,
+  ConfidenceIntervalChart,
+  RiskDistributionChart,
+  FeatureImportanceChart
+} from '@/components/charts'
 
 const store = useHealthStore()
+const chartStore = useChartStore()
 const validator = useHealthValidator()
 const { runPrediction, getRiskText, getRiskClass, getHealthAdvice } = usePrediction()
 const { startAutoSave, stopAutoSave, loadDraft } = useDraftPersistence()
@@ -909,9 +938,7 @@ const dpfInfoDialogVisible = ref(false)
 const resultDialogVisible = ref(false)
 const showDataDetails = ref(false)
 const currentChartIndex = ref(0)
-const previewDialogVisible = ref(false)
-const previewImage = ref('')
-const previewTitle = ref('')
+
 
 const emergencyDialogVisible = ref(false)
 const emergencyTab = ref('identify')
@@ -1024,21 +1051,40 @@ const footCheckPercent = computed(() => {
   return Math.round((done / footChecklist.value.length) * 100)
 })
 
+
+
+// 图表组件映射
+const chartComponentMap = {
+  riskGauge: RiskGaugeChart,
+  healthRadar: HealthRadarChart,
+  indicatorCompare: IndicatorCompareChart,
+  healthScore: HealthScoreChart,
+  riskHeatmap: RiskHeatmapChart,
+  factorWaterfall: FactorWaterfallChart,
+  confidenceInterval: ConfidenceIntervalChart,
+  riskDistribution: RiskDistributionChart,
+  featureImportance: FeatureImportanceChart
+}
+
+// 可用图表列表（使用ECharts图表组件）
 const availableCharts = computed(() => {
-  if (!store.chartsData) return []
-  const chartList = [
-    { key: 'dashboard_chart', label: '风险仪表盘', image: store.chartsData.dashboard_chart },
-    { key: 'radar_chart', label: '健康雷达图', image: store.chartsData.radar_chart },
-    { key: 'comparison_chart', label: '指标对比', image: store.chartsData.comparison_chart },
-    { key: 'scorecard_chart', label: '健康评分', image: store.chartsData.scorecard_chart },
-    { key: 'heatmap_chart', label: '风险热力图', image: store.chartsData.heatmap_chart },
-    { key: 'waterfall_chart', label: '因素贡献', image: store.chartsData.waterfall_chart },
-    { key: 'confidence_chart', label: '置信区间', image: store.chartsData.confidence_chart },
-    { key: 'pie_chart', label: '风险分布', image: store.chartsData.pie_chart },
-    { key: 'importance_chart', label: '特征重要性', image: store.chartsData.importance_chart }
+  return [
+    { key: 'riskGauge', label: '风险仪表盘' },
+    { key: 'healthRadar', label: '健康雷达图' },
+    { key: 'indicatorCompare', label: '指标对比' },
+    { key: 'healthScore', label: '健康评分' },
+    { key: 'riskHeatmap', label: '风险热力图' },
+    { key: 'factorWaterfall', label: '因素贡献' },
+    { key: 'confidenceInterval', label: '置信区间' },
+    { key: 'riskDistribution', label: '风险分布' },
+    { key: 'featureImportance', label: '特征重要性' }
   ]
-  return chartList.filter(chart => chart.image)
 })
+
+// 获取图表组件
+function getChartComponent(key) {
+  return chartComponentMap[key] || null
+}
 
 const dpfForm = reactive({
   father: { hasDiabetes: false, ageAtDiagnosis: 50 },
@@ -1188,6 +1234,8 @@ async function saveAndPredict() {
       if (res.data.prediction && res.data.prediction.ai_advice) {
         store.aiAdvice = res.data.prediction.ai_advice
       }
+      // 更新chartStore数据
+      chartStore.setPredictionData(res.data.prediction)
       generateAdvice()
       await loadHistory()
       resultDialogVisible.value = true
@@ -1214,6 +1262,8 @@ async function quickPredict() {
       store.setPredictionResult(result.data)
       ElMessage.warning(result.message)
     }
+    // 更新chartStore数据
+    chartStore.setPredictionData(result.data)
     generateAdvice()
     resultDialogVisible.value = true
   } catch (e) {
@@ -1449,6 +1499,12 @@ function startEmergencyTimer() {
 
 function toggleCheck(idx) {
   checkList.value[idx].done = !checkList.value[idx].done
+  const taskId = 'habit_' + idx
+  request.post('/api/treatment/checkin', {
+    profileId: 0,
+    taskId,
+    status: checkList.value[idx].done
+  }).catch(() => {})
 }
 
 function resetForm() {
@@ -1512,14 +1568,7 @@ function goToChart(index) {
   currentChartIndex.value = index
 }
 
-function previewCurrentChart() {
-  const charts = availableCharts.value
-  if (charts.length > 0) {
-    previewImage.value = charts[currentChartIndex.value].image
-    previewTitle.value = charts[currentChartIndex.value].label
-    previewDialogVisible.value = true
-  }
-}
+
 </script>
 
 <style scoped>
@@ -1537,6 +1586,24 @@ function previewCurrentChart() {
 .el-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.form-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e8ecf1;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+}
+.form-card:hover {
+  box-shadow: 0 8px 28px rgba(64, 128, 255, 0.08);
+}
+.form-card :deep(.el-card__header) {
+  padding: 16px 24px;
+  border-bottom: 1px solid #eef2f6;
+  background: linear-gradient(135deg, rgba(64, 128, 255, 0.03), rgba(82, 196, 26, 0.02));
+  border-radius: 14px 14px 0 0;
+}
+.form-card :deep(.el-card__body) {
+  padding: 20px 28px 24px;
 }
 
 /* 欢迎横幅 */
@@ -1593,22 +1660,33 @@ function previewCurrentChart() {
 }
 
 .el-divider {
-  margin: 20px 0 16px;
+  margin: 16px 0 14px;
+}
+.health-form :deep(.el-divider__text) {
+  background: transparent;
+}
+.health-form :deep(.el-divider__text::before),
+.health-form :deep(.el-divider__text::after) {
+  background: linear-gradient(90deg, rgba(64, 128, 255, 0.15), transparent);
 }
 .section-divider {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #606266;
+  letter-spacing: 0.5px;
 }
 
 .health-form {
-  padding: 8px 0;
+  padding: 4px 8px;
 }
 .health-form :deep(.el-form-item) {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 .health-form :deep(.el-input-number) {
   width: 100%;
+}
+.health-form :deep(.el-row + .el-row) {
+  margin-top: 2px;
 }
 
 /* 标签悬浮提示文字可换行 */
@@ -1625,11 +1703,16 @@ function previewCurrentChart() {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: 8px;
-  padding: 4px 12px;
-  border-radius: 16px;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 14px;
   font-size: 12px;
   font-weight: 500;
+  animation: feedbackIn 0.3s ease;
+}
+@keyframes feedbackIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .feedback-tag.success { background: #f0f9eb; color: #67C23A; }
 .feedback-tag.warning { background: #fdf6ec; color: #E6A23C; }
@@ -1644,14 +1727,41 @@ function previewCurrentChart() {
 .action-bar {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid #EBEEF5;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #eef2f6;
   flex-wrap: wrap;
 }
 .action-bar .el-button {
-  min-width: 100px;
+  min-width: 110px;
+  border-radius: 8px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+.action-bar .el-button--primary {
+  background: linear-gradient(135deg, #4a90e2, #357abd);
+  border: none;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.25);
+}
+.action-bar .el-button--primary:hover {
+  box-shadow: 0 4px 14px rgba(74, 144, 226, 0.35);
+  transform: translateY(-1px);
+}
+.action-bar .el-button--danger {
+  background: linear-gradient(135deg, #f56c6c, #e04b4b);
+  border: none;
+  box-shadow: 0 2px 8px rgba(245, 108, 108, 0.2);
+}
+.action-bar .el-button--warning {
+  background: linear-gradient(135deg, #e6a23c, #d4902a);
+  border: none;
+  box-shadow: 0 2px 8px rgba(230, 162, 60, 0.2);
+}
+.action-bar .el-button--success {
+  background: linear-gradient(135deg, #67c23a, #55a830);
+  border: none;
+  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.2);
 }
 
 .advice-grid {
@@ -1915,18 +2025,35 @@ function previewCurrentChart() {
     max-width: 100%;
     flex: 0 0 100%;
   }
+  .form-card :deep(.el-card__body) {
+    padding: 16px;
+  }
+  .health-form {
+    padding: 0;
+  }
   .action-bar {
     flex-direction: column;
   }
   .action-bar .el-button {
     width: 100%;
   }
+  .dpf-input-group {
+    flex-wrap: wrap;
+  }
+}
+@media (min-width: 769px) and (max-width: 1200px) {
+  .form-card :deep(.el-card__body) {
+    padding: 16px 20px 20px;
+  }
+  .health-form {
+    padding: 2px 4px;
+  }
 }
 
 /* DPF 输入组样式 */
 .dpf-input-group {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 .dpf-input-group .el-input-number {
@@ -1934,6 +2061,7 @@ function previewCurrentChart() {
 }
 .dpf-calc-btn, .dpf-info-btn {
   flex-shrink: 0;
+  border-radius: 6px;
 }
 
 /* 标签悬浮提示样式 */
@@ -2512,11 +2640,32 @@ function previewCurrentChart() {
   z-index: 1;
 }
 
+/* 主内容双列布局 */
+.result-body-two-col {
+  display: flex;
+  gap: 16px;
+  padding: 0 16px 16px;
+}
+
+.result-left-col {
+  flex: 6;
+  min-width: 0;
+}
+
+.result-right-col {
+  flex: 4;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 /* 图表轮播区 */
 .charts-carousel {
   padding: 20px 24px;
   background: #fafbfc;
-  border-bottom: 1px solid #ebeef5;
+  border-radius: 12px;
+  border: 1px solid #ebeef5;
 }
 
 .carousel-header {
@@ -2596,7 +2745,7 @@ function previewCurrentChart() {
 
 .carousel-display {
   flex: 1;
-  min-height: 240px;
+  min-height: 320px;
   background: white;
   border-radius: 12px;
   border: 1px solid #ebeef5;
@@ -2612,26 +2761,29 @@ function previewCurrentChart() {
   border-color: #409EFF;
   box-shadow: 0 4px 16px rgba(64, 158, 255, 0.15);
 }
-.carousel-display img {
-  max-width: 100%;
-  max-height: 260px;
-  object-fit: contain;
-  border-radius: 8px;
+
+/* ECharts图表组件样式 */
+.chart-component {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
 }
-.carousel-hint-text {
-  position: absolute;
-  bottom: 8px;
-  right: 12px;
-  font-size: 11px;
+
+.chart-placeholder {
+  text-align: center;
   color: #909399;
-  background: rgba(255,255,255,0.85);
-  padding: 2px 8px;
-  border-radius: 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
+  padding: 40px;
 }
-.carousel-display:hover .carousel-hint-text {
-  opacity: 1;
+
+.chart-placeholder .empty-icon {
+  font-size: 48px;
+  color: #c0c4cc;
+  margin-bottom: 12px;
+}
+
+.chart-placeholder p {
+  margin: 0;
+  font-size: 14px;
 }
 
 .carousel-thumbnails {
@@ -2650,7 +2802,7 @@ function previewCurrentChart() {
 
 .thumbnail {
   flex-shrink: 0;
-  width: 72px;
+  width: 80px;
   cursor: pointer;
   border-radius: 8px;
   overflow: hidden;
@@ -2684,11 +2836,9 @@ function previewCurrentChart() {
 
 /* 数据详情折叠面板 */
 .collapse-panel.data-details {
-  margin: 0 24px;
   border: 1px solid #ebeef5;
   border-radius: 10px;
   overflow: hidden;
-  margin-top: 16px;
 }
 .panel-header {
   display: flex;
@@ -2741,7 +2891,6 @@ function previewCurrentChart() {
 
 /* AI健康处方 */
 .health-suggestion-card {
-  margin: 16px 24px 20px;
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid #ebeef5;
@@ -2791,14 +2940,7 @@ function previewCurrentChart() {
   line-height: 1.7;
 }
 
-/* 图表预览 */
-.chart-preview {
-  text-align: center;
-}
-.chart-preview img {
-  max-width: 100%;
-  border-radius: 8px;
-}
+
 
 /* ===== 工具弹窗通用样式 ===== */
 .tool-dialog .el-dialog {
@@ -3036,5 +3178,24 @@ function previewCurrentChart() {
   .severity-grid { grid-template-columns: 1fr; }
   .guide-grid { grid-template-columns: repeat(2, 1fr); }
   .warning-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* 结果弹窗响应式：小屏幕切换为单列布局 */
+@media (max-width: 992px) {
+  .result-body-two-col {
+    flex-direction: column;
+  }
+  .result-left-col,
+  .result-right-col {
+    flex: none;
+    width: 100%;
+  }
+  .carousel-display {
+    min-height: 240px;
+  }
+  .result-dialog .el-dialog {
+    width: 95vw !important;
+    max-width: 95vw;
+  }
 }
 </style>

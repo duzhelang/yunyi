@@ -1,329 +1,292 @@
 <template>
-  <div>
-    <h2>数据采集</h2>
-    <!-- 多格式上传 -->
-    <div style="margin: 20px 0">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <span>多格式数据上传</span>
-          </div>
-        </template>
-        <div class="upload-container">
+  <div class="data-collection-container">
+    <el-row :gutter="20">
+      <el-col :xs="24" :lg="12">
+        <el-card shadow="hover">
+          <template #header>
+            <div class="card-header">
+              <span>数据上传</span>
+            </div>
+          </template>
           <el-upload
-            class="upload-demo"
+            class="upload-area"
+            drag
             :action="uploadUrl"
             :headers="uploadHeaders"
-            :on-success="handleFileUploadSuccess"
-            :on-error="handleFileUploadError"
-            :show-file-list="true"
+            :on-success="handleUploadSuccess"
+            :on-error="handleUploadError"
             accept=".xlsx,.xls,.csv"
-            :auto-upload="true"
           >
-            <el-button type="primary">
-              <el-icon><Upload /></el-icon>
-              点击上传
-            </el-button>
+            <el-icon class="upload-icon"><Upload /></el-icon>
+            <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
             <template #tip>
-              <div class="el-upload__tip">
-                支持上传 Excel、CSV 文件
-              </div>
+              <div class="el-upload__tip">支持 Excel (.xlsx/.xls) 和 CSV 文件</div>
             </template>
           </el-upload>
-          
-          <!-- 手动录入 -->
-          <el-button type="success" class="ml-4" @click="showManualInput = true">
-            <el-icon><Edit /></el-icon>
-            手动录入
-          </el-button>
-          
-          <!-- HIS系统导入 -->
-          <el-button type="warning" class="ml-4">
-            <el-icon><Link /></el-icon>
-            HIS系统导入
+        </el-card>
+      </el-col>
+
+      <el-col :xs="24" :lg="12">
+        <el-card shadow="hover">
+          <template #header>
+            <div class="card-header">
+              <span>数据预处理</span>
+            </div>
+          </template>
+          <el-form label-width="120px">
+            <el-form-item label="选择文件">
+              <el-select v-model="selectedFileId" placeholder="请选择要预处理的文件" style="width: 100%">
+                <el-option
+                  v-for="file in fileList"
+                  :key="file.id"
+                  :label="file.name"
+                  :value="file.id"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="缺失值策略">
+              <el-select v-model="fillStrategy" placeholder="请选择">
+                <el-option label="均值填充" value="mean" />
+                <el-option label="中位数填充" value="median" />
+                <el-option label="删除含缺失行" value="drop" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="标准化">
+              <el-switch v-model="standardize" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :loading="preprocessing" @click="handlePreprocess">
+                开始预处理
+              </el-button>
+            </el-form-item>
+          </el-form>
+          <div v-if="preprocessResult" class="preprocess-result">
+            <el-alert :title="preprocessResult" type="success" show-icon :closable="false" />
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-card shadow="hover" style="margin-top: 20px">
+      <template #header>
+        <div class="card-header">
+          <span>数据列表</span>
+          <el-button type="primary" size="small" @click="loadData">
+            <el-icon><Refresh /></el-icon>
+            刷新
           </el-button>
         </div>
-      </el-card>
-    </div>
-    
-    <!-- 数据质量检测 -->
-    <div style="margin: 20px 0">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <span>数据质量检测</span>
-          </div>
-        </template>
-        <el-table :data="qualityCheckData" border>
-          <el-table-column prop="field" label="字段" width="120"></el-table-column>
-          <el-table-column prop="status" label="状态">
-            <template #default="scope">
-              <el-tag :type="scope.row.status === '正常' ? 'success' : 'danger'">
-                {{ scope.row.status }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="message" label="提示信息"></el-table-column>
-        </el-table>
-      </el-card>
-    </div>
-    
-    <!-- 数据预处理 -->
-    <div style="margin: 20px 0">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <span>数据预处理</span>
-          </div>
-        </template>
-        <el-form label-width="120px">
-          <el-form-item label="缺失值填充策略">
-            <el-select v-model="fillStrategy" placeholder="请选择">
-              <el-option label="均值填充" value="mean"></el-option>
-              <el-option label="中位数填充" value="median"></el-option>
-              <el-option label="固定值填充" value="fixed"></el-option>
-            </el-select>
-          </el-form-item>
-          <el-form-item label="标准化选项">
-            <el-select v-model="scaleOption" placeholder="请选择">
-              <el-option label="StandardScaler" value="standard"></el-option>
-              <el-option label="MinMaxScaler" value="minmax"></el-option>
-              <el-option label="None" value="none"></el-option>
-            </el-select>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="preprocessData">开始预处理</el-button>
-          </el-form-item>
-        </el-form>
-      </el-card>
-    </div>
-    
-    <!-- 数据列表 -->
-    <div style="margin: 20px 0">
-      <el-card shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <span>数据列表</span>
-            <el-button type="primary" size="small" @click="loadData">
-              <el-icon><Refresh /></el-icon>
-              刷新
-            </el-button>
-          </div>
-        </template>
-        <el-table :data="dataList" border stripe>
-          <el-table-column type="selection" width="55"></el-table-column>
-          <el-table-column prop="id" label="ID" width="80"></el-table-column>
-          <el-table-column prop="name" label="文件名称"></el-table-column>
-          <el-table-column prop="type" label="文件类型" width="100"></el-table-column>
-          <el-table-column prop="size" label="文件大小(kb)" width="100"></el-table-column>
-          <el-table-column prop="version" label="版本" width="80"></el-table-column>
-          <el-table-column prop="status" label="状态" width="100">
-            <template #default="scope">
-              <el-tag :type="scope.row.status === '原始版' ? 'info' : 'success'">
-                {{ scope.row.status }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="uploadTime" label="上传时间" width="180"></el-table-column>
-          <el-table-column label="操作" width="200" align="center">
-            <template #default="scope">
-              <el-button type="primary" size="small" @click="previewData(scope.row)">
-                预览
-              </el-button>
-              <el-button type="success" size="small" class="ml-2" @click="processData(scope.row)">
-                处理
-              </el-button>
-              <el-button type="danger" size="small" class="ml-2" @click="deleteData(scope.row.id)">
-                删除
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-        <div style="margin-top: 10px">
-          <el-pagination
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-            :current-page="pageNum"
-            :page-sizes="[10, 20, 50, 100]"
-            :page-size="pageSize"
-            layout="total, sizes, prev, pager, next, jumper"
-            :total="total"
-          ></el-pagination>
-        </div>
-      </el-card>
-    </div>
-    
-    <!-- 手动录入对话框 -->
-    <el-dialog title="手动录入数据" v-model="showManualInput" width="60%">
-      <el-form :model="manualData" label-width="120px">
-        <el-form-item label="怀孕次数">
-          <el-input v-model.number="manualData.Pregnancies"></el-input>
-        </el-form-item>
-        <el-form-item label="葡萄糖">
-          <el-input v-model.number="manualData.Glucose"></el-input>
-        </el-form-item>
-        <el-form-item label="血压">
-          <el-input v-model.number="manualData.BloodPressure"></el-input>
-        </el-form-item>
-        <el-form-item label="皮肤厚度">
-          <el-input v-model.number="manualData.SkinThickness"></el-input>
-        </el-form-item>
-        <el-form-item label="胰岛素">
-          <el-input v-model.number="manualData.Insulin"></el-input>
-        </el-form-item>
-        <el-form-item label="BMI">
-          <el-input v-model.number="manualData.BMI"></el-input>
-        </el-form-item>
-        <el-form-item label="糖尿病家族史">
-          <el-input v-model.number="manualData.DiabetesPedigreeFunction"></el-input>
-        </el-form-item>
-        <el-form-item label="年龄">
-          <el-input v-model.number="manualData.Age"></el-input>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showManualInput = false">取消</el-button>
-          <el-button type="primary" @click="saveManualData">保存</el-button>
-        </span>
       </template>
+      <el-table :data="dataList" border stripe v-loading="loading">
+        <el-table-column prop="id" label="ID" width="70" align="center" />
+        <el-table-column prop="name" label="文件名称" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="type" label="类型" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag size="small">{{ row.type || '-' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="大小" width="100" align="center">
+          <template #default="{ row }">
+            {{ row.size ? (row.size / 1024).toFixed(1) + ' KB' : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="category" label="分类" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.category === 'train' ? 'success' : 'warning'" size="small">
+              {{ row.category === 'train' ? '训练集' : row.category === 'test' ? '测试集' : '未分类' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="上传时间" width="180" align="center" />
+        <el-table-column label="操作" width="150" align="center" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" size="small" link @click="previewData(row)">预览</el-button>
+            <el-button type="danger" size="small" link @click="deleteData(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="pageNum"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="loadData"
+          @current-change="loadData"
+        />
+      </div>
+    </el-card>
+
+    <el-dialog v-model="previewVisible" title="数据预览" width="800px">
+      <el-table :data="previewRows" border max-height="400">
+        <el-table-column v-for="col in previewColumns" :key="col" :prop="col" :label="col" min-width="120" show-overflow-tooltip />
+      </el-table>
+      <div v-if="!previewRows.length" style="text-align:center;color:#999;padding:20px">暂无数据</div>
     </el-dialog>
   </div>
 </template>
 
-<script>
-import request from "@/utils/request";
-import { ElMessage } from "element-plus";
-import { Upload, Edit, Link, Refresh } from '@element-plus/icons-vue';
+<script setup>
+import { ref, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Upload, Refresh } from '@element-plus/icons-vue'
+import request from '@/utils/request'
 
-export default {
-  name: "DataCollection",
-  components: { Upload, Edit, Link, Refresh },
-  data() {
-    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user')
-    let token = ''
-    if (userStr) {
-      try { token = JSON.parse(userStr).token || '' } catch (e) {}
-    }
-    return {
-      serverIp: window.config ? window.config.serverIp : 'localhost',
-      uploadUrl: 'http://' + this.serverIp + ':9090/DataTest/upload',
-      uploadHeaders: { token: token },
-      showManualInput: false,
-      fillStrategy: 'mean',
-      scaleOption: 'standard',
-      dataList: [],
-      pageNum: 1,
-      pageSize: 10,
-      total: 0,
-      qualityCheckData: [
-        { field: 'Pregnancies', status: '正常', message: '无异常' },
-        { field: 'Glucose', status: '警告', message: '存在异常值: 520' },
-        { field: 'BloodPressure', status: '正常', message: '无异常' },
-        { field: 'SkinThickness', status: '正常', message: '无异常' },
-        { field: 'Insulin', status: '正常', message: '无异常' },
-        { field: 'BMI', status: '正常', message: '无异常' },
-        { field: 'DiabetesPedigreeFunction', status: '正常', message: '无异常' },
-        { field: 'Age', status: '正常', message: '无异常' }
-      ],
-      manualData: {
-        Pregnancies: 0,
-        Glucose: 0,
-        BloodPressure: 0,
-        SkinThickness: 0,
-        Insulin: 0,
-        BMI: 0,
-        DiabetesPedigreeFunction: 0,
-        Age: 0
-      }
-    };
-  },
-  created() {
-    this.loadData();
-  },
-  methods: {
-    loadData() {
-      request.get("/DataTest/page", {
-        params: {
-          pageNum: this.pageNum,
-          pageSize: this.pageSize
-        }
-      }).then(res => {
-        if (res.code === '200') {
-          this.dataList = res.data?.records || [];
-          this.total = res.data?.total || 0;
-        } else {
-          ElMessage.error(res.msg || '加载失败');
-        }
-      }).catch(err => {
-        console.error(err);
-        ElMessage.error('网络请求失败');
-      });
-    },
-    handleFileUploadSuccess(res) {
-      if (res.code === '200') {
-        ElMessage.success("上传成功");
-        this.loadData();
-      } else {
-        ElMessage.error(res.msg || "上传失败");
-      }
-    },
-    handleFileUploadError(err) {
-      ElMessage.error("上传失败");
-    },
-    preprocessData() {
-      ElMessage.info("预处理功能开发中...");
-    },
-    previewData(row) {
-      ElMessage.info(`预览数据: ${row.name}`);
-    },
-    processData(row) {
-      ElMessage.info(`处理数据: ${row.name}`);
-    },
-    deleteData(id) {
-      request.delete(`/DataTest/${id}`).then(res => {
-        if (res.code === '200') {
-          ElMessage.success("删除成功");
-          this.loadData();
-        } else {
-          ElMessage.error(res.msg || "删除失败");
-        }
-      });
-    },
-    saveManualData() {
-      ElMessage.success("手动录入成功");
-      this.showManualInput = false;
-    },
-    handleSizeChange(pageSize) {
-      this.pageSize = pageSize;
-      this.pageNum = 1;
-      this.loadData();
-    },
-    handleCurrentChange(pageNum) {
-      this.pageNum = pageNum;
-      this.loadData();
-    }
+const uploadUrl = '/api/dataset/upload'
+const uploadHeaders = (() => {
+  const userStr = localStorage.getItem('user') || sessionStorage.getItem('user')
+  let token = ''
+  if (userStr) {
+    try { token = JSON.parse(userStr).token || '' } catch {}
   }
-};
+  return { token }
+})()
+
+const dataList = ref([])
+const fileList = ref([])
+const loading = ref(false)
+const pageNum = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+
+const selectedFileId = ref(null)
+const fillStrategy = ref('mean')
+const standardize = ref(true)
+const preprocessing = ref(false)
+const preprocessResult = ref('')
+
+const previewVisible = ref(false)
+const previewRows = ref([])
+const previewColumns = ref([])
+
+const loadData = async () => {
+  loading.value = true
+  try {
+    const res = await request.get('/api/dataset/list', {
+      params: { pageNum: pageNum.value, pageSize: pageSize.value }
+    })
+    if (res.code === '200') {
+      dataList.value = res.data?.records || []
+      total.value = res.data?.total || 0
+    }
+  } catch {} finally {
+    loading.value = false
+  }
+}
+
+const loadAllFiles = async () => {
+  try {
+    const res = await request.get('/api/dataset/all')
+    if (res.code === '200') {
+      fileList.value = res.data || []
+    }
+  } catch {}
+}
+
+const handleUploadSuccess = (res) => {
+  if (res.code === '200') {
+    ElMessage.success('上传成功')
+    loadData()
+    loadAllFiles()
+  } else {
+    ElMessage.error(res.msg || '上传失败')
+  }
+}
+
+const handleUploadError = () => {
+  ElMessage.error('上传失败')
+}
+
+const handlePreprocess = async () => {
+  if (!selectedFileId.value) {
+    ElMessage.warning('请先选择要预处理的文件')
+    return
+  }
+  preprocessing.value = true
+  preprocessResult.value = ''
+  try {
+    const res = await request.post('/api/data/preprocess', {
+      fileId: selectedFileId.value,
+      fillMethod: fillStrategy.value,
+      standardize: standardize.value
+    })
+    if (res.code === '200') {
+      preprocessResult.value = res.data?.message || '预处理完成'
+      ElMessage.success('预处理完成')
+      loadData()
+    } else {
+      ElMessage.error(res.msg || '预处理失败')
+    }
+  } catch {
+    ElMessage.error('预处理请求失败')
+  } finally {
+    preprocessing.value = false
+  }
+}
+
+const previewData = async (row) => {
+  try {
+    const res = await request.get(`/api/dataset/${row.id}`)
+    if (res.code === '200' && res.data) {
+      ElMessage.info(`文件: ${row.name}`)
+    }
+    previewColumns.value = ['id', 'name', 'type', 'category', 'createTime']
+    previewRows.value = [row]
+    previewVisible.value = true
+  } catch {
+    ElMessage.error('预览失败')
+  }
+}
+
+const deleteData = async (row) => {
+  try {
+    await ElMessageBox.confirm(`确定删除 "${row.name}"？`, '确认', { type: 'warning' })
+    const res = await request.delete(`/api/dataset/${row.id}`)
+    if (res.code === '200') {
+      ElMessage.success('删除成功')
+      loadData()
+      loadAllFiles()
+    } else {
+      ElMessage.error(res.msg || '删除失败')
+    }
+  } catch {}
+}
+
+onMounted(() => {
+  loadData()
+  loadAllFiles()
+})
 </script>
 
 <style scoped>
+.data-collection-container {
+  padding: 20px;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.upload-container {
+.upload-area {
+  width: 100%;
+}
+
+.upload-icon {
+  font-size: 48px;
+  color: #c0c4cc;
+  margin-bottom: 12px;
+}
+
+.preprocess-result {
+  margin-top: 16px;
+}
+
+.pagination-wrapper {
+  margin-top: 16px;
   display: flex;
-  align-items: center;
-}
-
-.ml-4 {
-  margin-left: 16px;
-}
-
-.ml-2 {
-  margin-left: 8px;
+  justify-content: flex-end;
 }
 </style>

@@ -34,7 +34,7 @@ const mapPagePath = {
   'test-file': 'TestFile',
   'collection-log': 'DataCollection',
   '数据采集日志': 'DataTest',
-  'online-predict': 'PredictionWorkbench',
+  'online-predict': 'OnlineTraining',
   '家庭预测': 'TestFile',
   'data-report': 'Dashbord',
   '我的报告': 'Dashbord',
