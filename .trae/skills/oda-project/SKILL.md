@@ -5,8 +5,8 @@ description: "Software-ODA125 糖尿病健康管理系统的完整项目知识�
 
 # Software-ODA125 糖尿病健康管理系统 — 项目知识库
 
-> **最后更新**：2026-05-07  
-> **最新变更**：测试集路径迁移至 data/test/、JSON 输出路径迁移至 data/json/、清理过渡性 SQL 迁移文件
+> **最后更新**：2026-05-09  
+> **最新变更**：新增 `migration_002_workflow_fix.sql` 与 `migration_003_menu_cleanup.sql`，AI模型中心菜单合并为「模型训练与预测」，上线个体洞察、群体分析、数据预处理、诊疗打卡与维修工单相关接口
 
 ## 1. 项目概览
 
@@ -14,7 +14,7 @@ description: "Software-ODA125 糖尿病健康管理系统的完整项目知识�
 |------|------|
 | 名称 | Software-ODA125 糖尿病健康管理系统 |
 | 版本 | 0.0.1-YUNYI |
-| 最后更新 | 2026-05-07（测试集路径迁移 + JSON路径迁移） |
+| 最后更新 | 2026-05-09（AI模型中心菜单合并 + 诊断分析/数据预处理/维修工单接口接入） |
 | 架构 | 前后端分离（Spring Boot + Vue 3 + Python算法层） |
 | 数据库 | MySQL 8.0 (数据库名: `dongfang`, 编码: utf8mb4) |
 | 缓存 | Redis (端口 6379, database 0) |
@@ -94,10 +94,10 @@ Software-ODA125/
 │   │   │   ├── Main/
 │   │   │   ├── common/
 │   │   │   ├── config/
-│   │   │   ├── controller/         # 24个控制器 + 3个DTO
-│   │   │   ├── entity/             # 19个实体类
+│   │   │   ├── controller/         # 30个控制器 + 3个DTO
+│   │   │   ├── entity/             # 24个实体类
 │   │   │   ├── exception/
-│   │   │   ├── mapper/             # 20个Mapper接口
+│   │   │   ├── mapper/             # 25个Mapper接口
 │   │   │   ├── service/
 │   │   │   ├── test/
 │   │   │   └── utils/
@@ -172,17 +172,15 @@ src/main/java/com/oda/springboot/
 │   ├── MybatisPlusConfig.java      # MyBatis-Plus分页插件
 │   ├── SwaggerConfig.java          # Swagger 3 文档配置
 │   └── WebConfig.java              # 静态资源配置
-├── controller/                     # 控制器 (24个)
+├── controller/                     # 控制器 (30个)
 │   ├── dto/                        # 数据传输对象 (3个)
 │   │   ├── SaveAndPredictRequest.java
 │   │   ├── UserDTO.java
 │   │   └── UserPasswordDTO.java
-│   ├── UserController.java
-│   ├── RoleController.java
-│   ├── MenuController.java
-│   ├── IndexController.java
+│   ├── AnalysisController.java         # 群体分析
+│   ├── DataPreprocessController.java   # 数据预处理
 │   ├── DatasetController.java
-│   ├── DiabetesController.java     # 智能对话
+│   ├── DiabetesController.java         # 智能对话
 │   ├── DiabetesEducationController.java
 │   ├── DiabetesVideoController.java
 │   ├── DetailbordController.java
@@ -190,18 +188,26 @@ src/main/java/com/oda/springboot/
 │   ├── EducationCommentController.java
 │   ├── FileController.java
 │   ├── HealthProfileController.java
+│   ├── IndexController.java
+│   ├── InsightController.java          # 个体洞察
+│   ├── MenuController.java
 │   ├── MessageController.java
 │   ├── ModelController.java
 │   ├── ModelVersionController.java
 │   ├── PatientVisitController.java
+│   ├── PredictController.java          # 批量预测结果管理
 │   ├── PythonScriptController.java
+│   ├── RepairController.java           # 维修工单管理
+│   ├── RoleController.java
 │   ├── SinglePredictController.java
 │   ├── SysConfigController.java
 │   ├── TestFileController.java
 │   ├── TrainTaskController.java
+│   ├── TreatmentCheckinController.java # 诊疗打卡
 │   ├── TreatmentRecordController.java
-│   └── pythonController.java       # 注意：命名不规范，首字母小写
-├── entity/                         # 实体类 (19个)
+│   ├── UserController.java
+│   └── pythonController.java           # 注意：命名不规范，首字母小写
+├── entity/                         # 实体类 (24个)
 │   ├── User.java                   # @TableName("sys_user")
 │   ├── Role.java                   # @TableName("sys_role")
 │   ├── Menu.java                   # @TableName("sys_menu")
@@ -220,11 +226,16 @@ src/main/java/com/oda/springboot/
 │   ├── PatientVisitRecord.java     # @TableName("patient_visit_record")
 │   ├── TrainTask.java              # @TableName("sys_train_task")
 │   ├── ModelVersion.java           # @TableName("sys_model_version")
-│   └── OnlineDate.java             # @TableName("sys_result") — 类名与表名不匹配
+│   ├── OnlineDate.java             # @TableName("sys_result") — 类名与表名不匹配
+│   ├── PredictionRecord.java       # prediction_record
+│   ├── TreatmentCheckin.java       # treatment_checkin
+│   ├── RepairOrder.java            # 维修工单主表
+│   ├── RepairLog.java              # 维修处理记录
+│   └── RepairEvaluation.java       # 维修评价
 ├── exception/                      # 异常处理
 │   ├── GlobalExceptionHandler.java
 │   └── ServiceException.java
-├── mapper/                         # MyBatis Mapper接口 (20个)
+├── mapper/                         # MyBatis Mapper接口 (25个)
 ├── service/                        # 服务层
 │   ├── impl/                       # 服务实现 (10个)
 │   │   ├── DiabetesEducationServiceImpl.java
@@ -351,8 +362,46 @@ mimo-omni.api.api-key: ${MIMO_OMNI_API_KEY:}
 | 训练任务 | POST | /api/train-task/start | 启动训练 | JWT |
 | 模型版本 | GET/POST/PUT/DELETE | /api/model-version | 模型版本管理 | JWT |
 | 健康档案 | POST | /api/health-profile/save-and-predict | 保存并预测 | JWT |
+| 健康档案 | GET | /api/health-profile/mine | 查询当前用户健康档案 | JWT |
+| 健康档案 | GET | /api/health-profile/download-csv | 导出健康档案CSV | JWT |
 | 诊疗档案 | GET/POST/PUT/DELETE | /api/treatment-record | 诊疗档案CRUD | JWT |
 | 就诊记录 | GET/POST/PUT/DELETE | /api/patient-visit | 就诊记录CRUD | JWT |
+| 诊疗打卡 | POST | /api/treatment/checkin | 创建诊疗打卡 | JWT |
+| 诊疗打卡 | GET | /api/treatment/checkin/list | 查询打卡记录 | JWT |
+| 群体分析 | POST | /api/analysis/group | 群体特征分布分析 | JWT |
+| 群体分析 | POST | /api/analysis/cluster | 聚类分析 | JWT |
+| 群体分析 | POST | /api/analysis/correlation | 相关性分析 | JWT |
+| 群体分析 | POST | /api/analysis/subgroup-comparison | 亚组对比 | JWT |
+| 群体分析 | POST | /api/analysis/model-performance | 模型性能评估 | JWT |
+| 个体洞察 | POST | /api/insight/explain | 单样本深度归因 | JWT |
+| 个体洞察 | POST | /api/insight/similar-cases | 相似病例查询 | JWT |
+| 个体洞察 | POST | /api/insight/history-trend | 用户历史趋势 | JWT |
+| 预测结果 | GET | /api/predict/results | 查询预测结果列表 | JWT |
+| 预测结果 | GET | /api/predict/results/{id} | 获取预测结果详情 | JWT |
+| 预测结果 | DELETE | /api/predict/results/{id} | 删除预测结果 | JWT |
+| 数据预处理 | GET | /api/preprocess/datasets | 查询数据集列表 | JWT |
+| 数据预处理 | POST | /api/preprocess/stats | 数据集统计分析 | JWT |
+| 数据预处理 | POST | /api/preprocess/clean | 数据清洗（去重/缺失值/异常值） | JWT |
+| 数据预处理 | POST | /api/preprocess/encode | 特征编码（独热/标签） | JWT |
+| 数据预处理 | POST | /api/preprocess/scale | 特征缩放（标准化/归一化） | JWT |
+| 数据预处理 | POST | /api/preprocess/balance | 样本平衡（上采样/下采样） | JWT |
+| 数据预处理 | POST | /api/preprocess/feature-engineering | 特征工程 | JWT |
+| 数据预处理 | POST | /api/preprocess/split | 数据集拆分 | JWT |
+| 数据预处理 | POST | /api/preprocess/download | 下载处理后的数据集 | JWT |
+| 维修工单 | POST | /api/repairs | 创建维修工单 | JWT |
+| 维修工单 | GET | /api/repairs | 查询工单列表（支持多条件筛选） | JWT |
+| 维修工单 | GET | /api/repairs/{id} | 获取工单详情 | JWT |
+| 维修工单 | PUT | /api/repairs/{id}/assign | 分配工单 | JWT |
+| 维修工单 | PUT | /api/repairs/{id}/start-processing | 开始处理 | JWT |
+| 维修工单 | PUT | /api/repairs/{id}/complete | 完成工单 | JWT |
+| 维修工单 | PUT | /api/repairs/{id}/close | 关闭工单 | JWT |
+| 维修工单 | POST | /api/repairs/{id}/logs | 添加处理记录 | JWT |
+| 维修工单 | GET | /api/repairs/{id}/logs | 查询处理记录 | JWT |
+| 维修工单 | POST | /api/repairs/{id}/evaluate | 提交评价 | JWT |
+| 维修工单 | GET | /api/repairs/statistics | 维修统计 | JWT |
+| 维修工单 | GET | /api/repairs/my | 我的工单 | JWT |
+| 医生诊断 | GET | /api/health-profile/doctor/pending | 待诊断列表 | JWT |
+| 医生诊断 | POST | /api/health-profile/doctor/submit-result | 提交诊断结果 | JWT |
 
 ### 4.6 JWT认证机制
 
@@ -783,16 +832,21 @@ baseURL: http://{host}:9090  // host = window.location.hostname || 'localhost'
 | 17 | 测试2 | 0002 | 系统增删测试项 |
 | 18 | 医生 | ROLE_DOCTOR | 医生角色 |
 
-### 6.4 菜单模块 (8大模块, 32条菜单记录)
+### 6.4 菜单模块 (8大模块, 31条菜单记录)
 
 1. **主页** — 首页仪表盘
 2. **系统管理** — 用户管理、角色管理、菜单管理
-3. **AI模型中心** — 训练集管理、模型管理、在线模型训练
+3. **AI模型中心** — 训练集管理、模型管理、模型训练与预测（已合并原"在线模型训练"和"模型训练与预测"，id=8保留，id=79已删除）
 4. **用户服务** — 风险快检、健康管理中心、智能问答、诊疗档案、糖尿病科普
 5. **诊断员服务** — 组合分析、个体洞察、数据采集、预测工作台、诊断工作台
 6. **糖尿病预测中心** — 采集日志、在线预测、数据报表、详细报表
 7. **运维中心** — 故障报修、报修详情、运维详情、信息回执
 8. **关于**
+
+> **最新菜单变更**（2026-05-09）：
+> - 删除菜单 id=79 "模型训练与预测"（原预测工作台入口）
+> - 更新菜单 id=8 图标为 `el-icon-dashboard`（原模型训练与预测图标）
+> - 用户需重新登录或清除浏览器缓存才能看到更新后的菜单
 
 ---
 
@@ -882,6 +936,78 @@ DiabetesModel(nn.Module):
 - 就诊/自查记录列表
 - 支持编辑和删除
 - Excel批量导入导出（EasyExcel）
+
+### 8.6 群体分析 (GroupAnalysis.vue)
+**功能**：对预测结果数据集进行多维度统计分析
+
+**工作流**：
+1. 选择预测结果数据集 → POST /api/analysis/group
+2. 后端 Python 统计脚本处理 → 返回特征分布、风险比例、均值标准差
+3. 前端 ECharts 可视化展示（直方图、箱线图、饼图、散点图）
+4. 支持聚类分析、相关性分析、亚组对比、模型性能评估
+
+**支持分析类型**：
+- 群体特征分布分析：风险等级分布、年龄/血糖/BMI分布
+- 聚类分析：KMeans 聚类患者群体
+- 相关性分析：特征相关性热力图
+- 亚组对比：不同群体的特征差异
+- 模型性能评估：混淆矩阵、ROC曲线、分类报告
+
+### 8.7 个体洞察 (IndividualInsight.vue)
+**功能**：单样本深度归因分析，展示模型决策逻辑
+
+**工作流**：
+1. 选择单一样本或上传单文件
+2. POST /api/insight/explain → 后端 Python SHAP 解释
+3. 返回 SHAP 特征贡献度、相似病例、历史趋势
+4. 前端展示深度归因报告（瀑布图、力图、特征贡献表格）
+
+**核心功能**：
+- 单样本深度归因：SHAP 特征贡献度分析
+- 相似病例查询：基于余弦相似度匹配
+- 用户历史趋势：查看用户历史预测记录变化趋势
+
+### 8.8 数据预处理 (DataCollection.vue)
+**功能**：数据集清洗、特征工程、样本平衡
+
+**工作流**：
+1. 选择数据集 → GET /api/preprocess/datasets
+2. 查看统计信息 → POST /api/preprocess/stats（缺失值比例、异常值、类别分布）
+3. 执行预处理操作：
+   - 数据清洗：去重、缺失值填充、异常值处理
+   - 特征编码：独热编码、标签编码
+   - 特征缩放：标准化、归一化
+   - 样本平衡：上采样、下采样
+   - 特征工程：多项式特征、交互特征、分箱
+   - 数据集拆分：训练集/验证集/测试集比例拆分
+4. 下载处理后的数据集 → POST /api/preprocess/download
+
+### 8.9 维修工单 (RepairController.java)
+**功能**：设备维修工单全流程管理
+
+**工单状态流转**：
+```
+待处理(pending) → 已分配(assigned) → 处理中(processing) → 已完成(completed) → 已关闭(closed)
+```
+
+**核心API**：
+- 创建工单：POST /api/repairs（用户报修）
+- 查询工单：GET /api/repairs（支持多条件筛选：类型、状态、紧急程度、时间范围）
+- 工单详情：GET /api/repairs/{id}（含处理记录和评价）
+- 状态流转：PUT /api/repairs/{id}/assign|start-processing|complete|close
+- 处理记录：POST /api/repairs/{id}/logs（文字+图片）
+- 服务评价：POST /api/repairs/{id}/evaluate（1-5星+评语）
+- 维修统计：GET /api/repairs/statistics（总数、状态分布、类型分布、紧急程度分布、平均处理时长）
+- 我的工单：GET /api/repairs/my（当前用户的工单列表）
+
+### 8.10 预测结果管理 (PredictController.java)
+**功能**：批量预测结果的查询与管理
+
+**工作流**：
+1. 批量预测完成后结果保存到 prediction_record 表
+2. 查询预测结果：GET /api/predict/results（分页+筛选：用户ID、用户名、风险等级、时间范围）
+3. 获取结果详情：GET /api/predict/results/{id}（含特征值、图表路径、SHAP解释路径）
+4. 删除结果：DELETE /api/predict/results/{id}
 
 ---
 
