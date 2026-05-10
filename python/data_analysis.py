@@ -6,6 +6,12 @@ from matplotlib import pyplot as plt
 from tensorflow.keras.models import load_model
 import json
 import pymysql #导入模块
+import sys
+import io
+
+# 设置标准输出编码为UTF-8，避免中文乱码
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 #分析数据
 def data_analysis(data,y):

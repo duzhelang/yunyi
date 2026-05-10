@@ -9,6 +9,7 @@ import json
 import io
 import traceback
 import base64
+import time
 import numpy as np
 import joblib
 import torch
@@ -34,6 +35,14 @@ try:
 except ImportError:
     SHAP_AVAILABLE = False
     print("[警告] SHAP 未安装，将跳过特征重要性计算。可执行: pip install shap")
+
+# 尝试导入 scipy（用于百分位计算）
+try:
+    from scipy import stats
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
+    print("[警告] scipy 未安装，百分位计算将使用近似算法。可执行: pip install scipy")
 
 # ==========================================
 # 模型结构定义（必须与训练脚本一致）
@@ -628,12 +637,18 @@ def generate_charts(result, output_dir):
 # ==========================================
 def compute_percentile(value, mean, std):
     """计算单个指标在正态分布中的百分位"""
-    from scipy import stats
-    percentile = stats.norm.cdf((value - mean) / std) * 100
+    if SCIPY_AVAILABLE:
+        percentile = stats.norm.cdf((value - mean) / std) * 100
+    else:
+        # 使用误差函数近似正态分布CDF
+        import math
+        z = (value - mean) / std
+        # 使用近似公式：Φ(z) ≈ 0.5 * (1 + erf(z / sqrt(2)))
+        percentile = 50 * (1 + math.erf(z / math.sqrt(2))) * 100
     return round(percentile, 1)
 
 def compute_all_percentiles(features):
-    """计算所有指标的百分位（基于正态分布假设）"""
+    """计算所有指标的百分位（基于正态分布假设，使用向量化计算）"""
     # 参考统计数据（基于糖尿病数据集的平均值和标准差）
     reference_stats = {
         'Pregnancies': {'mean': 3.8, 'std': 3.4},
@@ -649,11 +664,30 @@ def compute_all_percentiles(features):
     feature_names = ['Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness',
                      'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age']
     
+    # 准备向量化计算
+    means = np.array([reference_stats[name]['mean'] for name in feature_names])
+    stds = np.array([reference_stats[name]['std'] for name in feature_names])
+    features_array = np.array(features, dtype=np.float64)
+    
+    # 计算z分数
+    z_scores = (features_array - means) / stds
+    
+    # 计算百分位
+    if SCIPY_AVAILABLE:
+        percentiles_array = stats.norm.cdf(z_scores) * 100
+    else:
+        # 使用误差函数近似
+        import math
+        percentiles_array = np.array([50 * (1 + math.erf(z / math.sqrt(2))) * 100 for z in z_scores])
+    
+    # 四舍五入到一位小数
+    percentiles_array = np.round(percentiles_array, 1)
+    
+    # 构建结果字典
     percentiles = {}
     for i, name in enumerate(feature_names):
-        if name in reference_stats and features[i] is not None:
-            stats_dict = reference_stats[name]
-            percentiles[name] = compute_percentile(features[i], stats_dict['mean'], stats_dict['std'])
+        if features[i] is not None:
+            percentiles[name] = float(percentiles_array[i])
         else:
             percentiles[name] = 50.0  # 默认中等
     
@@ -663,7 +697,7 @@ def compute_all_percentiles(features):
 # 相似病例分布计算
 # ==========================================
 def compute_similar_cases(features, similarity_threshold=0.8):
-    """计算相似病例的分布统计"""
+    """计算相似病例的分布统计（使用向量化计算）"""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     similar_cases_path = os.path.join(script_dir, 'similar_cases.npy')
     
@@ -674,32 +708,33 @@ def compute_similar_cases(features, similarity_threshold=0.8):
         # 加载历史相似病例数据
         historical_data = np.load(similar_cases_path, allow_pickle=True).item()
         
-        # 计算特征相似度（余弦相似度）
+        # 计算特征相似度
         historical_features = historical_data.get('features', [])
         historical_probabilities = historical_data.get('probabilities', [])
         
         if len(historical_features) == 0 or len(historical_probabilities) == 0:
             return None
         
-        # 计算与当前输入的相似度
-        similarities = []
-        for hist_feat in historical_features:
-            # 归一化特征差异
-            diff = np.abs(np.array(features) - np.array(hist_feat))
-            similarity = 1 - np.mean(diff / (np.array(features) + 1e-6))
-            similarities.append(similarity)
+        # 使用向量化计算相似度（替代逐行循环）
+        features_array = np.array(features, dtype=np.float64)
+        historical_array = np.array(historical_features, dtype=np.float64)
+        probabilities_array = np.array(historical_probabilities, dtype=np.float64)
+        
+        # 计算归一化特征差异
+        diff = np.abs(historical_array - features_array)
+        similarities = 1 - np.mean(diff / (features_array + 1e-6), axis=1)
         
         # 筛选相似病例
-        similar_indices = [i for i, s in enumerate(similarities) if s >= similarity_threshold]
+        similar_mask = similarities >= similarity_threshold
+        similar_probs = probabilities_array[similar_mask]
         
-        if len(similar_indices) > 0:
-            similar_probs = [historical_probabilities[i] for i in similar_indices]
+        if len(similar_probs) > 0:
             return {
-                'count': len(similar_indices),
-                'avg_probability': round(np.mean(similar_probs), 2),
-                'min_probability': round(np.min(similar_probs), 2),
-                'max_probability': round(np.max(similar_probs), 2),
-                'std_probability': round(np.std(similar_probs), 2)
+                'count': int(len(similar_probs)),
+                'avg_probability': round(float(np.mean(similar_probs)), 2),
+                'min_probability': round(float(np.min(similar_probs)), 2),
+                'max_probability': round(float(np.max(similar_probs)), 2),
+                'std_probability': round(float(np.std(similar_probs)), 2)
             }
         else:
             return None
@@ -750,7 +785,11 @@ def save_prediction_record(features, probability):
 # 主函数
 # ==========================================
 def main():
-    print("[开始] Python 单条预测脚本执行（增强版）", file=sys.stderr)
+    # 性能监控：记录开始时间
+    start_time = time.time()
+    timings = {}
+    
+    print("[开始] Python 单条预测脚本执行（优化版）", file=sys.stderr)
     print("[时间] 当前时间：", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), file=sys.stderr)
 
     # 解决 Windows 控制台中文乱码
@@ -758,26 +797,77 @@ def main():
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
         sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
-    # 1. 参数校验
-    if len(sys.argv) != 9:
+    # 1. 参数解析（支持可选的 --model、--charts、--mc-iterations 参数）
+    model_base = None
+    generate_charts = False  # 默认不生成图表（由前端ECharts渲染）
+    mc_iterations = 10  # 默认MC Dropout迭代次数为10次
+    
+    # 解析命令行参数
+    remaining_args = []
+    i = 1
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        if arg == '--model':
+            if i + 1 < len(sys.argv):
+                model_base = sys.argv[i + 1]
+                i += 2
+            else:
+                result = {
+                    "status": "error",
+                    "msg": "--model 参数需要指定模型路径",
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                print(json.dumps(result, ensure_ascii=False))
+                sys.exit(1)
+        elif arg == '--charts':
+            generate_charts = True
+            i += 1
+        elif arg == '--mc-iterations':
+            if i + 1 < len(sys.argv):
+                try:
+                    mc_iterations = int(sys.argv[i + 1])
+                    if mc_iterations < 1 or mc_iterations > 100:
+                        raise ValueError("MC迭代次数必须在1-100之间")
+                    i += 2
+                except ValueError as e:
+                    result = {
+                        "status": "error",
+                        "msg": f"--mc-iterations 参数格式错误：{str(e)}",
+                        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    print(json.dumps(result, ensure_ascii=False))
+                    sys.exit(1)
+            else:
+                result = {
+                    "status": "error",
+                    "msg": "--mc-iterations 参数需要指定迭代次数",
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                print(json.dumps(result, ensure_ascii=False))
+                sys.exit(1)
+        else:
+            remaining_args.append(arg)
+            i += 1
+    
+    if len(remaining_args) != 8:
         result = {
             "status": "error",
-            "msg": f"参数数量错误！需要 8 个特征参数，实际收到 {len(sys.argv)-1} 个。",
+            "msg": f"参数数量错误！需要 8 个特征参数，实际收到 {len(remaining_args)} 个。",
             "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         print(json.dumps(result, ensure_ascii=False))
         sys.exit(1)
 
-    # 2. 解析参数
+    # 2. 解析特征参数
     try:
-        pregnancies = float(sys.argv[1])
-        glucose = float(sys.argv[2])
-        blood_pressure = float(sys.argv[3])
-        skin_thickness = float(sys.argv[4])
-        insulin = float(sys.argv[5])
-        bmi = float(sys.argv[6])
-        diabetes_pedigree_function = float(sys.argv[7])
-        age = float(sys.argv[8])
+        pregnancies = float(remaining_args[0])
+        glucose = float(remaining_args[1])
+        blood_pressure = float(remaining_args[2])
+        skin_thickness = float(remaining_args[3])
+        insulin = float(remaining_args[4])
+        bmi = float(remaining_args[5])
+        diabetes_pedigree_function = float(remaining_args[6])
+        age = float(remaining_args[7])
     except ValueError as e:
         result = {
             "status": "error",
@@ -786,6 +876,10 @@ def main():
         }
         print(json.dumps(result, ensure_ascii=False))
         sys.exit(1)
+    
+    print(f"[配置] 模型路径: {model_base or '默认'}", file=sys.stderr)
+    print(f"[配置] 生成图表: {generate_charts}", file=sys.stderr)
+    print(f"[配置] MC迭代次数: {mc_iterations}", file=sys.stderr)
 
     features = [pregnancies, glucose, blood_pressure, skin_thickness,
                 insulin, bmi, diabetes_pedigree_function, age]
@@ -794,8 +888,10 @@ def main():
                      'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age']
 
     # 3. 模型文件路径
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    model_base = os.path.join(script_dir, 'diabetes_model')  # 不含扩展名
+    if model_base is None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        model_base = os.path.join(script_dir, 'diabetes_model')  # 不含扩展名
+    
     model_path = model_base + '.pth'
     encoder_path = model_base + '_encoder.pkl'
     scaler_path = model_base + '_scaler.pkl'
@@ -816,12 +912,16 @@ def main():
     use_enhanced = False
     try:
         if os.path.exists(model_path) and os.path.exists(scaler_path) and os.path.exists(encoder_path):
+            # 模型加载计时
+            model_load_start = time.time()
             scaler = joblib.load(scaler_path)
             label_encoder = joblib.load(encoder_path)
 
             model = DiabetesModel(input_dim=8)
             model.load_state_dict(torch.load(model_path, map_location='cpu'))
             model.eval()
+            timings['model_load'] = time.time() - model_load_start
+            print(f"[信息] 模型加载完成 (耗时: {timings['model_load']:.3f}秒)", file=sys.stderr)
 
             # 数据标准化
             features_array = np.array(features).reshape(1, -1)
@@ -830,13 +930,15 @@ def main():
 
             # ----- 5.1 不确定性估计 (MC Dropout) -----
             try:
-                prob_mean, prob_std = predict_with_uncertainty(model, X_tensor, n_iter=30)
+                mc_start = time.time()
+                prob_mean, prob_std = predict_with_uncertainty(model, X_tensor, n_iter=mc_iterations)
+                timings['mc_dropout'] = time.time() - mc_start
                 ci_lower = max(0.0, prob_mean - 1.96 * prob_std)
                 ci_upper = min(1.0, prob_mean + 1.96 * prob_std)
                 result["confidence_interval"] = [round(ci_lower * 100, 2), round(ci_upper * 100, 2)]
                 result["probability"] = round(prob_mean * 100, 2)
                 result["prediction"] = 1 if prob_mean > 0.5 else 0
-                print("[成功] 不确定性估计完成", file=sys.stderr)
+                print(f"[成功] 不确定性估计完成 (耗时: {timings['mc_dropout']:.3f}秒, 迭代次数: {mc_iterations})", file=sys.stderr)
             except Exception as e:
                 print(f"[警告] 不确定性估计失败，回退到常规预测: {str(e)}", file=sys.stderr)
                 # 回退到单次预测
@@ -849,11 +951,13 @@ def main():
 
             # ----- 5.2 SHAP 特征重要性 -----
             try:
+                shap_start = time.time()
                 model.eval()  # SHAP 计算应在 eval 模式下
                 importance = compute_shap_importance(model, X_tensor, feature_names, model_base)
+                timings['shap'] = time.time() - shap_start
                 if importance is not None:
                     result["feature_importance"] = importance
-                    print("[成功] SHAP 特征重要性计算完成", file=sys.stderr)
+                    print(f"[成功] SHAP 特征重要性计算完成 (耗时: {timings['shap']:.3f}秒)", file=sys.stderr)
                 else:
                     print("[警告] SHAP 不可用，跳过特征重要性", file=sys.stderr)
             except Exception as e:
@@ -885,33 +989,57 @@ def main():
         result["risk_level"] = "low"
 
     # 8. 计算百分位排名
+    percentile_start = time.time()
     percentiles = compute_all_percentiles(features)
+    timings['percentiles'] = time.time() - percentile_start
     if percentiles:
         result["percentiles"] = percentiles
-        print("[成功] 百分位计算完成", file=sys.stderr)
+        print(f"[成功] 百分位计算完成 (耗时: {timings['percentiles']:.3f}秒)", file=sys.stderr)
 
     # 9. 计算相似病例分布
+    similar_start = time.time()
     similar_cases = compute_similar_cases(features)
+    timings['similar_cases'] = time.time() - similar_start
     if similar_cases:
         result["similar_cases"] = similar_cases
-        print("[成功] 相似病例分析完成", file=sys.stderr)
+        print(f"[成功] 相似病例分析完成 (耗时: {timings['similar_cases']:.3f}秒)", file=sys.stderr)
 
     # 10. 保存当前预测记录
     save_prediction_record(features, result["probability"])
 
-    # 11. 生成可视化图表
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(script_dir)
-    charts_dir = os.path.join(project_root, 'files', 'charts')
-    os.makedirs(charts_dir, exist_ok=True)
-    charts = generate_charts(result, charts_dir)
-    if charts:
-        result["charts"] = charts
-        print("[成功] 所有图表生成完成", file=sys.stderr)
+    # 11. 生成可视化图表（根据参数决定是否生成）
+    if generate_charts:
+        chart_start = time.time()
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(script_dir)
+        charts_dir = os.path.join(project_root, 'files', 'charts')
+        os.makedirs(charts_dir, exist_ok=True)
+        charts = generate_charts(result, charts_dir)
+        timings['charts'] = time.time() - chart_start
+        if charts:
+            result["charts"] = charts
+            print(f"[成功] 所有图表生成完成 (耗时: {timings['charts']:.3f}秒)", file=sys.stderr)
+        else:
+            print("[信息] 图表生成跳过（matplotlib可能未安装）", file=sys.stderr)
     else:
-        print("[信息] 图表生成跳过（matplotlib可能未安装）", file=sys.stderr)
+        print("[信息] 图表生成已禁用（使用 --charts 参数启用）", file=sys.stderr)
 
-    # 12. 输出 JSON 结果
+    # 12. 计算总耗时并添加性能统计信息
+    total_time = time.time() - start_time
+    timings['total'] = total_time
+    
+    # 添加性能统计信息到结果
+    result["performance"] = {
+        "total_time_seconds": round(total_time, 3),
+        "timings": {k: round(v, 3) for k, v in timings.items()},
+        "mc_iterations": mc_iterations,
+        "charts_generated": generate_charts
+    }
+    
+    print(f"[性能] 总耗时: {total_time:.3f}秒", file=sys.stderr)
+    print(f"[性能] 各步骤耗时: {json.dumps(timings, indent=2)}", file=sys.stderr)
+    
+    # 13. 输出 JSON 结果
     print(json.dumps(result, ensure_ascii=False))
 
 if __name__ == '__main__':

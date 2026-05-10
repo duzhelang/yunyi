@@ -2,6 +2,13 @@ from data_analysis import data_analysis
 from model import train_model
 from read_data import read_data,remove_duplicates
 from missing_scale import fill_missing_values,scale_data
+import sys
+import io
+import os
+
+# 设置标准输出编码为UTF-8，避免中文乱码
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # 项目根目录/python/data/ 下的训练/验证数据
 base_path = os.path.join(os.getcwd(), "python", "data")
