@@ -74,7 +74,7 @@ INSERT INTO `sys_menu` VALUES (7, '菜单管理', '/menu', 'el-icon-menu', '菜�
 INSERT INTO `sys_menu` VALUES (46, 'AI模型中心', NULL, 'el-icon-s-grid', 'AI模型训练与管理中心', NULL, NULL, 2);
 INSERT INTO `sys_menu` VALUES (76, '模型管理', '/model-manager', 'el-icon-s-data', '模型资产统一管理中心', 46, 'ModelManagement', 1);
 INSERT INTO `sys_menu` VALUES (45, '数据集管理', '/dataset-management', 'el-icon-document', '训练集、测试集与预测结果统一管理', 46, 'DatasetManagement', 2);
-INSERT INTO `sys_menu` VALUES (8, '在线模型训练', '/online-training', 'el-icon-document', '训练任务启动器和历史记录看板', 46, 'OnlineTraining', 3);
+INSERT INTO `sys_menu` VALUES (8, '在线模型训练', '/online-training', 'el-icon-dashboard', '训练任务启动器和历史记录看板', 46, 'OnlineTraining', 3);
 INSERT INTO `sys_menu` VALUES (41, '数据采集日志', '/data-test', 'el-icon-s-marketing', '在线测试模型数据', 46, 'DataTest', 4);
 INSERT INTO `sys_menu` VALUES (79, '预测工作台', '/diabetes/workbench', 'el-icon-dashboard', '预测任务的全生命周期管理中心', 46, 'PredictionWorkbench', 5);
 INSERT INTO `sys_menu` VALUES (85, '用户服务', NULL, 'el-icon-user', '用户服务模块', NULL, NULL, 3);
@@ -229,7 +229,7 @@ CREATE TABLE `sys_testfile` (
   `size` bigint(20) NULL DEFAULT NULL COMMENT '文件大小',
   `url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件路径',
   `enable` int(11) NULL DEFAULT 1 COMMENT '是否启用',
-  `md5` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件MD5',
+  `md5` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件MD5',
   `is_delete` tinyint(1) NULL DEFAULT 0 COMMENT '是否删除',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `user_id` int(11) NULL DEFAULT NULL COMMENT '用户ID',
@@ -257,7 +257,7 @@ CREATE TABLE `sys_trainfile` (
   `size` bigint(20) NULL DEFAULT NULL COMMENT '文件大小',
   `url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件路径',
   `pythonurl` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'Python脚本路径',
-  `md5` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件MD5',
+  `md5` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '文件MD5',
   `is_delete` tinyint(1) NULL DEFAULT 0 COMMENT '是否删除',
   `enable` tinyint(1) NULL DEFAULT 1 COMMENT '是否启用',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -1278,10 +1278,24 @@ CREATE TABLE `user_health_profiles` (
 -- ----------------------------
 -- Records of user_health_profiles (预置数据)
 -- ----------------------------
-INSERT INTO `user_health_profiles` (`id`, `user_id`, `Pregnancies`, `Glucose`, `BloodPressure`, `SkinThickness`, `Insulin`, `BMI`, `DiabetesPedigreeFunction`, `Age`, `height`, `weight`, `exercise_frequency`, `diet_habit`, `smoking`, `drinking`, `gender`, `symptoms`, `file_url`, `csv_file_path`, `status`, `diagnosis_result`, `diagnose_time`, `risk_level`, `risk_probability`, `prediction_json`, `ai_advice`) VALUES 
-(1, 3, 2, 120.5, 75, 30, 85.5, 28.5, 0.456, 35, 165.0, 68.0, '2', '1', '不吸烟', '不饮酒', '女', '偶尔口渴、疲劳', 'uploads/health/profile_1.csv', 'data/health/profile_1.csv', 'DONE', '经诊断，目前血糖控制在正常范围，建议继续保持健康的生活方式，定期监测血糖。', '2026-03-15 11:30:00', NULL, NULL, NULL, NULL),
-(2, 3, 0, 145.2, 80, 35, 0, 32.1, 0.623, 40, 170.0, 78.0, '1', '2', '不吸烟', '偶尔饮酒', '男', '多饮、多尿、体重下降', 'uploads/health/profile_2.csv', 'data/health/profile_2.csv', 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL),
-(3, 2, 1, 95.8, 68, 25, 72.3, 24.8, 0.289, 28, 160.0, 55.0, '3', '0', '不吸烟', '不饮酒', '女', '无明显症状，常规体检', 'uploads/health/profile_3.csv', 'data/health/profile_3.csv', 'DONE', '血糖正常，身体状况良好，建议每年体检一次。', '2026-03-10 16:00:00', NULL, NULL, NULL, NULL);
+INSERT INTO `user_health_profiles` (`id`, `user_id`, `Pregnancies`, `Glucose`, `BloodPressure`, `SkinThickness`, `Insulin`, `BMI`, `DiabetesPedigreeFunction`, `Age`, `height`, `weight`, `exercise_frequency`, `diet_habit`, `smoking`, `drinking`, `gender`, `symptoms`, `file_url`, `csv_file_path`, `status`, `diagnosis_result`, `diagnose_time`, `risk_level`, `risk_probability`, `prediction_json`, `ai_advice`, `create_time`) VALUES 
+(1, 3, 2, 120.5, 75, 30, 85.5, 28.5, 0.456, 35, 165.0, 68.0, '2', '1', '不吸烟', '不饮酒', '女', '偶尔口渴、疲劳', 'uploads/health/profile_1.csv', 'data/health/profile_1.csv', 'DONE', '经诊断，目前血糖控制在正常范围，建议继续保持健康的生活方式，定期监测血糖。', '2026-03-15 11:30:00', NULL, NULL, NULL, NULL, '2026-03-15 10:00:00'),
+(2, 3, 0, 145.2, 80, 35, 0, 32.1, 0.623, 40, 170.0, 78.0, '1', '2', '不吸烟', '偶尔饮酒', '男', '多饮、多尿、体重下降', 'uploads/health/profile_2.csv', 'data/health/profile_2.csv', 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-18 20:50:59'),
+(3, 2, 1, 95.8, 68, 25, 72.3, 24.8, 0.289, 28, 160.0, 55.0, '3', '0', '不吸烟', '不饮酒', '女', '无明显症状，常规体检', 'uploads/health/profile_3.csv', 'data/health/profile_3.csv', 'DONE', '血糖正常，身体状况良好，建议每年体检一次。', '2026-03-10 16:00:00', NULL, NULL, NULL, NULL, '2026-03-10 15:00:00'),
+(14, 1, 0, 89.0, 70, 28, 0, 25.8, 0.280, 25, 178.0, 71.0, '4', '0', '不吸烟', '不饮酒', '男', '入职体检，无不适', 'uploads/health/profile_14.csv', 'data/health/profile_14.csv', 'DONE', '入职体检各项指标正常，身体状况良好。', '2025-06-10 09:00:00', 'low', 10.5, NULL, '入职体检结果正常，建议保持规律作息和运动习惯。', '2025-06-10 09:00:00'),
+(15, 1, 0, 98.0, 72, 29, 80.0, 26.5, 0.320, 25, 178.0, 72.5, '3', '0', '不吸烟', '不饮酒', '男', '年度复查，偶尔熬夜加班', 'uploads/health/profile_15.csv', 'data/health/profile_15.csv', 'DONE', '复查结果基本正常，血糖略有上升趋势。', '2025-12-05 10:00:00', 'low', 15.0, NULL, '血糖较入职时略有上升，建议减少熬夜，保持规律运动。', '2025-12-05 10:00:00'),
+(16, 1, 0, 108.0, 76, 30, 100.0, 27.2, 0.380, 26, 178.0, 74.0, '2', '1', '不吸烟', '不饮酒', '男', '近期项目加班多，口渴明显', 'uploads/health/profile_16.csv', 'data/health/profile_16.csv', 'DONE', '血糖偏高，需要改善生活方式。', '2026-02-18 10:20:00', 'low', 18.5, NULL, '近期作息不规律，建议减少加班，每天保证7小时睡眠，增加运动量。', '2026-02-18 10:20:00'),
+(17, 1, 0, 118.0, 78, 31, 120.0, 27.8, 0.420, 26, 178.0, 75.5, '1', '1', '不吸烟', '偶尔饮酒', '男', '口渴、乏力、视力模糊', 'uploads/health/profile_17.csv', 'data/health/profile_17.csv', 'DONE', '血糖明显升高，建议立即就诊内分泌科。', '2026-03-12 09:40:00', 'medium', 28.0, NULL, '血糖持续升高，建议尽快到内分泌科就诊，完善糖耐量试验。', '2026-03-12 09:40:00'),
+(18, 1, 0, 95.0, 72, 28, 60.0, 26.8, 0.350, 26, 178.0, 73.0, '3', '0', '不吸烟', '不饮酒', '男', '治疗后复查，症状改善', 'uploads/health/profile_18.csv', 'data/health/profile_18.csv', 'DONE', '血糖恢复正常，治疗效果良好，继续保持健康生活方式。', '2026-05-05 14:10:00', 'low', 12.0, NULL, '恭喜！经过治疗和生活方式调整，血糖已恢复正常。建议继续保持健康饮食和规律运动。', '2026-05-05 14:10:00'),
+(5, 90, 0, 90.0, 70, 25, 80.0, 23.5, 0.200, 28, 175.0, 68.0, '3', '0', '不吸烟', '偶尔饮酒', '男', '无明显症状', 'uploads/health/profile_5.csv', 'data/health/profile_5.csv', 'DONE', '血糖正常，BMI正常，无糖尿病风险。', '2026-04-02 14:30:00', 'low', 15.0, NULL, '您的健康状况良好，空腹血糖5.3mmol/L处于正常范围。建议继续保持健康的生活方式，控制酒精摄入。'),
+(6, 81, 2, 95.0, 72, 28, 100.0, 24.8, 0.300, 35, 162.0, 58.0, '4', '0', '不吸烟', '不饮酒', '女', '常规体检，无不适', 'uploads/health/profile_6.csv', 'data/health/profile_6.csv', 'DONE', '各项指标正常，建议继续保持。', '2026-04-03 09:15:00', 'low', 18.0, NULL, '您的代谢指标均在正常范围，BMI 24.8属于正常体重。建议备孕前做好血糖监测，保持均衡饮食。'),
+(7, 58, 0, 80.0, 65, 22, 70.0, 22.0, 0.150, 24, 165.0, 55.0, '5', '0', '不吸烟', '不饮酒', '女', '无明显症状，年度体检', 'uploads/health/profile_7.csv', 'data/health/profile_7.csv', 'DONE', '各项指标优秀，身体状况非常好。', '2026-04-05 11:00:00', 'low', 8.0, NULL, '您的各项指标均处于优秀水平，空腹血糖4.9mmol/L，BMI 22.0，继续保持您优秀的运动习惯和饮食习惯。'),
+(8, 85, 3, 130.0, 78, 32, 150.0, 28.5, 0.550, 42, 160.0, 65.0, '2', '1', '不吸烟', '偶尔饮酒', '女', '口渴、乏力、视力模糊', 'uploads/health/profile_8.csv', 'data/health/profile_8.csv', 'DONE', '血糖偏高，建议进一步检查糖耐量，注意饮食控制和运动。', '2026-04-06 15:20:00', 'medium', 45.0, NULL, '您的空腹血糖6.8mmol/L处于偏高范围，BMI 28.5属于超重。建议：1.减少精制碳水化合物摄入；2.每周至少150分钟中等强度运动；3.3个月后复查糖耐量试验。'),
+(9, 86, 0, 125.0, 85, 30, 120.0, 27.8, 0.650, 45, 180.0, 82.0, '1', '2', '吸烟', '偶尔饮酒', '男', '头晕、偶尔心悸', 'uploads/health/profile_9.csv', 'data/health/profile_9.csv', 'DONE', '血压偏高，血糖处于临界值，建议控制饮食、戒烟限酒、增加运动。', '2026-04-07 10:30:00', 'medium', 48.0, NULL, '您的血压138/88mmHg偏高，空腹血糖6.5mmol/L处于临界值，有吸烟史会增加心血管风险。建议：1.尽快戒烟；2.低盐低脂饮食；3.每周运动3次以上；4.定期监测血压和血糖。'),
+(10, 91, 5, 140.0, 82, 35, 180.0, 30.2, 0.500, 55, 158.0, 68.0, '1', '1', '不吸烟', '不饮酒', '女', '口渴多饮、夜尿增多、体重增加', 'uploads/health/profile_10.csv', 'data/health/profile_10.csv', 'DONE', '血糖偏高，BMI超标，有家族遗传史，属于糖尿病高危人群，建议积极干预。', '2026-04-08 14:00:00', 'medium', 55.0, NULL, '您有多项风险因素：空腹血糖7.2mmol/L偏高、BMI 30.2属于肥胖、有家族遗传史、年龄55岁。建议：1.立即开始饮食控制，减少热量摄入；2.每天步行30分钟；3.每月监测血糖；4.建议做糖化血红蛋白检查。'),
+(11, 93, 0, 170.0, 90, 40, 250.0, 35.5, 0.800, 60, 172.0, 88.0, '0', '2', '吸烟', '经常饮酒', '男', '多饮多尿、体重下降、疲劳乏力、伤口愈合慢', 'uploads/health/profile_11.csv', 'data/health/profile_11.csv', 'DONE', '空腹血糖明显升高，高度怀疑2型糖尿病，建议立即就诊内分泌科。', '2026-04-09 09:00:00', 'high', 78.0, NULL, '⚠️ 高风险预警：您的空腹血糖8.5mmol/L明显超标，BMI 35.5属于重度肥胖，有吸烟饮酒史。建议：1.立即到内分泌科就诊；2.完善糖化血红蛋白、糖耐量试验；3.严格控制饮食，戒烟戒酒；4.在医生指导下制定运动方案。'),
+(12, 94, 8, 180.0, 88, 38, 300.0, 33.8, 0.900, 48, 155.0, 72.0, '0', '2', '不吸烟', '不饮酒', '女', '极度口渴、频繁排尿、视力下降、手脚麻木', 'uploads/health/profile_12.csv', 'data/health/profile_12.csv', 'DONE', '多项指标严重异常，高度怀疑糖尿病合并并发症，需紧急就医。', '2026-04-10 16:30:00', 'high', 82.0, NULL, '⚠️ 高风险预警：您的空腹血糖9.2mmol/L严重超标，胰岛素300pmol/L异常升高，BMI 33.8属于肥胖，怀孕次数8次也是重要风险因素。建议：1.立即就医，可能需要胰岛素治疗；2.检查眼底、肾功能、神经传导；3.严格糖尿病饮食；4.每天监测血糖4次。'),
+(13, 88, 0, 165.0, 92, 42, 280.0, 36.2, 1.100, 50, 176.0, 92.0, '0', '3', '吸烟', '经常饮酒', '男', '多饮多尿、极度疲劳、体重明显下降、反复感染', 'uploads/health/profile_13.csv', 'data/health/profile_13.csv', 'DONE', '多项指标严重异常，高度怀疑糖尿病，合并高血压和肥胖，需立即治疗。', '2026-04-11 11:15:00', 'high', 85.0, NULL, '⚠️ 高风险预警：您的空腹血糖8.8mmol/L严重超标，血压148/92mmHg属于2级高血压，BMI 36.2属于重度肥胖，家族遗传系数1.1极高。建议：1.立即住院全面检查；2.同时控制血糖和血压；3.戒烟戒酒；4.制定严格的饮食和运动计划；5.定期检查心肾功能。');
 
 -- ----------------------------
 -- Table structure for patient_visit_record
@@ -1315,11 +1329,33 @@ CREATE TABLE `patient_visit_record` (
 -- ----------------------------
 -- Records of patient_visit_record
 -- ----------------------------
-INSERT INTO `patient_visit_record` (`user_id`, `record_type`, `record_date`, `hospital`, `doctor_name`, `chief_complaint`, `diagnosis`, `treatment_plan`, `glucose_fasting`, `glucose_postprandial`, `hba1c`, `blood_pressure_systolic`, `blood_pressure_diastolic`, `weight`, `bmi`) VALUES
-(3, 'visit', '2026-03-01 09:30:00', '东方医院内分泌科', '王医生', '多饮、多尿、体重下降1个月', '2型糖尿病，空腹血糖受损', '1. 二甲双胍 0.5g 每日两次；2. 控制饮食；3. 每周运动150分钟；4. 每月复查血糖', 8.5, 12.3, 7.2, 135, 85, 78.5, 26.5),
-(3, 'self_check', '2026-03-15 08:00:00', NULL, NULL, '自我监测血糖', '空腹血糖：7.2mmol/L', '继续按医嘱服药', 7.2, NULL, NULL, 130, 82, 77.8, 26.2),
-(2, 'ai_plan', '2026-03-20 10:00:00', NULL, NULL, '获取糖尿病AI健康计划', 'BMI正常，血糖处于正常高值，建议预防', '饮食计划：低糖、高纤维；运动计划：每周3次，每次30分钟快走', 5.8, 7.5, 5.5, 120, 75, 65.0, 22.5),
-(3, 'visit', '2026-04-01 10:00:00', '东方医院内分泌科', '王医生', '定期复查', '血糖控制良好，HbA1c达标', '1. 维持原治疗方案；2. 继续保持健康生活方式；3. 3个月后复查', 6.8, 8.9, 6.5, 125, 80, 76.5, 25.8);
+INSERT INTO `patient_visit_record` (`user_id`, `record_type`, `record_date`, `hospital`, `doctor_name`, `chief_complaint`, `diagnosis`, `treatment_plan`, `glucose_fasting`, `glucose_postprandial`, `hba1c`, `blood_pressure_systolic`, `blood_pressure_diastolic`, `weight`, `bmi`, `create_time`) VALUES
+(3, 'visit', '2026-03-01 09:30:00', '东方医院内分泌科', '王医生', '多饮、多尿、体重下降1个月', '2型糖尿病，空腹血糖受损', '1. 二甲双胍 0.5g 每日两次；2. 控制饮食；3. 每周运动150分钟；4. 每月复查血糖', 8.5, 12.3, 7.2, 135, 85, 78.5, 26.5, '2026-03-01 10:30:00'),
+(3, 'self_check', '2026-03-15 08:00:00', NULL, NULL, '自我监测血糖', '空腹血糖：7.2mmol/L', '继续按医嘱服药', 7.2, NULL, NULL, 130, 82, 77.8, 26.2, '2026-03-15 08:30:00'),
+(2, 'ai_plan', '2026-03-20 10:00:00', NULL, NULL, '获取糖尿病AI健康计划', 'BMI正常，血糖处于正常高值，建议预防', '饮食计划：低糖、高纤维；运动计划：每周3次，每次30分钟快走', 5.8, 7.5, 5.5, 120, 75, 65.0, 22.5, '2026-03-20 10:30:00'),
+(3, 'visit', '2026-04-01 10:00:00', '东方医院内分泌科', '王医生', '定期复查', '血糖控制良好，HbA1c达标', '1. 维持原治疗方案；2. 继续保持健康生活方式；3. 3个月后复查', 6.8, 8.9, 6.5, 125, 80, 76.5, 25.8, '2026-04-01 11:00:00'),
+(1, 'self_check', '2025-06-12 08:40:00', NULL, NULL, '入职体检后首次自查', '空腹血糖5.0mmol/L，各项指标正常', '保持规律作息', 5.0, 6.5, 4.9, 116, 74, 71.0, 25.8, '2025-06-12 09:00:00'),
+(1, 'self_check', '2025-12-08 09:00:00', NULL, NULL, '年度复查自查', '空腹血糖5.5mmol/L，略有上升', '减少熬夜，保持运动', 5.5, 7.2, 5.1, 118, 75, 72.5, 26.5, '2025-12-08 09:30:00'),
+(1, 'self_check', '2026-02-20 08:50:00', NULL, NULL, '加班后复查', '空腹血糖6.2mmol/L，偏高', '减少加班，每天保证7小时睡眠', 6.2, 7.8, 5.3, 120, 76, 74.0, 27.2, '2026-02-20 09:20:00'),
+(1, 'self_check', '2026-03-15 09:10:00', NULL, NULL, '症状加重复查', '空腹血糖6.8mmol/L，明显偏高', '尽快到内分泌科就诊', 6.8, 8.5, 5.5, 122, 78, 75.5, 27.8, '2026-03-15 09:40:00'),
+(1, 'visit', '2026-03-20 10:00:00', '南京市第一医院内分泌科', '李医生', '口渴、乏力、视力模糊1个月', '糖耐量受损，建议药物干预', '1. 二甲双胍 0.5g 每日两次；2. 控制饮食；3. 每周运动150分钟；4. 每月复查', 7.2, 10.5, 6.2, 125, 80, 76.0, 28.0, '2026-03-20 11:00:00'),
+(1, 'self_check', '2026-04-05 08:30:00', NULL, NULL, '服药后复查', '空腹血糖6.5mmol/L，有所改善', '继续服药，坚持运动', 6.5, 8.2, 5.8, 120, 78, 75.0, 27.5, '2026-04-05 09:00:00'),
+(1, 'self_check', '2026-04-20 09:00:00', NULL, NULL, '治疗中复查', '空腹血糖5.8mmol/L，明显改善', '继续保持健康生活方式', 5.8, 7.5, 5.4, 118, 76, 74.0, 27.0, '2026-04-20 09:30:00'),
+(1, 'self_check', '2026-05-07 08:20:00', NULL, NULL, '治疗后复查', '空腹血糖5.2mmol/L，恢复正常', '恭喜！血糖已恢复正常，继续保持', 5.2, 6.8, 5.0, 116, 74, 73.0, 26.8, '2026-05-07 08:50:00'),
+(90, 'self_check', '2026-04-10 09:00:00', NULL, NULL, '年度体检后自查', '空腹血糖5.3mmol/L，BMI正常', '继续保持规律运动', 5.3, 7.0, 5.1, 120, 78, 68.0, 23.5, '2026-04-10 09:30:00'),
+(81, 'ai_plan', '2026-04-12 14:00:00', NULL, NULL, '备孕前获取健康评估', '各项指标正常，适合备孕', '饮食计划：补充叶酸、铁质；运动计划：瑜伽、散步，避免剧烈运动', 5.4, 7.2, 5.2, 115, 72, 58.0, 24.8, '2026-04-12 14:30:00'),
+(85, 'visit', '2026-04-15 09:00:00', '南京市第一医院内分泌科', '李医生', '口渴、乏力、视力模糊1个月', '糖耐量受损，建议进一步检查', '1. 口服葡萄糖耐量试验；2. 控制饮食，减少碳水化合物；3. 每周运动4次，每次40分钟', 6.8, 9.8, 6.4, 128, 82, 65.0, 28.5, '2026-04-15 10:00:00'),
+(86, 'visit', '2026-04-16 10:30:00', '南京市第一医院心内科', '赵医生', '头晕、心悸、血压偏高', '高血压1级，血糖临界值', '1. 缬沙坦 80mg 每日一次；2. 低盐低脂饮食；3. 戒烟限酒；4. 每周运动3次', 6.5, 9.5, 6.2, 138, 88, 82.0, 27.8, '2026-04-16 11:30:00'),
+(86, 'self_check', '2026-04-25 07:30:00', NULL, NULL, '服药后血压血糖监测', '血压降至130/82，血糖6.2mmol/L', '继续服药，保持健康生活方式', 6.2, 8.8, 6.0, 130, 82, 81.0, 27.5, '2026-04-25 08:00:00'),
+(91, 'visit', '2026-04-18 14:00:00', '南京市第二医院内分泌科', '张医生', '口渴多饮、夜尿增多、体重增加3个月', '2型糖尿病，肥胖症', '1. 二甲双胍 0.85g 每日两次；2. 阿卡波糖 50mg 随餐服用；3. 低糖低脂饮食；4. 每天步行30分钟', 7.2, 10.5, 6.8, 142, 86, 68.0, 30.2, '2026-04-18 15:00:00'),
+(91, 'ai_plan', '2026-04-20 10:00:00', NULL, NULL, '获取个性化饮食运动计划', 'BMI 30.2属于肥胖，需要减重', '饮食计划：每日热量控制在1500kcal，高蛋白低GI；运动计划：每天步行30分钟+每周2次力量训练', 7.0, 10.0, 6.6, 140, 84, 67.5, 30.0, '2026-04-20 10:30:00'),
+(93, 'visit', '2026-04-20 09:00:00', '南京市第一医院内分泌科', '李医生', '多饮多尿、体重下降5kg、疲劳乏力2个月', '2型糖尿病，重度肥胖，高脂血症', '1. 胰岛素注射治疗；2. 二甲双胍 1.0g 每日两次；3. 阿托伐他汀 20mg 每晚一次；4. 严格糖尿病饮食；5. 住院观察一周', 8.5, 13.5, 8.2, 150, 95, 88.0, 35.5, '2026-04-20 10:00:00'),
+(93, 'self_check', '2026-05-01 08:00:00', NULL, NULL, '出院后血糖监测', '空腹血糖7.8mmol/L，较前好转', '继续胰岛素治疗，加强饮食控制', 7.8, 11.2, 7.5, 145, 90, 86.0, 34.7, '2026-05-01 08:30:00'),
+(94, 'visit', '2026-04-22 09:30:00', '南京市第二医院内分泌科', '张医生', '极度口渴、频繁排尿、视力下降、手脚麻木1个月', '2型糖尿病合并周围神经病变，糖尿病视网膜病变待排', '1. 胰岛素强化治疗；2. 甲钴胺营养神经；3. 眼底检查；4. 肾功能检查；5. 严格控制血糖', 9.2, 14.2, 8.5, 145, 90, 72.0, 33.8, '2026-04-22 10:30:00'),
+(94, 'self_check', '2026-05-05 07:30:00', NULL, NULL, '胰岛素治疗后血糖监测', '空腹血糖8.0mmol/L，有所下降', '继续胰岛素治疗，加强血糖监测', 8.0, 12.5, 8.0, 140, 88, 71.0, 33.3, '2026-05-05 08:00:00'),
+(88, 'visit', '2026-04-25 10:00:00', '南京市第一医院内分泌科', '李医生', '多饮多尿、极度疲劳、体重下降、反复感染', '2型糖尿病，高血压2级，重度肥胖', '1. 胰岛素注射治疗；2. 氨氯地平 5mg 每日一次控制血压；3. 二甲双胍 1.0g 每日两次；4. 戒烟戒酒；5. 住院全面检查', 8.8, 13.8, 8.8, 148, 92, 92.0, 36.2, '2026-04-25 11:00:00'),
+(88, 'ai_plan', '2026-04-28 14:00:00', NULL, NULL, '获取住院期间饮食运动指导', 'BMI 36.2重度肥胖，需严格控制热量', '饮食计划：每日热量1200kcal，高蛋白低碳水；运动计划：住院期间床上肢体活动，出院后逐步增加步行量', 8.2, 12.0, 8.5, 145, 90, 91.0, 35.8, '2026-04-28 14:30:00'),
+(88, 'self_check', '2026-05-08 08:00:00', NULL, NULL, '出院后血糖血压监测', '空腹血糖7.5mmol/L，血压138/85mmHg，较前明显好转', '继续胰岛素和降压药治疗，坚持饮食运动计划', 7.5, 10.8, 8.0, 138, 85, 90.0, 35.4, '2026-05-08 08:30:00');
 
 -- ----------------------------
 -- Table structure for sys_config
@@ -1361,9 +1397,94 @@ CREATE TABLE `sys_treatment_record`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '诊疗档案表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sys_repair_order
+-- Records of sys_treatment_record (诊疗档案示例数据)
 -- ----------------------------
-DROP TABLE IF EXISTS `sys_repair_order`;
+INSERT INTO `sys_treatment_record` (`patient_name`, `id_card`, `phone`, `gender`, `age`, `blood_sugar`, `diagnosis_result`, `treatment_plan`, `doctor_name`, `remark`, `create_time`) VALUES
+('张三', '320102198101011234', '13800138100', '男', 45, 7.80, '糖耐量受损，空腹血糖偏高', '1. 二甲双胍 0.5g 每日两次；2. 控制饮食，减少精制碳水；3. 每周运动150分钟；4. 每月复查血糖', '王医生', '患者依从性好，血糖控制稳定', '2026-03-15 10:00:00'),
+('李明', '320102199901012345', '13800138101', '男', 25, 5.10, '各项指标正常，无糖尿病风险', '保持健康生活方式，每年体检一次', '李医生', '入职体检结果良好', '2026-04-01 10:30:00'),
+('周婷', '320102198901013456', '13800138102', '女', 35, 5.40, '血糖正常，适合备孕', '补充叶酸和铁质，定期监测血糖', '张医生', '备孕前健康评估，各项指标正常', '2026-04-03 09:30:00'),
+('刘芳', '320102198201014567', '13800138103', '女', 42, 6.80, '糖耐量受损，需进一步检查', '1. 口服葡萄糖耐量试验；2. 控制饮食；3. 每周运动4次', '李医生', '有家族遗传史，需密切关注', '2026-04-15 09:30:00'),
+('王磊', '320102197901015678', '13800138104', '男', 45, 6.50, '高血压1级，血糖临界值', '1. 缬沙坦 80mg 每日一次；2. 低盐低脂饮食；3. 戒烟限酒', '赵医生', '有吸烟史，心血管风险较高', '2026-04-16 11:00:00'),
+('孙丽华', '320102196901016789', '13800138105', '女', 55, 7.20, '2型糖尿病，肥胖症', '1. 二甲双胍 0.85g 每日两次；2. 阿卡波糖 50mg 随餐；3. 低糖低脂饮食；4. 每天步行30分钟', '张医生', 'BMI 30.2，需减重，有家族史', '2026-04-18 14:30:00'),
+('黄建国', '320102196401017890', '13800138106', '男', 60, 8.50, '2型糖尿病，重度肥胖，高脂血症', '1. 胰岛素注射治疗；2. 二甲双胍 1.0g 每日两次；3. 阿托伐他汀 20mg 每晚；4. 住院观察', '李医生', 'BMI 35.5，有吸烟饮酒史，需住院治疗', '2026-04-20 09:30:00'),
+('吴秀英', '320102197601018901', '13800138107', '女', 48, 9.20, '2型糖尿病合并周围神经病变', '1. 胰岛素强化治疗；2. 甲钴胺营养神经；3. 眼底检查；4. 肾功能检查', '张医生', '手脚麻木，视力下降，需紧急治疗', '2026-04-22 10:00:00'),
+('郑伟', '320102197401019012', '13800138108', '男', 50, 8.80, '2型糖尿病，高血压2级，重度肥胖', '1. 胰岛素注射；2. 氨氯地平 5mg 降压；3. 二甲双胍 1.0g；4. 戒烟戒酒；5. 住院全面检查', '李医生', 'BMI 36.2，多项指标严重异常', '2026-04-25 10:30:00'),
+('陈雪', '320102199901010123', '13800138109', '女', 24, 4.90, '各项指标优秀，身体状况非常好', '保持优秀的生活习惯，每年体检一次', '张医生', '年度体检，所有指标均在优秀范围', '2026-04-05 11:30:00');
+
+-- ----------------------------
+-- Table structure for prediction_record (预测记录表)
+-- ----------------------------
+DROP TABLE IF EXISTS `prediction_record`;
+CREATE TABLE `prediction_record` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `health_profile_id` BIGINT NOT NULL COMMENT '关联健康档案ID',
+    `probability` DECIMAL(5,2) NOT NULL COMMENT '预测概率',
+    `risk_level` VARCHAR(20) NOT NULL COMMENT '风险等级：low/medium/high',
+    `confidence_interval` VARCHAR(50) DEFAULT NULL COMMENT '置信区间，如 "72.3,84.9"',
+    `feature_importance` JSON DEFAULT NULL COMMENT '特征重要性 JSON',
+    `age` INT DEFAULT NULL COMMENT '患者年龄',
+    `gender` VARCHAR(10) DEFAULT NULL COMMENT '患者性别',
+    `predicted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '预测时间',
+    PRIMARY KEY (`id`),
+    INDEX `idx_profile_id` (`health_profile_id`),
+    INDEX `idx_probability` (`probability`),
+    INDEX `idx_risk_level` (`risk_level`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='预测记录表';
+
+-- ----------------------------
+-- Records of prediction_record (预测记录示例数据)
+-- ----------------------------
+INSERT INTO `prediction_record` (`health_profile_id`, `probability`, `risk_level`, `confidence_interval`, `feature_importance`, `age`, `gender`, `predicted_at`) VALUES
+(4, 12.50, 'low', '8.2,16.8', '[0.02,0.08,0.03,0.01,0.05,0.12,0.06,0.04]', 25, '男', '2026-04-01 10:05:00'),
+(5, 15.00, 'low', '10.5,19.5', '[0.01,0.09,0.04,0.02,0.06,0.10,0.05,0.03]', 28, '男', '2026-04-02 14:35:00'),
+(6, 18.00, 'low', '12.8,23.2', '[0.04,0.10,0.05,0.03,0.07,0.11,0.08,0.05]', 35, '女', '2026-04-03 09:20:00'),
+(7, 8.00, 'low', '4.5,11.5', '[0.01,0.06,0.02,0.01,0.04,0.08,0.03,0.02]', 24, '女', '2026-04-05 11:05:00'),
+(8, 45.00, 'medium', '38.2,51.8', '[0.08,0.18,0.06,0.05,0.12,0.15,0.10,0.09]', 42, '女', '2026-04-06 15:25:00'),
+(9, 48.00, 'medium', '40.5,55.5', '[0.05,0.16,0.09,0.06,0.10,0.14,0.12,0.11]', 45, '男', '2026-04-07 10:35:00'),
+(10, 55.00, 'medium', '47.8,62.2', '[0.10,0.19,0.07,0.08,0.14,0.16,0.09,0.12]', 55, '女', '2026-04-08 14:05:00'),
+(11, 78.00, 'high', '70.5,85.5', '[0.06,0.22,0.08,0.10,0.18,0.20,0.15,0.14]', 60, '男', '2026-04-09 09:05:00'),
+(12, 82.00, 'high', '75.2,88.8', '[0.15,0.24,0.09,0.11,0.20,0.18,0.16,0.13]', 48, '女', '2026-04-10 16:35:00'),
+(13, 85.00, 'high', '78.8,91.2', '[0.08,0.23,0.10,0.12,0.22,0.21,0.18,0.15]', 50, '男', '2026-04-11 11:20:00');
+
+-- ----------------------------
+-- Table structure for treatment_checkin (诊疗打卡表)
+-- ----------------------------
+DROP TABLE IF EXISTS `treatment_checkin`;
+CREATE TABLE `treatment_checkin` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `profile_id` BIGINT NOT NULL COMMENT '关联健康档案ID',
+    `user_id` BIGINT NOT NULL COMMENT '打卡用户ID',
+    `task_id` VARCHAR(50) NOT NULL COMMENT '任务标识：exercise/diet/medication/blood_sugar',
+    `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '打卡状态：1-已完成，0-未完成',
+    `checkin_date` DATE NOT NULL COMMENT '打卡日期',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_profile_task_date` (`profile_id`, `task_id`, `checkin_date`),
+    INDEX `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='诊疗打卡表';
+
+-- ----------------------------
+-- Records of treatment_checkin (诊疗打卡示例数据)
+-- ----------------------------
+INSERT INTO `treatment_checkin` (`profile_id`, `user_id`, `task_id`, `status`, `checkin_date`) VALUES
+(8, 85, 'exercise', 1, '2026-05-01'), (8, 85, 'diet', 1, '2026-05-01'), (8, 85, 'blood_sugar', 1, '2026-05-01'),
+(8, 85, 'exercise', 1, '2026-05-02'), (8, 85, 'diet', 1, '2026-05-02'), (8, 85, 'blood_sugar', 0, '2026-05-02'),
+(8, 85, 'exercise', 0, '2026-05-03'), (8, 85, 'diet', 1, '2026-05-03'), (8, 85, 'blood_sugar', 1, '2026-05-03'),
+(8, 85, 'exercise', 1, '2026-05-04'), (8, 85, 'diet', 1, '2026-05-04'), (8, 85, 'blood_sugar', 1, '2026-05-04'),
+(8, 85, 'exercise', 1, '2026-05-05'), (8, 85, 'diet', 0, '2026-05-05'), (8, 85, 'blood_sugar', 1, '2026-05-05'),
+(11, 93, 'medication', 1, '2026-05-01'), (11, 93, 'diet', 1, '2026-05-01'), (11, 93, 'blood_sugar', 1, '2026-05-01'),
+(11, 93, 'medication', 1, '2026-05-02'), (11, 93, 'diet', 0, '2026-05-02'), (11, 93, 'blood_sugar', 1, '2026-05-02'),
+(11, 93, 'medication', 1, '2026-05-03'), (11, 93, 'diet', 1, '2026-05-03'), (11, 93, 'blood_sugar', 1, '2026-05-03'),
+(13, 88, 'medication', 1, '2026-05-01'), (13, 88, 'diet', 1, '2026-05-01'), (13, 88, 'exercise', 0, '2026-05-01'), (13, 88, 'blood_sugar', 1, '2026-05-01'),
+(13, 88, 'medication', 1, '2026-05-02'), (13, 88, 'diet', 1, '2026-05-02'), (13, 88, 'exercise', 1, '2026-05-02'), (13, 88, 'blood_sugar', 1, '2026-05-02'),
+(13, 88, 'medication', 1, '2026-05-03'), (13, 88, 'diet', 0, '2026-05-03'), (13, 88, 'exercise', 0, '2026-05-03'), (13, 88, 'blood_sugar', 1, '2026-05-03'),
+(4, 1, 'exercise', 1, '2026-05-01'), (4, 1, 'diet', 1, '2026-05-01'),
+(4, 1, 'exercise', 1, '2026-05-02'), (4, 1, 'diet', 1, '2026-05-02'),
+(4, 1, 'exercise', 0, '2026-05-03'), (4, 1, 'diet', 1, '2026-05-03');
+
+-- ----------------------------
+-- Table structure for sys_repair_order
 CREATE TABLE `sys_repair_order` (
   `id` int NOT NULL AUTO_INCREMENT,
   `order_no` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '工单编号',
@@ -1445,5 +1566,21 @@ INSERT INTO `sys_repair_log` (`order_id`, `operator_id`, `operator_name`, `actio
 
 -- 更新工单2的指派人
 UPDATE `sys_repair_order` SET `assign_user_id` = 2, `assign_user_name` = 'admin' WHERE `id` = 2;
+
+-- ----------------------------
+-- Table structure for analysis_record
+-- ----------------------------
+DROP TABLE IF EXISTS `analysis_record`;
+CREATE TABLE `analysis_record` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `analysis_type` VARCHAR(20) NOT NULL COMMENT '分析类型：group/individual',
+    `user_id` BIGINT NOT NULL COMMENT '操作用户ID',
+    `profile_ids` VARCHAR(500) DEFAULT NULL COMMENT '分析的档案ID列表(JSON数组)',
+    `result_data` JSON DEFAULT NULL COMMENT '分析结果数据',
+    `analysis_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '分析时间',
+    PRIMARY KEY (`id`),
+    INDEX `idx_user_type` (`user_id`, `analysis_type`),
+    INDEX `idx_analysis_time` (`analysis_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='分析记录表';
 
 SET FOREIGN_KEY_CHECKS = 1;
