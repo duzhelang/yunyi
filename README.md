@@ -58,7 +58,8 @@ Software-ODA125/
 │   ├── public/            # 静态资源
 │   └── src/               # 源代码
 │       ├── assets/        # 静态资源
-│       ├── components/    # 组件
+│       ├── components/    # 组件（含 health/ 健康档案子组件）
+│       ├── composables/   # 组合式函数
 │       ├── router/        # 路由
 │       ├── store/         # 状态管理
 │       ├── styles/        # 样式
@@ -208,5 +209,5 @@ MIT License
 
 ---
 
-**项目版本：** 1.1.0
-**最后更新：** 2026-05-01
+**项目版本：** 1.2.0
+**最后更新：** 2026-05-12
