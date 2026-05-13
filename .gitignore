@@ -15,21 +15,26 @@
 secrets/
 application-secrets.yml
 diabetes_model.pth
-SKILL.md
+# 技能文档（禁止提交）
+**/SKILL.md
+/.trae/skills/
+
+# 项目文档目录（禁止提交）
+/docs/
+
 # 忽略所有 Markdown 文件
 *.md
 
 /.claude/
-/.trae/
+/.trae/memories/
+/.trae/agents/
+/.trae/settings.json
+/.trae/mcp.json
 
 # 但不忽略根目录下的 README.md
 !/README.md
 # 排除 Superpowers 工具文件夹
 /superpowers/
-
-# 排除技能（Skills）文件夹
-/.trae/skills/
-/.claude/skills/
 
 # 数据集 & 业务数据
 data/
