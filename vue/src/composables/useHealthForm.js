@@ -191,6 +191,7 @@ export function useHealthForm({ dpfDialogVisible, resultDialogVisible, loadHisto
         }
         if (typeof loadHistory === 'function') {
           await loadHistory()
+          await nextTick()
         }
         generateAdvice()
         return id
@@ -226,13 +227,14 @@ export function useHealthForm({ dpfDialogVisible, resultDialogVisible, loadHisto
           chartStore.setPredictionData(res.data.prediction)
         }
         generateAdvice()
-        if (typeof loadHistory === 'function') {
-          await loadHistory()
-        }
-        if (resultDialogVisible) {
-          resultDialogVisible.value = true
-        }
-        ElMessage.success('保存并检测完成')
+      if (typeof loadHistory === 'function') {
+        await loadHistory()
+        await nextTick()
+      }
+      if (resultDialogVisible) {
+        resultDialogVisible.value = true
+      }
+      ElMessage.success('保存并检测完成')
       } else {
         ElMessage.error(res.msg || '保存失败')
       }
@@ -309,6 +311,11 @@ export function useHealthForm({ dpfDialogVisible, resultDialogVisible, loadHisto
     store.diabetesPedigreeFunction = item.diabetesPedigreeFunction || 0.5
     store.age = item.age || 20
     store.symptoms = item.symptoms || ''
+    store.gender = item.gender || '女'
+    store.exerciseFrequency = item.exerciseFrequency || '1'
+    store.dietHabit = item.dietHabit || '1'
+    store.smoking = item.smoking || '不吸烟'
+    store.drinking = item.drinking || '不饮酒'
     temp.height = item.height || null
     temp.weight = item.weight || null
     evaluateGlucose(store.glucose)

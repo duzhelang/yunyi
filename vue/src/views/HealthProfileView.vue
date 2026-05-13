@@ -5,8 +5,10 @@
     <el-row :gutter="20">
       <el-col :xs="24" :lg="16">
         <HealthFormCard
-          v-model:form="form"
-          v-model:temp="temp"
+          :form="form"
+          :temp="temp"
+          @update:form="assignForm"
+          @update:temp="assignTemp"
           :bmi-feedback="bmiFeedback"
           :glucose-feedback="glucoseFeedback"
           :bp-feedback="bpFeedback"
@@ -172,8 +174,16 @@ async function loadHistoryWrapper() {
   await loadHistory()
 }
 
+function assignForm(newForm) {
+  Object.assign(form, newForm)
+}
+
+function assignTemp(newTemp) {
+  Object.assign(temp, newTemp)
+}
+
 function handleLoadHistoryToForm(item) {
-  loadHistoryToForm(item, store, temp, evaluateGlucose, evaluateBP, generateAdvice)
+  loadHistoryToForm(item)
 }
 
 function handleOpenTool(type) {

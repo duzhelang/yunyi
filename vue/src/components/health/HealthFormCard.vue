@@ -12,8 +12,8 @@
     </template>
 
     <el-form :model="form" label-width="120px" size="default" class="health-form">
-      <el-row :gutter="20">
-        <el-col :span="8">
+      <el-row :gutter="16">
+        <el-col :xs="24" :sm="12" :xl="8">
           <el-form-item label="年龄 (岁)" required>
             <el-input-number
               :model-value="form.Age"
@@ -25,7 +25,7 @@
             />
           </el-form-item>
         </el-col>
-        <el-col :span="8">
+        <el-col :xs="24" :sm="12" :xl="8">
           <el-form-item label="身高 (cm)" required>
             <el-input-number
               :model-value="temp.height"
@@ -38,7 +38,7 @@
             />
           </el-form-item>
         </el-col>
-        <el-col :span="8">
+        <el-col :xs="24" :sm="12" :xl="8">
           <el-form-item label="体重 (kg)" required>
             <el-input-number
               :model-value="temp.weight"
@@ -67,11 +67,11 @@
         <span class="section-divider">🩺 核心医疗指标</span>
       </el-divider>
 
-      <el-row :gutter="20">
-        <el-col :span="8">
+      <el-row :gutter="16">
+        <el-col :xs="24" :sm="12" :xl="8">
           <el-form-item required>
             <template #label>
-              <el-tooltip content="禁食8小时后的血糖水平，反映基础胰岛素分泌功能，是糖尿病筛查的核心指标。正常值：70-99 mg/dL" placement="top" :show-after="300">
+              <el-tooltip content="禁食8小时后的血糖水平，反映基础胰岛素分泌功能，是糖尿病筛查的核心指标。正常值：70-99 mg/dL" placement="top" :show-after="300" popper-class="health-tip-popper">
                 <span class="label-with-tip">空腹血糖 (mg/dL) <el-icon class="tip-icon"><InfoFilled /></el-icon></span>
               </el-tooltip>
             </template>
@@ -91,10 +91,10 @@
             </div>
           </el-form-item>
         </el-col>
-        <el-col :span="8">
+        <el-col :xs="24" :sm="12" :xl="8">
           <el-form-item>
             <template #label>
-              <el-tooltip content="舒张压，反映血管弹性和心脏舒张期压力。高血压是糖尿病并发症的重要危险因素。正常值：&lt;80 mmHg" placement="top" :show-after="300">
+              <el-tooltip content="舒张压，反映血管弹性和心脏舒张期压力。高血压是糖尿病并发症的重要危险因素。正常值：<80 mmHg" placement="top" :show-after="300" popper-class="health-tip-popper">
                 <span class="label-with-tip">血压 (mmHg) <el-icon class="tip-icon"><InfoFilled /></el-icon></span>
               </el-tooltip>
             </template>
@@ -113,10 +113,10 @@
             </div>
           </el-form-item>
         </el-col>
-        <el-col :span="8">
+        <el-col :xs="24" :sm="12" :xl="8">
           <el-form-item>
             <template #label>
-              <el-tooltip content="血清胰岛素水平，反映胰岛β细胞的分泌能力。2型糖尿病早期常出现高胰岛素血症，后期则分泌不足。正常值：16-166 mU/L" placement="top" :show-after="300">
+              <el-tooltip content="血清胰岛素水平，反映胰岛β细胞的分泌能力。2型糖尿病早期常出现高胰岛素血症，后期则分泌不足。正常值：16-166 mU/L" placement="top" :show-after="300" popper-class="health-tip-popper">
                 <span class="label-with-tip">胰岛素 (mU/L) <el-icon class="tip-icon"><InfoFilled /></el-icon></span>
               </el-tooltip>
             </template>
@@ -133,11 +133,11 @@
         </el-col>
       </el-row>
 
-      <el-row :gutter="20">
-        <el-col :span="8">
+      <el-row :gutter="16">
+        <el-col :xs="24" :sm="12" :xl="8">
           <el-form-item>
             <template #label>
-              <el-tooltip content="肱三头肌皮褶厚度，用于估算体脂百分比。肥胖是2型糖尿病的主要风险因素之一，皮褶厚度可间接反映肥胖程度。" placement="top" :show-after="300">
+              <el-tooltip content="肱三头肌皮褶厚度，用于估算体脂百分比。肥胖是2型糖尿病的主要风险因素之一，皮褶厚度可间接反映肥胖程度。" placement="top" :show-after="300" popper-class="health-tip-popper">
                 <span class="label-with-tip">皮褶厚度 (mm) <el-icon class="tip-icon"><InfoFilled /></el-icon></span>
               </el-tooltip>
             </template>
@@ -151,10 +151,10 @@
             />
           </el-form-item>
         </el-col>
-        <el-col :span="8">
+        <el-col :xs="24" :sm="12" :xl="8">
           <el-form-item required>
             <template #label>
-              <el-tooltip content="基于家族糖尿病史的遗传风险指数，综合考虑亲属患病情况和发病年龄。取值范围：0.08-2.42，值越高遗传风险越大。" placement="top" :show-after="300">
+              <el-tooltip content="基于家族糖尿病史的遗传风险指数，综合考虑亲属患病情况和发病年龄。取值范围：0.08-2.42，值越高遗传风险越大。" placement="top" :show-after="300" popper-class="health-tip-popper">
                 <span class="label-with-tip">糖尿病谱系函数 <el-icon class="tip-icon"><InfoFilled /></el-icon></span>
               </el-tooltip>
             </template>
@@ -178,10 +178,10 @@
             <div class="helper-text">* 家族遗传系数，点击"计算"自动评估</div>
           </el-form-item>
         </el-col>
-        <el-col :span="8">
+        <el-col :xs="24" :sm="12" :xl="8">
           <el-form-item>
             <template #label>
-              <el-tooltip content="妊娠次数（含流产），妊娠期糖尿病史是2型糖尿病的独立风险因素，多次妊娠可增加患病概率。" placement="top" :show-after="300">
+              <el-tooltip content="妊娠次数（含流产），妊娠期糖尿病史是2型糖尿病的独立风险因素，多次妊娠可增加患病概率。" placement="top" :show-after="300" popper-class="health-tip-popper">
                 <span class="label-with-tip">怀孕次数 <el-icon class="tip-icon"><InfoFilled /></el-icon></span>
               </el-tooltip>
             </template>
@@ -241,10 +241,10 @@
       <el-button type="warning" :loading="predicting" :disabled="saving || submitting" @click="$emit('quick-predict')">
         <el-icon><DataBoard /></el-icon> 快速检测
       </el-button>
-      <el-button type="danger" :loading="saving || predicting" :disabled="saving || submitting || predicting" @click="$emit('save-and-predict')">
+      <el-button type="primary" :loading="predicting" :disabled="saving || submitting" @click="$emit('save-and-predict')">
         <el-icon><DataAnalysis /></el-icon> 保存并检测
       </el-button>
-      <el-button type="primary" :loading="submitting" :disabled="saving || predicting" @click="$emit('submit-doctor')">
+      <el-button type="primary" plain :loading="submitting" :disabled="saving || predicting" @click="$emit('submit-doctor')">
         <el-icon><Promotion /></el-icon> 发送诊断员
       </el-button>
     </div>
@@ -350,7 +350,7 @@ function handleFileChange(uploadFile) {
   border-radius: 14px 14px 0 0;
 }
 .form-card :deep(.el-card__body) {
-  padding: 20px 28px 24px;
+  padding: 24px 28px 28px;
 }
 
 .card-header {
@@ -367,7 +367,7 @@ function handleFileChange(uploadFile) {
 }
 
 .el-divider {
-  margin: 16px 0 14px;
+  margin: 20px 0 16px;
 }
 .health-form :deep(.el-divider__text) {
   background: transparent;
@@ -387,23 +387,18 @@ function handleFileChange(uploadFile) {
   padding: 4px 8px;
 }
 .health-form :deep(.el-form-item) {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 .health-form :deep(.el-input-number) {
   width: 100%;
 }
 .health-form :deep(.el-row + .el-row) {
-  margin-top: 2px;
+  margin-top: 6px;
 }
-
-/* 标签悬浮提示文字可换行 */
-.health-form :deep(.el-tooltip__popper) {
-  max-width: 280px;
-  white-space: normal !important;
-  word-break: break-word !important;
-  line-height: 1.5;
-  padding: 10px 14px;
+.health-form :deep(.el-form-item__label) {
   font-size: 13px;
+  color: #4e5969;
+  line-height: 1.4;
 }
 
 .feedback-tag {
@@ -435,8 +430,8 @@ function handleFileChange(uploadFile) {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 20px;
-  padding-top: 18px;
+  margin-top: 24px;
+  padding-top: 20px;
   border-top: 1px solid #eef2f6;
   flex-wrap: wrap;
 }
@@ -445,33 +440,77 @@ function handleFileChange(uploadFile) {
   border-radius: 8px;
   font-weight: 500;
   letter-spacing: 0.3px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
+.action-bar .el-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  transition: background 0.2s;
+}
+.action-bar .el-button:active::after {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.action-bar .el-button--success {
+  background: linear-gradient(135deg, #67c23a, #55a830);
+  border: none;
+  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.2);
+}
+.action-bar .el-button--success:hover {
+  background: linear-gradient(135deg, #79d04d, #67c23a);
+  box-shadow: 0 4px 14px rgba(103, 194, 58, 0.3);
+  transform: translateY(-1px);
+}
+
+.action-bar .el-button--warning {
+  background: linear-gradient(135deg, #e6a23c, #d4902a);
+  border: none;
+  box-shadow: 0 2px 8px rgba(230, 162, 60, 0.2);
+}
+.action-bar .el-button--warning:hover {
+  background: linear-gradient(135deg, #ebb563, #e6a23c);
+  box-shadow: 0 4px 14px rgba(230, 162, 60, 0.3);
+  transform: translateY(-1px);
+}
+
 .action-bar .el-button--primary {
   background: linear-gradient(135deg, #4a90e2, #357abd);
   border: none;
   box-shadow: 0 2px 8px rgba(74, 144, 226, 0.25);
 }
 .action-bar .el-button--primary:hover {
+  background: linear-gradient(135deg, #5a9ee8, #4a90e2);
   box-shadow: 0 4px 14px rgba(74, 144, 226, 0.35);
   transform: translateY(-1px);
 }
-.action-bar .el-button--danger {
-  background: linear-gradient(135deg, #f56c6c, #e04b4b);
-  border: none;
-  box-shadow: 0 2px 8px rgba(245, 108, 108, 0.2);
+.action-bar .el-button--primary.is-plain {
+  background: transparent;
+  border: 1px solid #4a90e2;
+  color: #4a90e2;
+  box-shadow: none;
 }
-.action-bar .el-button--warning {
-  background: linear-gradient(135deg, #e6a23c, #d4902a);
-  border: none;
-  box-shadow: 0 2px 8px rgba(230, 162, 60, 0.2);
-}
-.action-bar .el-button--success {
-  background: linear-gradient(135deg, #67c23a, #55a830);
-  border: none;
-  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.2);
+.action-bar .el-button--primary.is-plain:hover {
+  background: linear-gradient(135deg, #4a90e2, #357abd);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(74, 144, 226, 0.35);
+  transform: translateY(-1px);
 }
 
-/* DPF 输入组样式 */
+.action-bar .el-button.is-disabled,
+.action-bar .el-button.is-disabled:hover {
+  background: #e4e7ed !important;
+  border: 1px solid #e4e7ed !important;
+  color: #a8abb2 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  cursor: not-allowed;
+}
+
 .dpf-input-group {
   display: flex;
   gap: 6px;
@@ -485,7 +524,6 @@ function handleFileChange(uploadFile) {
   border-radius: 6px;
 }
 
-/* 标签悬浮提示样式 */
 .label-with-tip {
   display: inline-flex;
   align-items: center;
@@ -520,10 +558,30 @@ function handleFileChange(uploadFile) {
 }
 @media (min-width: 769px) and (max-width: 1200px) {
   .form-card :deep(.el-card__body) {
-    padding: 16px 20px 20px;
+    padding: 18px 22px 24px;
   }
   .health-form {
     padding: 2px 4px;
   }
+}
+</style>
+
+<style>
+.health-tip-popper.is-dark {
+  --el-bg-color-overlay: #1d2129;
+  max-width: 300px;
+  padding: 12px 16px !important;
+  border: none !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16) !important;
+  line-height: 1.6;
+  font-size: 13px !important;
+  letter-spacing: 0.2px;
+  word-break: break-word;
+  white-space: normal !important;
+}
+.health-tip-popper.is-dark .el-popper__arrow::before {
+  background: #1d2129 !important;
+  border-color: #1d2129 !important;
 }
 </style>

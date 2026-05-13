@@ -4,7 +4,7 @@
     <template #header>
       <div class="card-header">
         <el-icon class="header-icon"><Document /></el-icon>
-        <span>个性化健康建议</span>
+        <span>健康建议</span>
       </div>
     </template>
     <div class="advice-grid" v-if="advice && advice.length > 0">

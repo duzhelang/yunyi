@@ -1,129 +1,133 @@
 <template>
-  <!-- 风险检测结果弹窗 -->
   <el-dialog
     :model-value="modelValue"
-    @update:model-value="$emit('update:modelValue', $event)"
+    @update:model-value="handleVisibleChange"
     width="1200px"
     :close-on-click-modal="false"
     custom-class="result-dialog"
     :show-close="true"
+    :before-close="handleBeforeClose"
+    destroy-on-close
   >
-    <div class="result-container">
-      <!-- 结果头部：风险等级 + 患病概率 -->
-      <div class="result-header" :class="getRiskClass(storeData.riskLevel)">
-        <div class="result-header-main">
-          <span class="risk-level-badge" :class="getRiskClass(storeData.riskLevel)">{{ getRiskText(storeData.riskLevel) }}</span>
-          <span class="probability-main">
-            <span class="probability-label">患病概率</span>
-            <span class="probability-value">{{ storeData.riskProbability }}%</span>
-          </span>
+    <div class="result-container" v-loading="loading" element-loading-text="正在加载检测结果..." element-loading-background="rgba(255,255,255,0.9)">
+      <template v-if="!loading">
+        <div class="result-header" :class="getRiskClass(storeData.riskLevel)">
+          <div class="result-header-main">
+            <span class="risk-level-badge" :class="getRiskClass(storeData.riskLevel)">
+              <el-icon class="risk-icon"><Warning v-if="storeData.riskLevel === 'high'" /><InfoFilled v-else-if="storeData.riskLevel === 'medium'" /><CircleCheck v-else /></el-icon>
+              {{ getRiskText(storeData.riskLevel) }}
+            </span>
+            <span class="probability-main">
+              <span class="probability-label">患病概率</span>
+              <span class="probability-value">{{ storeData.riskProbability || 0 }}<span class="probability-unit">%</span></span>
+            </span>
+          </div>
+          <div v-if="storeData.confidenceInterval && storeData.confidenceInterval[0] > 0" class="confidence-interval">
+            置信区间: {{ storeData.confidenceInterval[0] }}% - {{ storeData.confidenceInterval[1] }}%
+          </div>
         </div>
-        <div v-if="storeData.confidenceInterval && storeData.confidenceInterval[0] > 0" class="confidence-interval">
-          置信区间: {{ storeData.confidenceInterval[0] }}% - {{ storeData.confidenceInterval[1] }}%
-        </div>
-      </div>
 
-      <!-- 主内容区域：双列布局 -->
-      <div class="result-body-two-col">
-        <!-- 左侧：图表轮播区域 -->
-        <div class="result-left-col">
-          <div class="charts-carousel" v-if="availableCharts.length > 0">
-            <div class="carousel-header">
-              <h4>可视化分析</h4>
-              <span class="carousel-indicators">
-                <span v-for="(chart, index) in availableCharts" :key="index"
-                  :class="['indicator-dot', { active: currentChartIndex === index }]"
-                  @click="goToChart(index)"></span>
-              </span>
-            </div>
-            <div class="carousel-main">
-              <button class="carousel-btn prev" @click="prevChart" :disabled="availableCharts.length <= 1">
-                <el-icon><ArrowLeft /></el-icon>
-              </button>
-              <div class="carousel-display">
-                <!-- 使用ECharts图表组件动态渲染 -->
-                <component
-                  v-if="availableCharts[currentChartIndex]"
-                  :is="getChartComponent(availableCharts[currentChartIndex].key)"
-                  class="chart-component"
-                />
-                <div v-else class="chart-placeholder">
-                  <el-icon class="empty-icon"><TrendCharts /></el-icon>
-                  <p>暂无图表数据</p>
+        <div class="result-body-two-col">
+          <div class="result-left-col">
+            <div class="charts-carousel" v-if="availableCharts.length > 0">
+              <div class="carousel-header">
+                <h4>可视化分析</h4>
+                <span class="carousel-indicators">
+                  <span v-for="(chart, index) in availableCharts" :key="index"
+                    :class="['indicator-dot', { active: currentChartIndex === index }]"
+                    @click="goToChart(index)"></span>
+                </span>
+              </div>
+              <div class="carousel-main">
+                <button class="carousel-btn prev" @click="prevChart" :disabled="availableCharts.length <= 1">
+                  <el-icon><ArrowLeft /></el-icon>
+                </button>
+                <div class="carousel-display">
+                  <component
+                    v-if="availableCharts[currentChartIndex]"
+                    :is="getChartComponent(availableCharts[currentChartIndex].key)"
+                    class="chart-component"
+                  />
+                  <div v-else class="chart-placeholder">
+                    <el-icon class="empty-icon"><TrendCharts /></el-icon>
+                    <p>暂无图表数据</p>
+                  </div>
+                </div>
+                <button class="carousel-btn next" @click="nextChart" :disabled="availableCharts.length <= 1">
+                  <el-icon><ArrowRight /></el-icon>
+                </button>
+              </div>
+              <div class="carousel-thumbnails">
+                <div v-for="(chart, index) in availableCharts" :key="index"
+                  :class="['thumbnail', { active: currentChartIndex === index }]"
+                  @click="goToChart(index)">
+                  <span class="thumbnail-label">{{ chart.label }}</span>
                 </div>
               </div>
-              <button class="carousel-btn next" @click="nextChart" :disabled="availableCharts.length <= 1">
-                <el-icon><ArrowRight /></el-icon>
-              </button>
             </div>
-            <div class="carousel-thumbnails">
-              <div v-for="(chart, index) in availableCharts" :key="index"
-                :class="['thumbnail', { active: currentChartIndex === index }]"
-                @click="goToChart(index)">
-                <span class="thumbnail-label">{{ chart.label }}</span>
+          </div>
+
+          <div class="result-right-col">
+            <div class="collapse-panel data-details">
+              <div class="panel-header" @click="showDataDetails = !showDataDetails">
+                <span class="panel-title">数据详情</span>
+                <span class="panel-arrow" :class="{ expanded: showDataDetails }"><el-icon><ArrowDown /></el-icon></span>
+              </div>
+              <Transition name="panel-slide">
+                <div class="panel-content" v-show="showDataDetails">
+                  <el-descriptions :column="1" size="small" border>
+                    <el-descriptions-item label="年龄">{{ storeData.age || '-' }}岁</el-descriptions-item>
+                    <el-descriptions-item label="BMI">{{ storeData.bmi || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="空腹血糖">{{ storeData.glucose || '-' }} mg/dL</el-descriptions-item>
+                    <el-descriptions-item label="血压">{{ storeData.bloodPressure || '-' }} mmHg</el-descriptions-item>
+                    <el-descriptions-item label="胰岛素">{{ storeData.insulin || '-' }} mU/L</el-descriptions-item>
+                    <el-descriptions-item label="遗传系数">{{ storeData.diabetesPedigreeFunction || '-' }}</el-descriptions-item>
+                  </el-descriptions>
+                </div>
+              </Transition>
+            </div>
+
+            <div class="health-suggestion-card">
+              <div class="prescription-header">
+                <el-icon><Document /></el-icon>
+                <span>AI 健康处方</span>
+              </div>
+              <div class="suggestion-section health-advice-section">
+                <div class="section-indicator"></div>
+                <div class="section-content">
+                  <h4>健康建议</h4>
+                  <p>{{ storeData.aiAdvice || getHealthAdvice(storeData.riskLevel) }}</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- 右侧：数据详情 + AI 健康处方 -->
-        <div class="result-right-col">
-          <!-- 数据详情面板 -->
-          <div class="collapse-panel data-details">
-            <div class="panel-header" @click="showDataDetails = !showDataDetails">
-              <span class="panel-title">数据详情</span>
-              <span class="panel-arrow" :class="{ expanded: showDataDetails }"><el-icon><ArrowDown /></el-icon></span>
-            </div>
-            <Transition name="panel-slide">
-              <div class="panel-content" v-show="showDataDetails">
-                <el-descriptions :column="1" size="small" border>
-                  <el-descriptions-item label="年龄">{{ storeData.age }}岁</el-descriptions-item>
-                  <el-descriptions-item label="BMI">{{ storeData.bmi }}</el-descriptions-item>
-                  <el-descriptions-item label="空腹血糖">{{ storeData.glucose }} mg/dL</el-descriptions-item>
-                  <el-descriptions-item label="血压">{{ storeData.bloodPressure }} mmHg</el-descriptions-item>
-                  <el-descriptions-item label="胰岛素">{{ storeData.insulin }} mU/L</el-descriptions-item>
-                  <el-descriptions-item label="遗传系数">{{ storeData.diabetesPedigreeFunction }}</el-descriptions-item>
-                </el-descriptions>
-              </div>
-            </Transition>
-          </div>
-
-          <!-- AI健康处方 -->
-          <div class="health-suggestion-card">
-            <div class="prescription-header">
-              <el-icon><Document /></el-icon>
-              <span>AI 健康处方</span>
-            </div>
-            <div class="suggestion-section health-advice-section">
-              <div class="section-indicator"></div>
-              <div class="section-content">
-                <h4>健康建议</h4>
-                <p>{{ storeData.aiAdvice || getHealthAdvice(storeData.riskLevel) }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      </template>
     </div>
     <template #footer>
-      <el-button @click="$emit('update:modelValue', false)">关闭</el-button>
-      <el-button type="primary" @click="$emit('re-evaluate')">重新评估</el-button>
+      <el-button @click="handleClose">关闭</el-button>
+      <el-button type="primary" @click="handleReEvaluate">
+        <el-icon><RefreshRight /></el-icon> 重新评估
+      </el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import {
   ArrowLeft,
   ArrowRight,
   ArrowDown,
   Document,
-  TrendCharts
+  TrendCharts,
+  Warning,
+  InfoFilled,
+  CircleCheck,
+  RefreshRight
 } from '@element-plus/icons-vue'
 import { useChartStore } from '@/store/chartStore'
 import { usePrediction } from '@/composables/usePrediction'
-// 导入ECharts图表组件
 import {
   RiskGaugeChart,
   HealthRadarChart,
@@ -158,15 +162,15 @@ const props = defineProps({
   }
 })
 
-defineEmits(['update:modelValue', 're-evaluate'])
+const emit = defineEmits(['update:modelValue', 're-evaluate'])
 
 const chartStore = useChartStore()
 const { getRiskText, getRiskClass, getHealthAdvice } = usePrediction()
 
 const currentChartIndex = ref(0)
 const showDataDetails = ref(false)
+const loading = ref(false)
 
-// 图表组件映射
 const chartComponentMap = {
   riskGauge: RiskGaugeChart,
   healthRadar: HealthRadarChart,
@@ -179,7 +183,6 @@ const chartComponentMap = {
   featureImportance: FeatureImportanceChart
 }
 
-// 可用图表列表（使用ECharts图表组件）
 const availableCharts = computed(() => {
   return [
     { key: 'riskGauge', label: '风险仪表盘' },
@@ -194,130 +197,191 @@ const availableCharts = computed(() => {
   ]
 })
 
-// 获取图表组件
+watch(() => props.modelValue, (visible) => {
+  if (visible) {
+    loading.value = true
+    currentChartIndex.value = 0
+    showDataDetails.value = false
+    setTimeout(() => {
+      loading.value = false
+    }, 600)
+  }
+})
+
 function getChartComponent(key) {
   return chartComponentMap[key] || null
 }
 
-// 轮播导航：上一张
 function prevChart() {
   if (availableCharts.value.length <= 1) return
   currentChartIndex.value = (currentChartIndex.value - 1 + availableCharts.value.length) % availableCharts.value.length
 }
 
-// 轮播导航：下一张
 function nextChart() {
   if (availableCharts.value.length <= 1) return
   currentChartIndex.value = (currentChartIndex.value + 1) % availableCharts.value.length
 }
 
-// 轮播导航：跳转到指定图表
 function goToChart(index) {
   if (index >= 0 && index < availableCharts.value.length) {
     currentChartIndex.value = index
   }
 }
+
+function handleVisibleChange(val) {
+  emit('update:modelValue', val)
+}
+
+function handleBeforeClose(done) {
+  done()
+}
+
+function handleClose() {
+  emit('update:modelValue', false)
+}
+
+function handleReEvaluate() {
+  emit('update:modelValue', false)
+  emit('re-evaluate')
+}
 </script>
 
 <style scoped>
-/* 结果弹窗容器 */
 .result-container {
   padding: 0;
+  min-height: 200px;
 }
 
-/* ==================== 结果头部 ==================== */
 .result-header {
-  padding: 24px 28px;
-  border-radius: 12px;
+  padding: 28px 32px;
+  border-radius: 14px;
   margin-bottom: 24px;
   text-align: center;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.result-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  opacity: 0.08;
+  pointer-events: none;
 }
 
 .result-header.low-risk {
   background: linear-gradient(135deg, #f0f9eb, #e8f8e0);
   border: 1px solid #b7eb8f;
 }
+.result-header.low-risk::before {
+  background: #52c41a;
+}
 
 .result-header.medium-risk {
   background: linear-gradient(135deg, #fff7e6, #fff1cc);
   border: 1px solid #ffd666;
+}
+.result-header.medium-risk::before {
+  background: #faad14;
 }
 
 .result-header.high-risk {
   background: linear-gradient(135deg, #fff1f0, #ffd8d2);
   border: 1px solid #ffa39e;
 }
+.result-header.high-risk::before {
+  background: #f5222d;
+}
 
 .result-header-main {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: 24px;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
 }
 
-/* 风险等级标签 */
 .risk-level-badge {
   display: inline-flex;
   align-items: center;
-  padding: 8px 22px;
-  border-radius: 20px;
+  gap: 8px;
+  padding: 10px 26px;
+  border-radius: 24px;
   font-size: 16px;
   font-weight: 600;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   transition: all 0.3s ease;
+}
+
+.risk-icon {
+  font-size: 18px;
 }
 
 .risk-level-badge.low-risk {
   background: linear-gradient(135deg, #52c41a, #73d13d);
-  color: white;
-  box-shadow: 0 2px 8px rgba(82, 196, 26, 0.3);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
 }
 
 .risk-level-badge.medium-risk {
   background: linear-gradient(135deg, #faad14, #ffc53d);
-  color: white;
-  box-shadow: 0 2px 8px rgba(250, 173, 20, 0.3);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(250, 173, 20, 0.3);
 }
 
 .risk-level-badge.high-risk {
   background: linear-gradient(135deg, #f5222d, #ff4d4f);
-  color: white;
-  box-shadow: 0 2px 8px rgba(245, 34, 45, 0.3);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(245, 34, 45, 0.3);
 }
 
-/* 患病概率 */
 .probability-main {
   display: inline-flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 10px;
 }
 
 .probability-label {
   font-size: 14px;
   color: #606266;
+  font-weight: 500;
 }
 
 .probability-value {
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 700;
   color: #1D2129;
   line-height: 1;
+  letter-spacing: -0.5px;
 }
 
-/* 置信区间 */
+.probability-unit {
+  font-size: 18px;
+  font-weight: 500;
+  color: #606266;
+  margin-left: 2px;
+}
+
 .confidence-interval {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: 13px;
   color: #909399;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.7);
   display: inline-block;
-  padding: 4px 16px;
-  border-radius: 12px;
+  padding: 5px 18px;
+  border-radius: 14px;
+  backdrop-filter: blur(4px);
+  position: relative;
+  z-index: 1;
 }
 
-/* ==================== 双列布局 ==================== */
 .result-body-two-col {
   display: grid;
   grid-template-columns: 1fr 380px;
@@ -334,19 +398,19 @@ function goToChart(index) {
   gap: 20px;
 }
 
-/* ==================== 图表轮播 ==================== */
 .charts-carousel {
   background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e8e8e8;
-  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid #e8ecf1;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
 }
 
 .carousel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .carousel-header h4 {
@@ -367,51 +431,60 @@ function goToChart(index) {
   border-radius: 50%;
   background: #d9d9d9;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .indicator-dot.active {
   background: #409EFF;
-  width: 20px;
+  width: 22px;
   border-radius: 4px;
 }
 
 .carousel-main {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .carousel-btn {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  border: 1px solid #e8e8e8;
-  background: white;
+  border: 1px solid #e8ecf1;
+  background: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
   color: #606266;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .carousel-btn:hover:not(:disabled) {
   border-color: #409EFF;
   color: #409EFF;
   background: #ecf5ff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
+  transform: scale(1.05);
+}
+
+.carousel-btn:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .carousel-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .carousel-display {
   flex: 1;
-  min-height: 320px;
+  min-width: 0;
+  height: 380px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -419,7 +492,21 @@ function goToChart(index) {
 
 .chart-component {
   width: 100%;
-  height: 320px;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #d4d7dc transparent;
+}
+.chart-component::-webkit-scrollbar {
+  width: 5px;
+}
+.chart-component::-webkit-scrollbar-thumb {
+  background: #d4d7dc;
+  border-radius: 3px;
+}
+.chart-component::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .chart-placeholder {
@@ -439,60 +526,61 @@ function goToChart(index) {
   font-size: 14px;
 }
 
-/* 缩略图导航 */
 .carousel-thumbnails {
   display: flex;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 18px;
   flex-wrap: wrap;
 }
 
 .thumbnail {
-  padding: 6px 14px;
-  border-radius: 6px;
+  padding: 7px 16px;
+  border-radius: 8px;
   font-size: 12px;
   color: #606266;
   background: #f5f7fa;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid transparent;
 }
 
 .thumbnail:hover {
   background: #ecf5ff;
   color: #409EFF;
+  border-color: #d4e6ff;
 }
 
 .thumbnail.active {
   background: #409EFF;
-  color: white;
+  color: #fff;
   border-color: #409EFF;
+  box-shadow: 0 2px 6px rgba(64, 158, 255, 0.25);
 }
 
 .thumbnail-label {
   white-space: nowrap;
 }
 
-/* ==================== 折叠面板 ==================== */
 .collapse-panel {
   background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e8e8e8;
+  border-radius: 14px;
+  border: 1px solid #e8ecf1;
   overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
 }
 
 .panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 16px 20px;
   cursor: pointer;
   user-select: none;
   transition: background 0.2s;
 }
 
 .panel-header:hover {
-  background: #f5f7fa;
+  background: #f8f9fb;
 }
 
 .panel-title {
@@ -504,7 +592,7 @@ function goToChart(index) {
 .panel-arrow {
   font-size: 14px;
   color: #909399;
-  transition: transform 0.3s;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: inline-flex;
   align-items: center;
 }
@@ -514,16 +602,15 @@ function goToChart(index) {
 }
 
 .panel-content {
-  padding: 0 18px 16px;
+  padding: 0 20px 18px;
 }
 
-/* 面板折叠动画 */
 .panel-slide-enter-active {
-  transition: all 0.3s ease-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .panel-slide-leave-active {
-  transition: all 0.2s ease-in;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .panel-slide-enter-from {
@@ -550,10 +637,9 @@ function goToChart(index) {
   padding-bottom: 0;
 }
 
-/* ==================== AI健康处方 ==================== */
 .health-suggestion-card {
   background: linear-gradient(135deg, #f0f5ff, #e8f4fd);
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid #bae0ff;
   overflow: hidden;
 }
@@ -562,12 +648,12 @@ function goToChart(index) {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 18px;
-  background: rgba(64, 158, 255, 0.08);
+  padding: 16px 20px;
+  background: rgba(64, 158, 255, 0.06);
   font-size: 15px;
   font-weight: 600;
   color: #1D2129;
-  border-bottom: 1px solid #bae0ff;
+  border-bottom: 1px solid #d6eaff;
 }
 
 .prescription-header .el-icon {
@@ -575,14 +661,13 @@ function goToChart(index) {
   color: #409EFF;
 }
 
-/* 健康建议区域 */
 .suggestion-section {
-  padding: 16px 18px;
+  padding: 18px 20px;
 }
 
 .health-advice-section {
   display: flex;
-  gap: 12px;
+  gap: 14px;
 }
 
 .section-indicator {
@@ -597,19 +682,19 @@ function goToChart(index) {
 }
 
 .section-content h4 {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   font-size: 14px;
   color: #303133;
+  font-weight: 600;
 }
 
 .section-content p {
   margin: 0;
   font-size: 13px;
-  color: #606266;
-  line-height: 1.7;
+  color: #4e5969;
+  line-height: 1.8;
 }
 
-/* ==================== ElDescriptions 样式覆盖 ==================== */
 :deep(.el-descriptions__title) {
   font-size: 13px;
 }
@@ -618,15 +703,42 @@ function goToChart(index) {
   font-weight: 500;
   color: #606266;
   width: 100px;
+  background: #fafbfc;
 }
 
 :deep(.el-descriptions__content) {
   color: #303133;
 }
+
+:deep(.el-loading-mask) {
+  border-radius: 14px;
+}
+
+:deep(.el-loading-spinner .el-loading-text) {
+  color: #4e5969;
+  font-size: 14px;
+  margin-top: 12px;
+}
+
+:deep(.el-loading-spinner .circular) {
+  width: 36px;
+  height: 36px;
+}
+
+@media (max-width: 900px) {
+  .result-body-two-col {
+    grid-template-columns: 1fr;
+  }
+  .result-right-col {
+    order: -1;
+  }
+  .probability-value {
+    font-size: 28px;
+  }
+}
 </style>
 
 <style>
-/* 结果弹窗全局样式 */
 .result-dialog .el-dialog__header {
   display: none;
 }
@@ -637,7 +749,7 @@ function goToChart(index) {
 
 .result-dialog .el-dialog__footer {
   padding: 16px 28px 24px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #eef2f6;
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -646,5 +758,36 @@ function goToChart(index) {
 .result-dialog {
   border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
+}
+
+.carousel-display .chart-component {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 4px 0 !important;
+}
+
+.carousel-display .chart-header {
+  margin-bottom: 4px !important;
+}
+
+.carousel-display .chart-title {
+  font-size: 15px !important;
+  margin-bottom: 0 !important;
+}
+
+.carousel-display .chart-subtitle {
+  font-size: 12px !important;
+  margin: 0 !important;
+}
+
+.carousel-display .chart-container {
+  min-height: unset !important;
+  height: 280px !important;
+}
+
+.carousel-display .risk-description {
+  display: none !important;
 }
 </style>

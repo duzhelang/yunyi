@@ -88,6 +88,11 @@ export function useHealthHistory() {
     store.diabetesPedigreeFunction = item.diabetesPedigreeFunction || 0.5
     store.age = item.age || 20
     store.symptoms = item.symptoms || ''
+    store.gender = item.gender || '女'
+    store.exerciseFrequency = item.exerciseFrequency || '1'
+    store.dietHabit = item.dietHabit || '1'
+    store.smoking = item.smoking || '不吸烟'
+    store.drinking = item.drinking || '不饮酒'
     temp.height = item.height || null
     temp.weight = item.weight || null
     evaluateGlucose(store.glucose)
