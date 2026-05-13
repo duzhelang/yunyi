@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -128,6 +127,36 @@ public class PatientVisitController {
         } catch (Exception e) {
             log.error("查询图表数据失败", e);
             return Result.error("查询失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/restore/{id}")
+    public Result<String> restore(@PathVariable Integer id) {
+        try {
+            User currentUser = TokenUtils.getCurrentUser();
+            if (currentUser == null) {
+                return Result.error("401", "请先登录");
+            }
+            patientVisitService.restore(id, currentUser.getId());
+            return Result.success("恢复成功");
+        } catch (Exception e) {
+            log.error("恢复诊疗记录失败", e);
+            return Result.error("恢复失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/batch-save")
+    public Result<Map<String, Integer>> batchSave(@RequestBody List<PatientVisitRecord> records) {
+        try {
+            User currentUser = TokenUtils.getCurrentUser();
+            if (currentUser == null) {
+                return Result.error("401", "请先登录");
+            }
+            Map<String, Integer> result = patientVisitService.batchSave(records, currentUser.getId());
+            return Result.success("批量保存完成", result);
+        } catch (Exception e) {
+            log.error("批量保存诊疗记录失败", e);
+            return Result.error("批量保存失败: " + e.getMessage());
         }
     }
 }

@@ -20,4 +20,8 @@ public interface IPatientVisitService {
     void delete(Integer id, Integer userId);
 
     void cleanupOldRecords(Integer userId);
+
+    void restore(Integer id, Integer userId);
+
+    Map<String, Integer> batchSave(List<PatientVisitRecord> records, Integer userId);
 }

@@ -5,8 +5,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import com.oda.springboot.common.Result;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONUtil;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -35,6 +41,12 @@ public class DiabetesController {
 
     @Value("${mimo-omni.api.api-key:}")
     private String mimoOmniApiKey;
+
+    @Value("${mimo-tts.api.api-key:}")
+    private String mimoTtsApiKey;
+
+    @Value("${mimo-tts.api.base-url:https://token-plan-cn.xiaomimimo.com/anthropic}")
+    private String mimoTtsBaseUrl;
 
     private static final long PROCESS_TIMEOUT = 300;
 
@@ -149,6 +161,106 @@ public class DiabetesController {
             if (process != null && process.isAlive()) {
                 process.destroyForcibly();
             }
+        }
+    }
+
+    @PostMapping("/tts")
+    public Result<String> textToSpeech(@RequestParam String text) {
+        log.info("[TTS] 收到语音合成请求，文本长度:{}", text.length());
+
+        if (text == null || text.trim().isEmpty()) {
+            return Result.error("文本不能为空");
+        }
+
+        if (mimoTtsApiKey == null || mimoTtsApiKey.isBlank()) {
+            return Result.error("TTS API Key 未配置");
+        }
+
+        try {
+            JSONObject requestBody = new JSONObject();
+            requestBody.set("model", "mimo-v2.5-tts-voicedesign");
+
+            JSONArray messages = new JSONArray();
+            JSONObject userMessage = new JSONObject();
+            userMessage.set("role", "user");
+            userMessage.set("content", "请用温柔亲切的年轻女性声音朗读以下内容");
+            messages.add(userMessage);
+
+            JSONObject assistantMessage = new JSONObject();
+            assistantMessage.set("role", "assistant");
+            assistantMessage.set("content", text);
+            messages.add(assistantMessage);
+
+            requestBody.set("messages", messages);
+
+            JSONObject audio = new JSONObject();
+            audio.set("format", "wav");
+            audio.set("optimize_text_preview", true);
+            requestBody.set("audio", audio);
+
+            String requestUrl = mimoTtsBaseUrl + "/chat/completions";
+            log.info("[TTS] 请求URL: {}", requestUrl);
+            log.info("[TTS] API Key前10位: {}", mimoTtsApiKey.substring(0, Math.min(10, mimoTtsApiKey.length())));
+            log.info("[TTS] 请求体: {}", requestBody.toString());
+
+            HttpResponse response = HttpRequest.post(requestUrl)
+                    .header("Authorization", "Bearer " + mimoTtsApiKey)
+                    .header("Content-Type", "application/json")
+                    .body(requestBody.toString())
+                    .timeout(60000)
+                    .execute();
+
+            log.info("[TTS] 响应状态码: {}", response.getStatus());
+            log.info("[TTS] 响应内容前500字符: {}", response.body().substring(0, Math.min(500, response.body().length())));
+
+            if (response.getStatus() != 200) {
+                log.error("[TTS] API调用失败，状态码:{}, 响应:{}", response.getStatus(), response.body());
+                return Result.error("语音合成服务调用失败，状态码: " + response.getStatus());
+            }
+
+            JSONObject responseJson = JSONUtil.parseObj(response.body());
+            
+            // 检查是否有错误
+            if (responseJson.containsKey("error")) {
+                JSONObject error = responseJson.getJSONObject("error");
+                String errorMsg = error.getStr("message", "未知错误");
+                log.error("[TTS] API返回错误: {}", errorMsg);
+                return Result.error("TTS API错误: " + errorMsg);
+            }
+            
+            JSONArray choices = responseJson.getJSONArray("choices");
+            if (choices == null || choices.isEmpty()) {
+                log.error("[TTS] 返回结果为空，响应: {}", response.body());
+                return Result.error("语音合成返回结果为空");
+            }
+
+            JSONObject firstChoice = choices.getJSONObject(0);
+            JSONObject message = firstChoice.getJSONObject("message");
+            
+            if (message == null) {
+                log.error("[TTS] message为空，firstChoice: {}", firstChoice.toString());
+                return Result.error("语音合成返回数据格式错误：缺少message");
+            }
+            
+            JSONObject audioResult = message.getJSONObject("audio");
+
+            if (audioResult == null) {
+                log.error("[TTS] audio为空，message: {}", message.toString());
+                return Result.error("语音合成返回数据格式错误：缺少audio");
+            }
+
+            String audioData = audioResult.getStr("data");
+            if (audioData == null || audioData.isEmpty()) {
+                log.error("[TTS] audio.data为空，audioResult: {}", audioResult.toString());
+                return Result.error("语音合成返回的音频数据为空");
+            }
+
+            log.info("[TTS] 语音合成成功，音频数据长度:{}", audioData.length());
+            return Result.success(audioData);
+
+        } catch (Exception e) {
+            log.error("[TTS] 语音合成异常", e);
+            return Result.error("语音合成服务调用异常: " + e.getMessage());
         }
     }
 
