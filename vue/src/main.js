@@ -8,6 +8,8 @@ import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import request from "@/utils/request"
+import Particles from "@tsparticles/vue3"
+import { loadSlim } from "@tsparticles/slim"
 
 const app = createApp(App)
 
@@ -21,6 +23,11 @@ app.use(ElementPlus, {
 })
 app.use(router)
 app.use(createPinia())
+app.use(Particles, {
+  init: async (engine) => {
+    await loadSlim(engine)
+  }
+})
 
 app.config.globalProperties.$request = request
 

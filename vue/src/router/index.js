@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useMainStore } from "@/store"
 import { CacheHelper } from "@/utils/cacheHelper"
+import { ElMessage } from 'element-plus'
 
 // pagePath 到组件名称的映射表
 const mapPagePath = {
@@ -22,7 +23,7 @@ const mapPagePath = {
   'role': 'Role',
   'dashbord': 'Dashbord',
   'doctor-workbench': 'DoctorWorkbench',
-  'prediction-workbench': 'PredictionWorkbench',
+
   'data-collection': 'DataCollection',
   'data-test': 'DataTest',
   'treatment-record': 'TreatmentRecord',
@@ -63,6 +64,16 @@ const routes = [
     path: '/404',
     name: '404',
     component: () => import('../views/404.vue')
+  },
+  {
+    path: '/about',
+    name: '关于系统',
+    component: () => import('../views/About.vue')
+  },
+  {
+    path: '/particle-demo',
+    name: '粒子动画演示',
+    component: () => import('../views/ParticleDemo.vue')
   }
 ]
 
@@ -152,6 +163,43 @@ setRoutes()
 
 let pendingPaths = new Set()
 
+// 检查用户是否有权限访问指定路径
+const hasPermissionForPath = (path) => {
+  const storeMenus = CacheHelper.get('menus')
+  if (!storeMenus) return false
+  
+  try {
+    const menus = JSON.parse(storeMenus)
+    const normalizedPath = path.replace(/^\//, '').toLowerCase()
+    
+    // 检查一级菜单
+    for (const menu of menus) {
+      if (menu.path && menu.path.replace(/^\//, '').toLowerCase() === normalizedPath) {
+        return true
+      }
+      if (menu.pagePath && menu.pagePath.toLowerCase() === normalizedPath) {
+        return true
+      }
+      
+      // 检查子菜单
+      if (menu.children && menu.children.length) {
+        for (const child of menu.children) {
+          if (child.path && child.path.replace(/^\//, '').toLowerCase() === normalizedPath) {
+            return true
+          }
+          if (child.pagePath && child.pagePath.toLowerCase() === normalizedPath) {
+            return true
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('检查权限失败:', error)
+  }
+  
+  return false
+}
+
 router.beforeEach((to, from, next) => {
   if (to.path === '/login' || to.path === '/register' || to.path === '/404') {
     return next()
@@ -168,6 +216,14 @@ router.beforeEach((to, from, next) => {
     if (storeMenus) {
       if (pendingPaths.has(to.fullPath)) {
         pendingPaths.delete(to.fullPath)
+        // 检查是否是权限问题
+        if (!hasPermissionForPath(to.path)) {
+          ElMessage.warning('您没有权限访问该页面，请联系管理员分配权限')
+          localStorage.setItem('lastRouteError', 'permission')
+        } else {
+          ElMessage.error('页面加载失败，请稍后重试')
+          localStorage.setItem('lastRouteError', 'notfound')
+        }
         return next("/404")
       }
       pendingPaths.add(to.fullPath)

@@ -1,6 +1,6 @@
 <template>
-  <el-menu :openeds="opens" style="min-height: 100%; overflow-x: hidden" background-color="#1e293b"
-           text-color="#fff" active-text-color="#ffd04b" :collapse-transition="false" :collapse="isCollapse" router
+  <el-menu :openeds="opens" style="min-height: 100%; overflow-x: hidden" background-color="transparent"
+           text-color="rgba(50, 50, 50, 0.95)" active-text-color="#5eead4" :collapse-transition="false" :collapse="isCollapse" router
            class="aside-menu">
     <div class="sidebar-header" v-show="logoTextShow">
       <div class="logo-title">云医智护</div>
@@ -73,7 +73,7 @@ export default {
       return pagePathVal ? '/' + pagePathVal.toLowerCase() : '';
     }
 
-    // 图标映射函数，将旧的 el-icon-* 格式转换为新的组件名
+    // 图标映射函数组件名
     const getIconComponent = (iconName) => {
       const iconMap = {
         'el-icon-coffee': 'Coffee',
@@ -130,8 +130,19 @@ export default {
       try {
         const storedMenus = CacheHelper.get('menus');
         if (storedMenus) {
-          menus.value = typeof storedMenus === 'string' ? JSON.parse(storedMenus) : storedMenus;
-          opens.value = menus.value.map(v => v.id + '');
+          let parsed = typeof storedMenus === 'string' ? JSON.parse(storedMenus) : storedMenus;
+          parsed = parsed.map(item => {
+            if (item.children && item.children.length) {
+              return { ...item, children: item.children.filter(c => c.name !== '我的报告') };
+            }
+            return item;
+          }).filter(item => item.name !== '我的报告');
+          menus.value = parsed;
+          const userSvc = parsed.find(v => v.name === '用户服务');
+          opens.value = parsed.map(v => v.id + '');
+          if (userSvc && !opens.value.includes(userSvc.id + '')) {
+            opens.value.push(userSvc.id + '');
+          }
         }
       } catch (error) {
         console.error('解析菜单数据失败:', error);
@@ -159,42 +170,102 @@ export default {
   width: 200px !important;
   z-index: 999 !important;
   overflow-y: auto;
+  background: linear-gradient(to right, #6a7077, #acb0b6, #f0f7fff7) !important;
+  border-right: none !important;
+  box-shadow: 1px 0 6px rgba(0, 0, 0, 0.12);
+}
+
+.aside-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.aside-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.aside-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.aside-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .el-menu--collapse span {
   visibility: hidden;
 }
 
-.el-menu-item.is-active {
-  background-color: #3d5a80 !important;
+.el-menu-item,
+.el-sub-menu__title {
+  margin: 2px 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease, color 0.15s ease;
+  height: 44px;
+  line-height: 44px;
 }
 
-.el-menu-item:hover {
-  background-color: #3d5a80 !important;
-}
-
+.el-menu-item:hover,
 .el-sub-menu__title:hover {
-  background-color: #3d5a80 !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.el-menu-item.is-active {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-left: none !important;
+  color: #001d3b!important;
+  font-weight: 400;
+  position: relative;
+  backdrop-filter: blur(4px);
+}
+
+.el-menu-item.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 55%;
+  background: #5eead4;
+  border-radius: 0 3px 3px 0;
 }
 
 .sidebar-header {
-  padding: 20px 0;
+  padding: 22px 0 18px;
   text-align: center;
-  background: linear-gradient(135deg, #1e293b, #334155);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(to right, #585e65, #8a8f96, #a8adb3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .logo-title {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 25px;
+  font-weight: 700;
   color: #ffffff;
-  margin-bottom: 5px;
-  letter-spacing: 1px;
+  margin-bottom: 4px;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 .logo-subtitle {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
-  letter-spacing: 0.5px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 1px;
+}
+
+.el-sub-menu .el-menu {
+  background: linear-gradient(to right, #5e646b, #9a9ea5, #c2c7ce) !important;
+}
+
+.el-sub-menu .el-menu .el-menu-item {
+  padding-left: 28px !important;
+  font-size: 17px;
+  height: 40px;
+  line-height: 40px;
+}
+
+.el-icon {
+  margin-right: 8px;
+  font-size: 16px;
 }
 </style>
