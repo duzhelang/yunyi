@@ -322,7 +322,6 @@ const faultTypeOptions = [
 const moduleOptions = [
   { label: '首页仪表盘', value: 'home' },
   { label: '数据采集', value: 'data-collection' },
-  { label: '预测工作台', value: 'prediction-workbench' },
   { label: '诊断工作台', value: 'doctor-workbench' },
   { label: '个体洞察', value: 'individual-insight' },
   { label: '组合分析', value: 'group-analysis' },

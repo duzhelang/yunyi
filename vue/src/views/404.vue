@@ -35,8 +35,9 @@
 		</svg>
       </div>
 
-      <h1>404</h1>
-      <p>页面未找到<br/>您访问的页面不存在或发生了其他错误</p>
+      <h1>{{ isPermissionIssue ? '403' : '404' }}</h1>
+      <p v-if="isPermissionIssue">权限不足<br/>您没有权限访问该页面，请联系管理员分配权限</p>
+      <p v-else>页面未找到<br/>您访问的页面不存在或发生了其他错误</p>
 
       <div class="actions">
         <button @click="goBack">返回上一页</button>
@@ -60,8 +61,15 @@ export default {
       eyeOffsetY: 0,
       // mouthPath: "M30 70 Q60 90 90 70",
 	  mouthPath: "M35 85 Q60 65 85 85",
-      idleTimer: null
+      idleTimer: null,
+      isPermissionIssue: false
     };
+  },
+  created() {
+    // 检查是否是权限问题（通过URL参数或本地存储判断）
+    const urlParams = new URLSearchParams(window.location.search)
+    this.isPermissionIssue = urlParams.get('type') === 'permission' || 
+                            localStorage.getItem('lastRouteError') === 'permission'
   },
   methods: {
     handleMouseMove(e) {
@@ -90,6 +98,7 @@ export default {
     goHome() {
       this.mouthPath = "M35 80 Q60 100 85 80";
       setTimeout(() => {
+        localStorage.removeItem('lastRouteError')
         window.location.href = "/";
       }, 300);
     },

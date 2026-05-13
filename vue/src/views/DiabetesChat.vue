@@ -367,8 +367,8 @@ export default {
       allQuestions: [],
       marqueePaused: false,
       marqueeAnimId: null,
-      speechSynth: null,
       isMuted: false,
+      _currentAudio: null,
     }
   },
   computed: {
@@ -398,11 +398,6 @@ export default {
     }
   },
   async mounted() {
-    // 初始化语音合成
-    if ('speechSynthesis' in window) {
-      this.speechSynth = window.speechSynthesis
-    }
-
     const storedUser = localStorage.getItem("user")
     if (storedUser) {
       try {
@@ -731,27 +726,26 @@ export default {
         ElMessage.success('健康计划已生成')
       }
       this.showRecipePanel = true
-      await this.generateRecipe()
       this.isLoading = false
+      this.generateRecipe(true)
     },
     async generateRecipe(fromSidebar) {
       this.recipeData = this.getMockRecipe()
-      if (fromSidebar) this.isRecipeLoading = true
-      else this.isLoading = true
+      this.isRecipeLoading = true
       const prefs = this.selectedDietPrefs.length > 0 ? this.selectedDietPrefs.join('、') : '低GI、高纤维'
       const meals = this.mealCount === '5' ? '一日五餐（含上午加餐和下午加餐）' : '一日三餐'
       const prompt = `请作为糖尿病营养师生成一天的控糖食谱。严格按以下格式返回，每行一道菜用"|"分隔菜品名、分量、热量：
-【早餐】
-菜品名 | 分量 | 热量kcal
-（每道菜一行，继续列出）
-每餐小计：GI≈XX | 总热量≈XXXkcal
-【午餐】
-（同上格式）
-【晚餐】
-（同上格式）
-饮食偏好：${prefs}
-餐次安排：${meals}
-口味偏好：${this.tastePref}`
+          【早餐】
+          菜品名 | 分量 | 热量kcal
+          （每道菜一行，继续列出）
+          每餐小计：GI≈XX | 总热量≈XXXkcal
+          【午餐】
+          （同上格式）
+          【晚餐】
+          （同上格式）
+          饮食偏好：${prefs}
+          餐次安排：${meals}
+          口味偏好：${this.tastePref}`
       try {
         const response = await request.post('/api/diabetes/chat', null, {
           params: { question: prompt, provider: this.selectedModel }
@@ -770,8 +764,7 @@ export default {
       } catch (error) {
         ElMessage.info('已使用标准食谱方案')
       } finally {
-        if (fromSidebar) this.isRecipeLoading = false
-        else this.isLoading = false
+        this.isRecipeLoading = false
       }
       this.$nextTick(() => this.saveRecipeToRecord())
     },
@@ -878,64 +871,74 @@ export default {
     },
     toggleSpeak(msg, index) {
       if (msg.isSpeaking) {
-        this.stopSpeaking(index)
+        this.stopSpeaking()
       } else {
         this.speak(index)
       }
     },
-    speak(index) {
-      if (!this.speechSynth) return
-      // 停止当前正在朗读的消息
-      this.messages.forEach((m, i) => {
-        if (!m.isUser && m.isSpeaking) {
-          m.isSpeaking = false
-        }
-      })
-      this.speechSynth.cancel()
+    async speak(index) {
+      // 停止当前正在播放的音频
+      this.stopSpeaking()
 
       const msg = this.messages[index]
       if (!msg || msg.isUser) return
 
-      const utterance = new SpeechSynthesisUtterance(msg.content)
-      utterance.lang = 'zh-CN'
-      utterance.rate = 1.0
-      utterance.pitch = 1.0
-      utterance.volume = 1.0
+      msg.isSpeaking = true
 
-      utterance.onstart = () => {
-        msg.isSpeaking = true
-      }
-      utterance.onend = () => {
-        msg.isSpeaking = false
-      }
-      utterance.onerror = () => {
-        msg.isSpeaking = false
-      }
+      try {
+        const response = await request.post('/api/diabetes/tts', null, {
+          params: { text: msg.content }
+        })
 
-      // 保存 utterance 引用以便取消
-      this._currentUtterance = utterance
-      this.speechSynth.speak(utterance)
+        if (response && response.code === '200' && response.data) {
+          const audioData = response.data
+          const audioBlob = this.base64ToBlob(audioData, 'audio/wav')
+          const audioUrl = URL.createObjectURL(audioBlob)
+
+          this._currentAudio = new Audio(audioUrl)
+          this._currentAudio.onended = () => {
+            msg.isSpeaking = false
+            URL.revokeObjectURL(audioUrl)
+            this._currentAudio = null
+          }
+          this._currentAudio.onerror = () => {
+            msg.isSpeaking = false
+            URL.revokeObjectURL(audioUrl)
+            this._currentAudio = null
+          }
+          await this._currentAudio.play()
+        } else {
+          msg.isSpeaking = false
+          console.error('TTS合成失败:', response?.msg)
+        }
+      } catch (error) {
+        msg.isSpeaking = false
+        console.error('TTS请求异常:', error)
+      }
     },
-    stopSpeaking(index) {
-      if (this.speechSynth) {
-        this.speechSynth.cancel()
+    base64ToBlob(base64, mimeType) {
+      const byteCharacters = atob(base64)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
       }
-      if (index !== undefined && this.messages[index]) {
-        this.messages[index].isSpeaking = false
+      const byteArray = new Uint8Array(byteNumbers)
+      return new Blob([byteArray], { type: mimeType })
+    },
+    stopSpeaking() {
+      if (this._currentAudio) {
+        this._currentAudio.pause()
+        this._currentAudio.currentTime = 0
+        this._currentAudio = null
       }
-      this._currentUtterance = null
+      this.messages.forEach(m => {
+        if (!m.isUser) m.isSpeaking = false
+      })
     },
     toggleMute() {
       this.isMuted = !this.isMuted
       if (this.isMuted) {
-        // 静音时停止当前朗读
-        if (this.speechSynth) {
-          this.speechSynth.cancel()
-        }
-        this.messages.forEach(m => {
-          if (!m.isUser) m.isSpeaking = false
-        })
-        this._currentUtterance = null
+        this.stopSpeaking()
       }
     },
     startMarquee() {
@@ -1013,9 +1016,7 @@ export default {
     }
   },
   beforeDestroy() {
-    if (this.speechSynth) {
-      this.speechSynth.cancel()
-    }
+    this.stopSpeaking()
     if (this.marqueeAnimId) {
       cancelAnimationFrame(this.marqueeAnimId);
       this.marqueeAnimId = null;

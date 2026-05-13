@@ -1635,7 +1635,7 @@ body, .diabetes-education-container {
   position: absolute;
   left: 0;
   top: 50%;
-  transform: translateY(-50%) scaleX(0);
+  transform: translateY(-0%) scaleX(0);
   width: 3px;
   height: 20px;
   background: linear-gradient(180deg, #4080FF, #3366CC);

@@ -1,27 +1,32 @@
 <template>
-  <el-container class="manage-container">
+  <div class="manage-wrapper">
+    <GlobalParticleBg :show-switcher="true" />
 
-    <el-aside :width="sideWidth + 'px'" class="manage-aside">
-      <Aside :isCollapse="isCollapse" :logoTextShow="logoTextShow" style="padding-bottom: 20px" />
-    </el-aside>
+    <el-container class="manage-container">
 
-    <el-container class="manage-main-container">
-      <el-header class="manage-header">
-        <Header :collapseBtnClass="collapseBtnClass" @asideCollapse="collapse" :user="user" />
-      </el-header>
+      <el-aside :width="sideWidth + 'px'" class="manage-aside">
+        <Aside :isCollapse="isCollapse" :logoTextShow="logoTextShow" style="padding-bottom: 20px" />
+      </el-aside>
 
-      <el-main class="manage-main">
-        <router-view :key="$route.fullPath" @refreshUser="getUser" />
-      </el-main>
+      <el-container class="manage-main-container">
+        <el-header class="manage-header">
+          <Header :collapseBtnClass="collapseBtnClass" @asideCollapse="collapse" :user="user" />
+        </el-header>
 
+        <el-main class="manage-main">
+          <router-view :key="$route.fullPath" @refreshUser="getUser" />
+        </el-main>
+
+      </el-container>
     </el-container>
-  </el-container>
+  </div>
 </template>
 
 <script>
 
 import Aside from "@/components/Aside.vue";
 import Header from "@/components/Header.vue";
+import GlobalParticleBg from "@/components/GlobalParticleBg.vue";
 import request from "@/utils/request";
 import { setRoutes } from "@/router";
 
@@ -38,7 +43,8 @@ export default {
   },
   components: {
     Aside,
-    Header
+    Header,
+    GlobalParticleBg
   },
   created() {
     this.getUser()
@@ -69,31 +75,44 @@ export default {
 </script>
 
 <style scoped>
+.manage-wrapper {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
 .manage-container {
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
 }
 
 .manage-aside {
-  box-shadow: 2px 0 8px rgba(0, 21, 41, 0.25);
+  box-shadow: 1px 0 6px rgba(0, 0, 0, 0.12);
   transition: width 0.3s ease;
+  background: linear-gradient(to right, #6a7077, #acb0b6, #d3d8df);
 }
 
 .manage-main-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background: transparent;
 }
 
 .manage-header {
-  border-bottom: 1px solid #e4e7ed;
-  background: white;
+  border-bottom: 1px solid rgba(228, 231, 237, 0.6);
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
 .manage-main {
   padding: 20px 24px;
-  background-color: #f5f7fa;
+  background: rgba(255, 255, 250, 0.99);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   min-height: calc(100vh - 60px);
 }
 

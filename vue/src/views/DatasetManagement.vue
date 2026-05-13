@@ -13,15 +13,15 @@
           <span class="stat-num">{{ stats.dataFileCount + stats.jsonCount }}</span>
           <span class="stat-label">数据集总数</span>
         </div>
-        <div class="stat-card stat-train">
+        <div class="stat-card stat-train" @click="switchTab('train')">
           <span class="stat-num">{{ stats.trainCount }}</span>
           <span class="stat-label">训练集</span>
         </div>
-        <div class="stat-card stat-test">
+        <div class="stat-card stat-test" @click="switchTab('test')">
           <span class="stat-num">{{ stats.testCount }}</span>
           <span class="stat-label">测试集</span>
         </div>
-        <div class="stat-card stat-json">
+        <div class="stat-card stat-json" @click="switchTab('json')">
           <span class="stat-num">{{ stats.jsonCount }}</span>
           <span class="stat-label">预测结果</span>
         </div>
@@ -384,6 +384,11 @@ const handleTabChange = (name) => {
   if (name === 'json' && jsonFileList.value.length === 0) loadJsonFiles()
 }
 
+const switchTab = (name) => {
+  activeTab.value = name
+  handleTabChange(name)
+}
+
 const loadTrainData = () => {
   loadingTrain.value = true
   request.get('/api/dataset/list', {
@@ -663,6 +668,14 @@ onMounted(async () => {
   text-align: center;
   backdrop-filter: blur(10px);
   min-width: 80px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.stat-card:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .stat-num {
