@@ -2698,7 +2698,7 @@ onUnmounted(() => {
   border-bottom: 1px solid #e5e7eb;
 }
 
-/* 抽屉固定在右侧，满屏高度，类似侧边栏 */
+/* 抽屉固定在右侧，满屏高度 */
 .el-drawer {
   position: fixed !important;
   top: 0 !important;
