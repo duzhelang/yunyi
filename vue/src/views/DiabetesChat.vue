@@ -511,13 +511,12 @@ export default {
               clearInterval(this.typingTimer)
               this.messages[botMsgIndex].isTyping = false
               this.typingTimer = null
+              // 输出完成后自动朗读
+              if (!this.isMuted) {
+                this.$nextTick(() => this.speak(botMsgIndex))
+              }
             }
           }, 60)
-
-          // 开始回答的同时自动朗读
-          if (!this.isMuted) {
-            this.$nextTick(() => this.speak(botMsgIndex))
-          }
         } else {
           const errorMsg = `服务提示:${response?.msg || '未知错误'}`
           this.addBotMessage(errorMsg)
@@ -858,12 +857,12 @@ export default {
           clearInterval(this.typingTimer)
           this.messages[botMsgIndex].isTyping = false
           this.typingTimer = null
+          // 输出完成后自动朗读
+          if (!this.isMuted) {
+            this.$nextTick(() => this.speak(botMsgIndex))
+          }
         }
       }, 30)
-
-      if (!this.isMuted) {
-        this.$nextTick(() => this.speak(botMsgIndex))
-      }
     },
     askSample(sampleQ) {
       this.question = sampleQ;
@@ -886,9 +885,7 @@ export default {
       msg.isSpeaking = true
 
       try {
-        const response = await request.post('/api/diabetes/tts', null, {
-          params: { text: msg.content }
-        })
+        const response = await request.post('/api/diabetes/tts', { text: msg.content })
 
         if (response && response.code === '200' && response.data) {
           const audioData = response.data

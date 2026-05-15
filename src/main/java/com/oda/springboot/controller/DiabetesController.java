@@ -13,6 +13,7 @@ import cn.hutool.json.JSONUtil;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -45,7 +46,7 @@ public class DiabetesController {
     @Value("${mimo-tts.api.api-key:}")
     private String mimoTtsApiKey;
 
-    @Value("${mimo-tts.api.base-url:https://token-plan-cn.xiaomimimo.com/anthropic}")
+    @Value("${mimo-tts.api.base-url:}")
     private String mimoTtsBaseUrl;
 
     private static final long PROCESS_TIMEOUT = 300;
@@ -165,8 +166,9 @@ public class DiabetesController {
     }
 
     @PostMapping("/tts")
-    public Result<String> textToSpeech(@RequestParam String text) {
-        log.info("[TTS] 收到语音合成请求，文本长度:{}", text.length());
+    public Result<String> textToSpeech(@RequestBody Map<String, String> body) {
+        String text = body.get("text");
+        log.info("[TTS] 收到语音合成请求，文本长度:{}", text != null ? text.length() : 0);
 
         if (text == null || text.trim().isEmpty()) {
             return Result.error("文本不能为空");

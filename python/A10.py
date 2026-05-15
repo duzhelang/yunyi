@@ -12,8 +12,8 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='repla
 
 # 项目根目录/python/data/ 下的训练/验证数据
 base_path = os.path.join(os.getcwd(), "python", "data")
-file_path_train = os.path.join(base_path, "train_10000.csv")
-file_path_val = os.path.join(base_path, "validate_1000.csv")
+file_path_train = os.path.join(base_path, "train_10000_A10.csv")
+file_path_val = os.path.join(base_path, "validate_1000_A10.csv")
 
 df,y = read_data(file_path_train)
 df_val,y_val = read_data(file_path_val)

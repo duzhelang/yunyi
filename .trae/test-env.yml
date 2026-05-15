@@ -1,0 +1,48 @@
+# ============================================================
+# 本地测试环境配置
+# local-fullstack-tester 智能体在执行测试前必须读取此文件
+# ============================================================
+
+# 前端服务配置
+frontend:
+  port: 8080
+  host: localhost
+  base_url: http://localhost:8080
+  dev_command: npm run dev
+  working_dir: ./vue
+
+# 后端服务配置
+backend:
+  port: 9090
+  host: localhost
+  base_url: http://localhost:9090
+
+# 前端代理配置（与 vite.config.js 保持一致）
+proxy:
+  /api: http://localhost:9090
+
+# 认证信息
+auth:
+  login_path: /user/login
+  login_method: POST
+  token_header_name: token
+  test_accounts:
+    admin:
+      username: admin
+      password: admin
+      role: ROLE_ADMIN
+    user:
+      username: user
+      password: user123
+      role: ROLE_USER
+
+# 测试流程说明
+test_flow:
+  - step: 1
+    action: 检查前后端服务端口是否可达
+  - step: 2
+    action: 使用测试账号调用登录接口获取 token
+  - step: 3
+    action: 携带 token 测试业务接口
+  - step: 4
+    action: 输出测试报告

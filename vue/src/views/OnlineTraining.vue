@@ -32,9 +32,9 @@
                   <el-form-item label="训练数据集">
                     <el-select v-model="taskForm.trainFileId" placeholder="请选择训练数据集" style="width: 100%">
                       <el-option
-                        v-for="file in fileList"
+                        v-for="file in mergedFileList"
                         :key="file.id"
-                        :label="file.name + (file.sampleCount ? ' (' + file.sampleCount + ' 条)' : '')"
+                        :label="file.displayName || (file.name + (file.sampleCount ? ' (' + file.sampleCount + ' 条)' : ''))"
                         :value="file.id"
                       />
                     </el-select>
@@ -42,7 +42,7 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="训练脚本">
-                    <el-select v-model="taskForm.pythonScript" placeholder="请选择训练脚本" style="width: 100%">
+                    <el-select v-model="taskForm.pythonScript" placeholder="请选择训练脚本" style="width: 100%" @change="onScriptChange">
                       <el-option
                         v-for="script in pythonScripts"
                         :key="script.name"
@@ -59,20 +59,44 @@
                     <el-input v-model="taskForm.modelName" placeholder="例如: diabetes_model_v2" />
                   </el-form-item>
                 </el-col>
-                <el-col :span="12">
-                  <el-form-item label="选择模型">
-                    <el-select v-model="taskForm.selectedModel" placeholder="请选择模型" style="width: 100%">
-                      <el-option label="使用训练脚本新建模型" value="new_model" />
-                      <el-option
-                        v-for="model in trainedModels"
-                        :key="model.id"
-                        :label="model.modelName + ' (' + model.version + ')'"
-                        :value="String(model.id)"
-                      />
-                    </el-select>
-                  </el-form-item>
-                </el-col>
+
               </el-row>
+
+              
+              <div v-if="isIncrementalScript" style="margin-bottom: 10px;">
+                <el-divider content-position="left">增量训练配置</el-divider>
+                <el-row :gutter="20">
+                  <el-col :span="8">
+                    <el-form-item label="基础模型" prop="incrementalParams.baseModelId" :rules="[{ required: true, message: '请选择基础模型', trigger: 'change' }]">
+                      <el-select v-model="taskForm.incrementalParams.baseModelId" placeholder="请选择要微调的基础模型" style="width: 100%">
+                        <el-option
+                          v-for="model in trainedModels"
+                          :key="model.id"
+                          :label="model.modelName + ' (' + model.version + ')'"
+                          :value="model.id"
+                        />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="8">
+                    <el-form-item label="冻结层">
+                      <el-select v-model="taskForm.incrementalParams.freezeLayers" style="width: 100%">
+                        <el-option label="不冻结（全部层参与训练）" value="none" />
+                        <el-option label="冻结 fc1（第一层）" value="fc1" />
+                        <el-option label="冻结 fc1 + fc2" value="fc1+fc2" />
+                        <el-option label="冻结所有隐藏层（仅训练输出层）" value="all-hidden" />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="8">
+                    <el-form-item label="复用预处理器">
+                      <el-checkbox v-model="taskForm.incrementalParams.reusePreprocessor">
+                        复用基础模型的 scaler 和 encoder
+                      </el-checkbox>
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+              </div>
 
               
               <el-divider content-position="left">训练参数</el-divider>
@@ -136,11 +160,15 @@
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="性能指标" width="280">
+              <el-table-column label="性能指标" width="500">
                 <template #default="scope">
                   <div v-if="scope.row.status === 'completed'" class="metrics">
                     <span class="metric-item">准确率: {{ scope.row.accuracy }}</span>
                     <span class="metric-item">损失: {{ scope.row.loss }}</span>
+                    <span class="metric-item">精确率: {{ scope.row.precisionRate }}</span>
+                    <span class="metric-item">召回率: {{ scope.row.recallRate }}</span>
+                    <span class="metric-item">F1: {{ scope.row.f1Score }}</span>
+                    <span class="metric-item">AUC: {{ scope.row.auc }}</span>
                   </div>
                   <span v-else>-</span>
                 </template>
@@ -300,6 +328,8 @@
     <el-dialog
       v-model="detailVisible"
       title="训练任务详情"
+      append-to-body
+      top="15vh"
       width="600px"
     >
       <el-descriptions v-if="currentTask" :column="1" border>
@@ -319,8 +349,30 @@
             <div class="metric-item">召回率: {{ currentTask.recallRate }}</div>
             <div class="metric-item">精确率: {{ currentTask.precisionRate }}</div>
             <div class="metric-item">F1分数: {{ currentTask.f1Score }}</div>
+            <div class="metric-item">AUC: {{ currentTask.auc }}</div>
           </div>
           <span v-else>-</span>
+        </el-descriptions-item>
+        <el-descriptions-item v-if="currentTask.status === 'completed' && currentTask.confusionMatrix" label="混淆矩阵">
+          <div class="confusion-matrix-wrapper">
+            <table class="confusion-matrix">
+              <tr>
+                <td class="cm-header"></td>
+                <td class="cm-header">预测: 阴性</td>
+                <td class="cm-header">预测: 阳性</td>
+              </tr>
+              <tr>
+                <td class="cm-label">实际: 阴性</td>
+                <td class="cm-tn">TN: {{ getParsedConfusionMatrix()[0][0] }}</td>
+                <td class="cm-fp">FP: {{ getParsedConfusionMatrix()[0][1] }}</td>
+              </tr>
+              <tr>
+                <td class="cm-label">实际: 阳性</td>
+                <td class="cm-fn">FN: {{ getParsedConfusionMatrix()[1][0] }}</td>
+                <td class="cm-tp">TP: {{ getParsedConfusionMatrix()[1][1] }}</td>
+              </tr>
+            </table>
+          </div>
         </el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ currentTask.createTime }}</el-descriptions-item>
         <el-descriptions-item v-if="currentTask.startTime" label="开始时间">{{ currentTask.startTime }}</el-descriptions-item>
@@ -335,6 +387,8 @@
     <el-dialog
       v-model="predictResultVisible"
       title="预测结果详情"
+      append-to-body
+      top="15vh"
       width="800px"
     >
       <div v-if="currentPredictResult" class="predict-result-detail">
@@ -353,7 +407,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Cpu, Plus, List, VideoPlay, Refresh, DataAnalysis, Document, Loading } from '@element-plus/icons-vue'
 import request from '@/utils/request'
@@ -362,13 +416,17 @@ const activeTab = ref('training')
 
 const taskForm = ref({
   trainFileId: null,
-  selectedModel: 'new_model',
   modelName: '',
   pythonScript: 'train.py',
   hyperParams: {
     learningRate: 0.001,
     epochs: 100,
     batchSize: 32
+  },
+  incrementalParams: {
+    baseModelId: null,
+    reusePreprocessor: false,
+    freezeLayers: 'none'
   }
 })
 
@@ -380,6 +438,32 @@ const predictForm = ref({
 })
 
 const fileList = ref([])
+const defaultDatasets = [
+  { id: 'default_v1', name: 'diabetes_train_dataset.csv', displayName: 'V1.0 diabetes_train_dataset.csv (768 条, 9 特征) - 糖尿病训练数据集', sampleCount: 768, columnCount: 9, category: 'train' },
+  { id: 'default_extended', name: 'diabetes_features_extended.csv', displayName: '扩展 diabetes_features_extended.csv (1536 条, 12 特征) - 扩展特征数据集', sampleCount: 1536, columnCount: 12, category: 'train' },
+  { id: 'default_history', name: 'patient_history_data.csv', displayName: '历史 patient_history_data.csv (512 条, 8 特征) - 患者历史数据', sampleCount: 512, columnCount: 8, category: 'train' }
+]
+const mergedFileList = computed(() => {
+  const apiFiles = fileList.value.map(f => ({
+    ...f,
+    displayName: f.name + (f.sampleCount ? ` (${f.sampleCount} 条, ${f.columnCount || '?'} 特征)` : '')
+  }))
+  const apiNames = new Set(apiFiles.map(f => f.name))
+  const defaults = defaultDatasets.filter(d => !apiNames.has(d.name))
+  return [...apiFiles, ...defaults]
+})
+const isIncrementalScript = computed(() => {
+  return taskForm.value.pythonScript && taskForm.value.pythonScript.toLowerCase().includes('incremental')
+})
+const onScriptChange = (val) => {
+  if (val && val.toLowerCase().includes('incremental')) {
+    taskForm.value.hyperParams.learningRate = 0.0001
+    taskForm.value.hyperParams.epochs = 50
+  } else {
+    taskForm.value.hyperParams.learningRate = 0.001
+    taskForm.value.hyperParams.epochs = 100
+  }
+}
 const testFileList = ref([])
 const pythonScripts = ref([])
 const trainedModels = ref([])
@@ -538,6 +622,10 @@ const startTask = async () => {
     ElMessage.warning('请输入模型名称')
     return
   }
+  if (isIncrementalScript.value && !taskForm.value.incrementalParams.baseModelId) {
+    ElMessage.warning('增量训练模式下请选择基础模型')
+    return
+  }
 
   submitting.value = true
   try {
@@ -694,6 +782,20 @@ const getStatusText = (status) => {
   return map[status] || status
 }
 
+const getParsedConfusionMatrix = () => {
+  if (!currentTask.value || !currentTask.value.confusionMatrix) {
+    return [[0, 0], [0, 0]]
+  }
+  try {
+    const cm = typeof currentTask.value.confusionMatrix === 'string' 
+      ? JSON.parse(currentTask.value.confusionMatrix) 
+      : currentTask.value.confusionMatrix
+    return cm.length >= 2 ? cm : [[0, 0], [0, 0]]
+  } catch (e) {
+    return [[0, 0], [0, 0]]
+  }
+}
+
 const formatFileSize = (bytes) => {
   if (!bytes) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']
@@ -797,14 +899,15 @@ onMounted(() => {
 }
 
 .metrics {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px 8px;
 }
 
 .metric-item {
   font-size: 12px;
   color: #606266;
+  white-space: nowrap;
 }
 
 .error-message {
@@ -864,5 +967,52 @@ onMounted(() => {
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+.confusion-matrix-wrapper {
+  margin-top: 10px;
+}
+
+.confusion-matrix {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.confusion-matrix td {
+  padding: 8px 12px;
+  border: 1px solid #e4e7ed;
+  text-align: center;
+}
+
+.confusion-matrix .cm-header {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #303133;
+}
+
+.confusion-matrix .cm-label {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #303133;
+}
+
+.confusion-matrix .cm-tn {
+  background-color: #e1f3d8;
+  color: #67c23a;
+}
+
+.confusion-matrix .cm-tp {
+  background-color: #e1f3d8;
+  color: #67c23a;
+}
+
+.confusion-matrix .cm-fp {
+  background-color: #faecd8;
+  color: #e6a23c;
+}
+
+.confusion-matrix .cm-fn {
+  background-color: #fde2e2;
+  color: #f56c6c;
 }
 </style>

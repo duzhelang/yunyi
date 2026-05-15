@@ -34,6 +34,10 @@ public class TrainTask {
 
     private BigDecimal f1Score;
 
+    private BigDecimal auc;
+
+    private String confusionMatrix;
+
     private String logPath;
 
     private String modelOutputPath;
@@ -142,6 +146,22 @@ public class TrainTask {
 
     public void setF1Score(BigDecimal f1Score) {
         this.f1Score = f1Score;
+    }
+
+    public BigDecimal getAuc() {
+        return auc;
+    }
+
+    public void setAuc(BigDecimal auc) {
+        this.auc = auc;
+    }
+
+    public String getConfusionMatrix() {
+        return confusionMatrix;
+    }
+
+    public void setConfusionMatrix(String confusionMatrix) {
+        this.confusionMatrix = confusionMatrix;
     }
 
     public String getLogPath() {

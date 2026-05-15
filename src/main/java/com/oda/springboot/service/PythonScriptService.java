@@ -40,7 +40,6 @@ public class PythonScriptService {
                 if (file.isFile() && file.getName().toLowerCase().endsWith(".py")) {
                     String fileName = file.getName();
 
-                    // 检查文件是否是训练相关的脚本
                     if (isTrainingScript(fileName)) {
                         Map<String, Object> script = new HashMap<>();
                         script.put("name", fileName);
@@ -59,33 +58,26 @@ public class PythonScriptService {
         return scripts;
     }
 
-    /**
-     * 判断是否是训练脚本
-     * @param fileName
-     * @return
-     */
     private boolean isTrainingScript(String fileName) {
         String lowerName = fileName.toLowerCase();
-        return lowerName.contains("train") ||
-               lowerName.contains("model") ||
-               lowerName.contains("A10") ||
-               lowerName.equals("train.py");
+        return lowerName.contains("train") || lowerName.contains("model") || lowerName.contains("a10")
+                || lowerName.contains("incremental") || lowerName.contains("fine_tune");
     }
 
-    /**
-     * 获取脚本描述
-     * @param fileName
-     * @return
-     */
     private String getScriptDescription(String fileName) {
-        if ("train.py".equalsIgnoreCase(fileName)) {
-            return "最新的 PyTorch 神经网络训练脚本";
-        } else if (fileName.toLowerCase().contains("A10")) {
-            return "旧版整合训练脚本（已弃用）";
-        } else if (fileName.toLowerCase().contains("model")) {
-            return "模型训练相关脚本";
-        } else {
-            return "Python 训练脚本";
+        String lowerName = fileName.toLowerCase();
+        if (lowerName.contains("incremental") || lowerName.contains("fine_tune")) {
+            return "增量训练脚本（基于已有模型微调）";
         }
+        if (lowerName.equals("train.py")) {
+            return "最新 PyTorch 神经网络训练脚本";
+        }
+        if (lowerName.contains("a10")) {
+            return "旧版整合训练脚本（已弃用）";
+        }
+        if (lowerName.contains("model")) {
+            return "模型训练相关脚本";
+        }
+        return "Python 训练脚本";
     }
 }

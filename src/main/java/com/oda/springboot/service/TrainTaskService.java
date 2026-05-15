@@ -30,36 +30,85 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
     private TrainTaskMapper trainTaskMapper;
 
     @Autowired
-    private FileMapper fileMapper;
+    private ModelVersionMapper modelVersionMapper;
 
     @Autowired
-    private ModelVersionMapper modelVersionMapper;
+    private FileMapper fileMapper;
 
     @Autowired
     private UsePythonUtils usePythonUtils;
 
     /**
+     * 默认数据集映射（前端传入 default_ 开头的 ID 时使用）
+     */
+    private static final java.util.Map<String, String> DEFAULT_DATASET_MAP = new java.util.HashMap<>();
+    static {
+        DEFAULT_DATASET_MAP.put("default_v1", "diabetes_train_dataset.csv");
+        DEFAULT_DATASET_MAP.put("default_extended", "diabetes_features_extended.csv");
+        DEFAULT_DATASET_MAP.put("default_history", "patient_history_data.csv");
+    }
+
+    /**
      * 创建并启动训练任务
      */
     public TrainTask createAndStartTask(Map<String, Object> params) {
-        Integer trainFileId = (Integer) params.get("trainFileId");
+        Object trainFileIdObj = params.get("trainFileId");
         String modelName = (String) params.get("modelName");
         Map<String, Object> hyperParams = (Map<String, Object>) params.get("hyperParams");
         String pythonScript = (String) params.get("pythonScript");
+        Map<String, Object> incrementalParams = (Map<String, Object>) params.get("incrementalParams");
 
-        // 获取训练文件信息
-        Files trainFile = fileMapper.selectById(trainFileId);
-        if (trainFile == null) {
-            throw new RuntimeException("训练文件不存在");
+        Integer trainFileId = null;
+        String trainFileName = null;
+
+        // 处理 trainFileId：支持 Integer（数据库ID）和 String（默认数据集ID）
+        if (trainFileIdObj instanceof String) {
+            String trainFileIdStr = (String) trainFileIdObj;
+            if (DEFAULT_DATASET_MAP.containsKey(trainFileIdStr)) {
+                // 使用默认数据集
+                trainFileName = DEFAULT_DATASET_MAP.get(trainFileIdStr);
+                log.info("使用默认数据集: {}", trainFileName);
+            } else {
+                // 尝试解析为数据库ID
+                try {
+                    trainFileId = Integer.parseInt(trainFileIdStr);
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException("无效的训练文件ID: " + trainFileIdStr);
+                }
+            }
+        } else if (trainFileIdObj instanceof Integer) {
+            trainFileId = (Integer) trainFileIdObj;
+        }
+
+        // 如果是数据库ID，从数据库获取文件信息
+        if (trainFileId != null) {
+            Files trainFile = fileMapper.selectById(trainFileId);
+            if (trainFile == null) {
+                throw new RuntimeException("训练文件不存在");
+            }
+            trainFileName = trainFile.getName();
+        }
+
+        if (trainFileName == null || trainFileName.isEmpty()) {
+            throw new RuntimeException("请选择训练数据集");
         }
 
         // 创建训练任务记录
+        // 将增量训练参数合并到 hyperParams 中保存
+        String hyperParamsJson = JSONUtil.toJsonStr(hyperParams);
+        if (incrementalParams != null && pythonScript != null && pythonScript.toLowerCase().contains("incremental")) {
+            com.alibaba.fastjson.JSONObject hyperObj = com.alibaba.fastjson.JSON.parseObject(hyperParamsJson);
+            hyperObj.put("incrementalParams", incrementalParams);
+            hyperParamsJson = hyperObj.toJSONString();
+        }
+
         TrainTask task = new TrainTask();
-        task.setTaskName(modelName + "_" + System.currentTimeMillis());
+        String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
+        task.setTaskName(modelName + "_" + timestamp);
         task.setTrainFileId(trainFileId);
-        task.setTrainFileName(trainFile.getName());
+        task.setTrainFileName(trainFileName);
         task.setModelName(modelName);
-        task.setHyperParams(JSONUtil.toJsonStr(hyperParams));
+        task.setHyperParams(hyperParamsJson);
         task.setPythonScript(pythonScript != null ? pythonScript : "train.py");
         task.setStatus("pending");
         task.setCreateTime(new Date());
@@ -86,12 +135,13 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
             trainTaskMapper.updateById(task);
             log.info("训练任务开始执行: {}, 使用脚本: {}", task.getTaskName(), task.getPythonScript());
 
-            // 构建训练参数
+            // 执行训练脚本并捕获输出
             String processId = UUID.randomUUID().toString();
             String[] arguments = buildTrainingArguments(task);
 
-            // 执行训练脚本
+            final StringBuilder outputCapture = new StringBuilder();
             usePythonUtils.callPythonWithCallback(processId, arguments, (line, isError) -> {
+                outputCapture.append(line).append("\n");
                 log.debug("训练日志: {}", line);
             });
 
@@ -104,12 +154,45 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
             String modelPath = projectRoot + File.separator + "data" + File.separator + "models" + File.separator + "pth_models" + File.separator + task.getModelName() + ".pth";
             task.setModelOutputPath(modelPath);
             
-            // 设置模拟性能指标（实际项目中应该从训练输出中解析）
-            task.setAccuracy(java.math.BigDecimal.valueOf(0.925));
-            task.setLoss(java.math.BigDecimal.valueOf(0.18));
-            task.setRecallRate(java.math.BigDecimal.valueOf(0.89));
-            task.setPrecisionRate(java.math.BigDecimal.valueOf(0.91));
-            task.setF1Score(java.math.BigDecimal.valueOf(0.90));
+            // 解析 Python 输出中的真实训练指标
+            boolean metricsParsed = false;
+            String output = outputCapture.toString();
+            for (String line : output.split("\n")) {
+                String trimmed = line.trim();
+                if (trimmed.startsWith("[METRICS]")) {
+                    try {
+                        String metricsJson = trimmed.substring("[METRICS]".length()).trim();
+                        com.alibaba.fastjson.JSONObject metrics = com.alibaba.fastjson.JSON.parseObject(metricsJson);
+                        task.setAccuracy(metrics.getBigDecimal("accuracy"));
+                        task.setLoss(metrics.getBigDecimal("loss"));
+                        task.setPrecisionRate(metrics.getBigDecimal("precision"));
+                        task.setRecallRate(metrics.getBigDecimal("recall"));
+                        task.setF1Score(metrics.getBigDecimal("f1"));
+                        task.setAuc(metrics.getBigDecimal("auc"));
+                        if (metrics.containsKey("confusionMatrix")) {
+                            task.setConfusionMatrix(metrics.getString("confusionMatrix"));
+                        }
+                        metricsParsed = true;
+                        log.info("已解析训练指标: acc={}, loss={}, precision={}, recall={}, f1={}, auc={}",
+                                metrics.get("accuracy"), metrics.get("loss"),
+                                metrics.get("precision"), metrics.get("recall"), metrics.get("f1"), metrics.get("auc"));
+                    } catch (Exception e) {
+                        log.warn("解析训练指标JSON失败: {}", e.getMessage());
+                    }
+                    break;
+                }
+            }
+
+            if (!metricsParsed) {
+                log.warn("未从Python输出中解析到训练指标，使用默认值");
+                task.setAccuracy(java.math.BigDecimal.valueOf(0.0));
+                task.setLoss(java.math.BigDecimal.valueOf(0.0));
+                task.setRecallRate(java.math.BigDecimal.valueOf(0.0));
+                task.setPrecisionRate(java.math.BigDecimal.valueOf(0.0));
+                task.setF1Score(java.math.BigDecimal.valueOf(0.0));
+                task.setAuc(java.math.BigDecimal.valueOf(0.0));
+                task.setConfusionMatrix("[]");
+            }
             
             trainTaskMapper.updateById(task);
             
@@ -158,12 +241,67 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
         String modelOutputPath = projectRoot + File.separator + "data" + File.separator + "models" + File.separator + modelName + ".pth";
 
         // 构建完整的命令行参数
-        // 格式: [python, script_path, csv_path, model_output_path]
-        String[] args = new String[4];
-        args[0] = "python";
-        args[1] = pythonScriptPath;
-        args[2] = csvPath;
-        args[3] = modelOutputPath;
+        // 格式: [python, script_path, csv_path, model_output_path, --lr, --epochs, --batch-size]
+        java.util.List<String> argList = new java.util.ArrayList<>();
+        argList.add("python");
+        argList.add(pythonScriptPath);
+        argList.add(csvPath);
+        argList.add(modelOutputPath);
+
+        // 解析超参数并传递给脚本
+        if (task.getHyperParams() != null && !task.getHyperParams().isEmpty()) {
+            try {
+                com.alibaba.fastjson.JSONObject hyperParams = com.alibaba.fastjson.JSON.parseObject(task.getHyperParams());
+                if (hyperParams.containsKey("learningRate") && hyperParams.get("learningRate") != null) {
+                    argList.add("--lr");
+                    argList.add(hyperParams.getString("learningRate"));
+                }
+                if (hyperParams.containsKey("epochs") && hyperParams.get("epochs") != null) {
+                    argList.add("--epochs");
+                    argList.add(hyperParams.getString("epochs"));
+                }
+                if (hyperParams.containsKey("batchSize") && hyperParams.get("batchSize") != null) {
+                    argList.add("--batch-size");
+                    argList.add(hyperParams.getString("batchSize"));
+                }
+
+                // 增量训练参数
+                String scriptName = task.getPythonScript() != null ? task.getPythonScript().toLowerCase() : "";
+                if (scriptName.contains("incremental") && hyperParams.containsKey("incrementalParams")) {
+                    com.alibaba.fastjson.JSONObject incParams = hyperParams.getJSONObject("incrementalParams");
+
+                    if (incParams.containsKey("baseModelId") && incParams.get("baseModelId") != null) {
+                        Integer baseModelId = incParams.getInteger("baseModelId");
+                        ModelVersion baseModel = modelVersionMapper.selectById(baseModelId);
+                        if (baseModel != null && baseModel.getFilePath() != null) {
+                            argList.add("--base-model");
+                            argList.add(baseModel.getFilePath());
+                            log.info("增量训练基础模型: {}", baseModel.getFilePath());
+                        } else {
+                            throw new RuntimeException("基础模型不存在或路径为空，ID: " + baseModelId);
+                        }
+                    }
+
+                    if (incParams.containsKey("reusePreprocessor") && incParams.getBooleanValue("reusePreprocessor")) {
+                        argList.add("--reuse-preprocessor");
+                    }
+
+                    if (incParams.containsKey("freezeLayers") && incParams.getString("freezeLayers") != null) {
+                        String freezeLayers = incParams.getString("freezeLayers");
+                        if (!"none".equals(freezeLayers)) {
+                            argList.add("--freeze-layers");
+                            argList.add(freezeLayers);
+                        }
+                    }
+                }
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                log.warn("解析超参数失败，使用默认值: {}", e.getMessage());
+            }
+        }
+
+        String[] args = argList.toArray(new String[0]);
         
         log.info("构建训练参数:");
         for (int i = 0; i < args.length; i++) {
@@ -206,6 +344,8 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
             if (task.getRecallRate() != null) metrics.put("recallRate", task.getRecallRate());
             if (task.getPrecisionRate() != null) metrics.put("precisionRate", task.getPrecisionRate());
             if (task.getF1Score() != null) metrics.put("f1Score", task.getF1Score());
+            if (task.getAuc() != null) metrics.put("auc", task.getAuc());
+            if (task.getConfusionMatrix() != null) metrics.put("confusionMatrix", task.getConfusionMatrix());
             modelVersion.setMetrics(JSONUtil.toJsonStr(metrics));
             
             modelVersion.setStatus("inactive");

@@ -13,13 +13,109 @@ import torch.nn as nn
 from datetime import datetime
 import io
 import traceback
+import yaml
 
-# ==========================================
-# 【配置区域】请确保此处路径与 Java 配置一致
-# ==========================================
-# 注意：如果你的 Java 配置改了路径，这里也需要同步修改，或者最好由 Java 传入该路径
-# OUTPUT_DIRECTORY = r'D:\Software-DZL125\json'
-OUTPUT_DIRECTORY = os.path.join(os.getcwd(), 'data', 'json')
+def get_project_root():
+    """获取项目根目录"""
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def load_config():
+    """从 application.yml 和 application-secrets.yml 加载配置"""
+    project_root = get_project_root()
+    config = {}
+    
+    # 读取主配置文件
+    main_config_path = os.path.join(project_root, 'src', 'main', 'resources', 'application.yml')
+    secrets_config_path = os.path.join(project_root, 'src', 'main', 'resources', 'secrets', 'application-secrets.yml')
+    
+    try:
+        if os.path.exists(main_config_path):
+            with open(main_config_path, 'r', encoding='utf-8') as f:
+                main_config = yaml.safe_load(f)
+                if main_config:
+                    config.update(main_config)
+        
+        if os.path.exists(secrets_config_path):
+            with open(secrets_config_path, 'r', encoding='utf-8') as f:
+                secrets_config = yaml.safe_load(f)
+                if secrets_config:
+                    # 合并配置，secrets_config 优先
+                    for key, value in secrets_config.items():
+                        if isinstance(value, dict) and key in config and isinstance(config[key], dict):
+                            config[key].update(value)
+                        else:
+                            config[key] = value
+    except Exception as e:
+        print(f"[警告] 读取配置文件失败: {e}")
+    
+    return config
+
+def get_config_value(config, *keys, default=None):
+    """从配置字典中获取嵌套值"""
+    current = config
+    for key in keys:
+        if isinstance(current, dict) and key in current:
+            current = current[key]
+        else:
+            return default
+    return current
+
+# 加载配置
+CONFIG = load_config()
+
+# 从配置中获取数据库信息
+def parse_database_url(url):
+    """从 JDBC URL 中解析数据库连接信息"""
+    if not url:
+        return {}
+    
+    # 移除 jdbc:mysql:// 前缀
+    if 'mysql://' in url:
+        url = url.split('mysql://')[1]
+    
+    # 分离主机:端口 和 数据库名?参数
+    if '/' in url:
+        host_port, db_params = url.split('/', 1)
+    else:
+        host_port = url
+        db_params = ''
+    
+    # 解析主机和端口
+    if ':' in host_port:
+        host, port = host_port.split(':', 1)
+        try:
+            port = int(port)
+        except ValueError:
+            port = 3306
+    else:
+        host = host_port
+        port = 3306
+    
+    # 解析数据库名
+    database = db_params.split('?')[0] if db_params else 'dongfang'
+    
+    return {
+        'host': host,
+        'port': port,
+        'database': database
+    }
+
+# 从配置中获取数据库 URL
+datasource_url = get_config_value(CONFIG, 'spring', 'datasource', 'url', default='jdbc:mysql://127.0.0.1:3306/dongfang')
+db_info = parse_database_url(datasource_url)
+
+DB_CONFIG = {
+    'host': db_info.get('host', '127.0.0.1'),
+    'port': db_info.get('port', 3306),
+    'user': get_config_value(CONFIG, 'spring', 'datasource', 'username', default='root'),
+    'password': get_config_value(CONFIG, 'spring', 'datasource', 'password', default='010125'),
+    'database': db_info.get('database', 'dongfang'),
+    'charset': 'utf8'
+}
+
+# 从配置中获取文件路径
+PROJECT_ROOT = get_project_root()
+OUTPUT_DIRECTORY = os.path.join(PROJECT_ROOT, 'data', 'json')
 # 定义和训练脚本一致的模型结构
 class DiabetesModel(nn.Module):
     def __init__(self, input_dim):
@@ -55,6 +151,30 @@ def write_error_json(filepath, error_msg, debug_info=None):
     except Exception as e:
         print(f"[严重] 连错误文件都无法写入：{str(e)}")
 
+def resolve_path(path, base_dir=None):
+    """解析路径，支持相对路径和绝对路径"""
+    if not path:
+        return path
+    
+    # 如果是绝对路径，直接返回
+    if os.path.isabs(path):
+        return path
+    
+    # 如果没有指定基础目录，使用项目根目录
+    if base_dir is None:
+        base_dir = PROJECT_ROOT
+    
+    # 处理相对路径
+    if path.startswith('./') or path.startswith('.\\'):
+        # 相对于当前工作目录
+        return os.path.abspath(path)
+    elif path.startswith('/') or path.startswith('\\') or ':' in path:
+        # 绝对路径（Unix 或 Windows）
+        return path
+    else:
+        # 相对于基础目录
+        return os.path.join(base_dir, path)
+
 def main():
     print("[开始] Python 预测脚本执行")
     print("[时间] 当前时间：", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -75,10 +195,10 @@ def main():
             pass
         sys.exit(1)
 
-    predict_file_path = sys.argv[1]
+    predict_file_path = resolve_path(sys.argv[1])
     predict_json_name = sys.argv[2]
     prediction_title = sys.argv[3]
-    model_path = sys.argv[4]
+    model_path = resolve_path(sys.argv[4])
 
     # 2. 准备输出路径
     if not os.path.exists(OUTPUT_DIRECTORY):
@@ -102,6 +222,9 @@ def main():
     print(f"[成功] 输入文件存在：{predict_file_path}")
 
     # 4. 验证模型文件（支持分类路径）
+    print(f"[调试] 模型路径: {model_path}")
+    print(f"[调试] 模型路径是否存在: {os.path.exists(model_path)}")
+    
     # 先检查传入的 model_path 是否直接存在
     model_exists = os.path.exists(model_path)
     
@@ -279,13 +402,14 @@ def main():
         file_basename = os.path.basename(predict_file_path)
         url = f"http://localhost:9090/DataTest/{file_basename}"
 
+        # 使用配置中的数据库信息
         conn = pymysql.connect(
-            host='127.0.0.1',
-            port=3306,
-            user='root',
-            password='010125', # ⚠️ 请确认密码是否正确
-            database='dongfang',
-            charset='utf8'
+            host=DB_CONFIG['host'],
+            port=DB_CONFIG['port'],
+            user=DB_CONFIG['user'],
+            password=DB_CONFIG['password'],
+            database=DB_CONFIG['database'],
+            charset=DB_CONFIG['charset']
         )
         cursor = conn.cursor()
 

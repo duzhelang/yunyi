@@ -301,6 +301,8 @@ CREATE TABLE `sys_train_task` (
   `recall_rate` decimal(10,6) NULL DEFAULT NULL COMMENT '召回率',
   `precision_rate` decimal(10,6) NULL DEFAULT NULL COMMENT '精确率',
   `f1_score` decimal(10,6) NULL DEFAULT NULL COMMENT 'F1分数',
+  `auc` decimal(10,6) NULL DEFAULT NULL COMMENT 'AUC曲线下面积',
+  `confusion_matrix` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '混淆矩阵JSON格式 [[TN,FP],[FN,TP]]',
   `log_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '训练日志路径',
   `model_output_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模型输出路径',
   `python_script` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '使用的Python训练脚本文件名',
@@ -317,10 +319,10 @@ CREATE TABLE `sys_train_task` (
 -- ----------------------------
 -- Records of sys_train_task (预置数据)
 -- ----------------------------
-INSERT INTO `sys_train_task` (`id`, `task_name`, `train_file_id`, `train_file_name`, `model_name`, `hyper_params`, `status`, `accuracy`, `loss`, `recall_rate`, `precision_rate`, `f1_score`, `log_path`, `model_output_path`, `python_script`, `create_time`, `start_time`, `end_time`) VALUES 
-(1, '糖尿病预测模型V1训练', 1, 'diabetes_train_dataset.csv', 'diabetes_model', '{\"epochs\": 100, \"batch_size\": 32, \"learning_rate\": 0.001}', 'completed', 0.875000, 0.325000, 0.850000, 0.890000, 0.870000, 'logs/train/task_1.log', 'models/diabetes_model_v1.pth', 'python/train/diabetes_train.py', '2026-03-02 09:00:00', '2026-03-02 09:05:00', '2026-03-02 10:30:00'),
-(2, '扩展特征模型训练', 2, 'diabetes_features_extended.csv', 'diabetes_model', '{\"epochs\": 150, \"batch_size\": 64, \"learning_rate\": 0.0005}', 'completed', 0.892000, 0.298000, 0.875000, 0.908000, 0.891000, 'logs/train/task_2.log', 'models/diabetes_model_v2.pth', 'python/train/feature_extract.py', '2026-03-16 14:00:00', '2026-03-16 14:05:00', '2026-03-16 16:45:00'),
-(3, '历史数据分析模型', 3, 'patient_history_data.csv', 'history_model', '{\"epochs\": 80, \"batch_size\": 16, \"learning_rate\": 0.002}', 'running', NULL, NULL, NULL, NULL, NULL, 'logs/train/task_3.log', NULL, 'python/train/history_analysis.py', '2026-03-21 10:00:00', '2026-03-21 10:05:00', NULL);
+INSERT INTO `sys_train_task` (`id`, `task_name`, `train_file_id`, `train_file_name`, `model_name`, `hyper_params`, `status`, `accuracy`, `loss`, `recall_rate`, `precision_rate`, `f1_score`, `auc`, `confusion_matrix`, `log_path`, `model_output_path`, `python_script`, `create_time`, `start_time`, `end_time`) VALUES 
+(1, '糖尿病预测模型V1训练', 1, 'diabetes_train_dataset.csv', 'diabetes_model', '{\"epochs\": 100, \"batch_size\": 32, \"learning_rate\": 0.001}', 'completed', 0.875000, 0.325000, 0.850000, 0.890000, 0.870000, 0.920000, '[[95,5],[12,88]]', 'logs/train/task_1.log', 'models/diabetes_model_v1.pth', 'python/train/diabetes_train.py', '2026-03-02 09:00:00', '2026-03-02 09:05:00', '2026-03-02 10:30:00'),
+(2, '扩展特征模型训练', 2, 'diabetes_features_extended.csv', 'diabetes_model', '{\"epochs\": 150, \"batch_size\": 64, \"learning_rate\": 0.0005}', 'completed', 0.892000, 0.298000, 0.875000, 0.908000, 0.891000, 0.935000, '[[190,10],[24,176]]', 'logs/train/task_2.log', 'models/diabetes_model_v2.pth', 'python/train/feature_extract.py', '2026-03-16 14:00:00', '2026-03-16 14:05:00', '2026-03-16 16:45:00'),
+(3, '历史数据分析模型', 3, 'patient_history_data.csv', 'history_model', '{\"epochs\": 80, \"batch_size\": 16, \"learning_rate\": 0.002}', 'running', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'logs/train/task_3.log', NULL, 'python/train/history_analysis.py', '2026-03-21 10:00:00', '2026-03-21 10:05:00', NULL);
 
 -- ----------------------------
 -- Table structure for sys_model_version

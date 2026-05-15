@@ -96,12 +96,13 @@ public class UsePythonUtils {
         }
     }
 
-    // 带回调的Python调用方法
-    public static void callPythonWithCallback(String processId, String[] arguments, PythonOutputCallback callback) throws IOException, InterruptedException {
+    // 带回调的Python调用方法，返回捕获的标准输出
+    public static String callPythonWithCallback(String processId, String[] arguments, PythonOutputCallback callback) throws IOException, InterruptedException {
         if (arguments == null || arguments.length == 0) {
             throw new IllegalArgumentException("调用参数不能为空");
         }
 
+        StringBuilder capturedOutput = new StringBuilder();
         Process process = null;
         try {
             process = Runtime.getRuntime().exec(arguments, getUtf8Environment());
@@ -113,6 +114,7 @@ public class UsePythonUtils {
             ) {
                 String line;
                 while ((line = stdoutReader.readLine()) != null) {
+                    capturedOutput.append(line).append("\n");
                     if (callback != null) {
                         callback.onOutput(line, false);
                     }
@@ -139,6 +141,7 @@ public class UsePythonUtils {
                 process.destroy();
             }
         }
+        return capturedOutput.toString().trim();
     }
 
     // 原调用方法保留(用于其他场景)
