@@ -55,10 +55,12 @@
             <div class="family-radio-row">
               <el-radio-group v-model="familyHistoryType">
                 <el-radio value="simple">快速选择</el-radio>
-                <el-radio value="precise">精确计算 (DPF)</el-radio>
               </el-radio-group>
+              <el-button type="primary" link class="family-dpf-link" @click="goToDpfCalculator">
+                精确计算 (DPF) <el-icon><ArrowRight /></el-icon>
+              </el-button>
             </div>
-            <div v-if="familyHistoryType === 'simple'" class="family-simple-row">
+            <div class="family-simple-row">
               <el-radio-group v-model="familyHistorySimple">
                 <el-radio value="无">无</el-radio>
                 <el-radio value="有">有</el-radio>
@@ -66,15 +68,6 @@
               <span class="family-precision-warning">
                 <el-icon><Warning /></el-icon> 选"有/无"会丢失遗传风险精度
               </span>
-            </div>
-            <div v-else class="family-precise-row">
-              <div class="family-dpf-group">
-                <el-input-number v-model="store.diabetesPedigreeFunction" :precision="3" :step="0.01" :min="0.08" :max="2.42" controls-position="right" style="width: 180px" />
-                <el-button type="primary" plain size="small" @click="goToDpfCalculator">
-                  精确计算
-                </el-button>
-              </div>
-              <span class="family-dpf-value">当前 DPF: {{ store.diabetesPedigreeFunction.toFixed(3) }}</span>
             </div>
           </div>
         </el-form-item>
@@ -323,7 +316,7 @@ const showPercentileRanking = ref(false)
 const previewDialogVisible = ref(false)
 const previewImage = ref('')
 const previewTitle = ref('')
-const familyHistoryType = ref('precise')
+const familyHistoryType = ref('simple')
 const familyHistorySimple = ref('无')
 
 const showECharts = ref(false)
@@ -1816,11 +1809,22 @@ function downloadReport() {
 }
 
 .family-radio-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   margin-bottom: 8px;
 }
 
 .family-radio-row .el-radio-group .el-radio {
   margin-right: 16px;
+}
+
+.family-dpf-link {
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .family-simple-row {

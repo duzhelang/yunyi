@@ -3,14 +3,26 @@
     <!-- 粒子背景 -->
     <div class="particles-bg" ref="particlesBg"></div>
     
+    <!-- 导航栏 -->
+    <nav class="about-nav">
+      <div class="nav-content">
+        <router-link to="/" class="nav-brand">
+          <span class="brand-icon">☁️</span>
+          <span class="brand-text">云医智护</span>
+        </router-link>
+        <div class="nav-links">
+          <router-link to="/" class="nav-link">
+            <el-icon><HomeFilled /></el-icon>
+            <span>返回首页</span>
+          </router-link>
+        </div>
+      </div>
+    </nav>
+
     <!-- 主内容区 -->
     <div class="main-content">
       <!-- 英雄区域 -->
       <section class="hero-section">
-        <div class="hero-badge">
-          <span class="badge-dot"></span>
-          <span>关于系统</span>
-        </div>
         <h1 class="hero-title">
           <span class="title-line">云医智护</span>
           <span class="title-highlight">糖尿病诊断系统</span>
@@ -118,7 +130,7 @@
               </div>
               <div class="contact-item">
                 <el-icon><Location /></el-icon>
-                <span>北京市海淀区中关村科技园</span>
+                <span>科技园</span>
               </div>
             </div>
           </div>
@@ -144,11 +156,23 @@
         </div>
       </footer>
     </div>
+
+    <!-- 返回顶部按钮 -->
+    <transition name="fade">
+      <div 
+        v-show="showBackToTop" 
+        class="back-to-top"
+        @click="scrollToTop"
+      >
+        <el-icon :size="20"><Top /></el-icon>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { 
   DataAnalysis, 
   Cpu, 
@@ -159,13 +183,17 @@ import {
   ArrowRight,
   Message,
   Phone,
-  Location
+  Location,
+  HomeFilled,
+  Top
 } from '@element-plus/icons-vue'
 
+const router = useRouter()
 const activeFeature = ref(-1)
 const activeTeamMember = ref(-1)
 const hoveredTech = ref('')
 const particlesBg = ref(null)
+const showBackToTop = ref(false)
 
 const stats = ref([
   { value: '98.7%', label: '预测准确率' },
@@ -285,6 +313,19 @@ const teamMembers = ref([
   }
 ])
 
+// 返回顶部
+const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  })
+}
+
+// 监听滚动事件
+const handleScroll = () => {
+  showBackToTop.value = window.scrollY > 300
+}
+
 // 粒子动画
 let animationId = null
 let particles = []
@@ -361,12 +402,14 @@ const initParticles = () => {
 
 onMounted(() => {
   initParticles()
+  window.addEventListener('scroll', handleScroll)
 })
 
 onUnmounted(() => {
   if (animationId) {
     cancelAnimationFrame(animationId)
   }
+  window.removeEventListener('scroll', handleScroll)
 })
 </script>
 
@@ -389,12 +432,119 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
+/* 导航栏 */
+.about-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #ffffff;
+  transition: opacity 0.3s ease;
+}
+
+.nav-brand:hover {
+  opacity: 0.8;
+}
+
+.brand-icon {
+  font-size: 24px;
+}
+
+.brand-text {
+  font-size: 18px;
+  font-weight: 600;
+  background: linear-gradient(90deg, #5eead4 0%, #4facfe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav-links {
+  display: flex;
+  gap: 24px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+
+.nav-link:hover {
+  color: #5eead4;
+  background: rgba(94, 234, 212, 0.1);
+}
+
+.nav-link .el-icon {
+  font-size: 16px;
+}
+
+/* 返回顶部按钮 */
+.back-to-top {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #5eead4 0%, #4facfe 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #0f172a;
+  box-shadow: 0 4px 12px rgba(94, 234, 212, 0.3);
+  transition: all 0.3s ease;
+  z-index: 100;
+}
+
+.back-to-top:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(94, 234, 212, 0.4);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 .main-content {
   position: relative;
   z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 60px 40px;
+  padding: 80px 40px 60px;
 }
 
 /* 英雄区域 */
@@ -402,32 +552,6 @@ onUnmounted(() => {
   text-align: center;
   padding: 80px 0 60px;
   position: relative;
-}
-
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(94, 234, 212, 0.1);
-  border: 1px solid rgba(94, 234, 212, 0.3);
-  border-radius: 20px;
-  padding: 6px 16px;
-  font-size: 14px;
-  color: #5eead4;
-  margin-bottom: 24px;
-}
-
-.badge-dot {
-  width: 6px;
-  height: 6px;
-  background: #5eead4;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
 }
 
 .hero-title {
@@ -848,8 +972,20 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
+  .nav-content {
+    padding: 12px 20px;
+  }
+  
+  .nav-link span {
+    display: none;
+  }
+  
+  .nav-link {
+    padding: 8px;
+  }
+  
   .main-content {
-    padding: 40px 20px;
+    padding: 70px 20px 40px;
   }
   
   .hero-title {
@@ -876,6 +1012,13 @@ onUnmounted(() => {
     flex-direction: column;
     gap: 16px;
     text-align: center;
+  }
+  
+  .back-to-top {
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
   }
 }
 </style>

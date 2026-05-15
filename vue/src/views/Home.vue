@@ -15,10 +15,12 @@
 								<span class="greeting-wave">👋</span>
 								<span class="greeting-text">Hi, {{ user.nickname || user.username }}</span>
 							</div>
+							<el-tooltip content="进入个人中心" placement="bottom" :show-after="300">
 							<div class="user-avatar" @click="goToPerson">
 								<span class="avatar-emoji">🧑‍⚕️</span>
 								<span class="avatar-ring"></span>
 							</div>
+						</el-tooltip>
 						</template>
 						<template v-else>
 							<div class="login-prompt" @click="goToLogin">
