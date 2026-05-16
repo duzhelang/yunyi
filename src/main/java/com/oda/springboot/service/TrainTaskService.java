@@ -373,9 +373,105 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
     }
 
     /**
-     * 删除训练任务
+     * 删除训练任务（同时删除关联的模型文件和模型版本记录）
      */
     public boolean deleteTask(Integer taskId) {
-        return trainTaskMapper.deleteById(taskId) > 0;
+        TrainTask task = trainTaskMapper.selectById(taskId);
+        if (task == null) {
+            log.warn("训练任务不存在，ID: {}", taskId);
+            return false;
+        }
+        
+        String modelName = task.getModelName();
+        
+        // 删除关联的模型文件
+        if (modelName != null && !modelName.isEmpty()) {
+            deleteModelFiles(modelName);
+        }
+        
+        // 删除关联的模型版本记录
+        if (modelName != null && !modelName.isEmpty()) {
+            deleteModelVersionRecords(modelName);
+        }
+        
+        // 删除训练任务记录
+        int result = trainTaskMapper.deleteById(taskId);
+        if (result > 0) {
+            log.info("训练任务已删除，ID: {}, 模型名称: {}", taskId, modelName);
+            return true;
+        } else {
+            log.error("删除训练任务失败，ID: {}", taskId);
+            return false;
+        }
+    }
+    
+    /**
+     * 删除模型文件（.pth、_scaler.pkl、_encoder.pkl、_background.npy）
+     */
+    private void deleteModelFiles(String modelName) {
+        String projectRoot = System.getProperty("user.dir");
+        String modelsBasePath = projectRoot + File.separator + "data" + File.separator + "models";
+        
+        // 模型权重文件路径
+        String pthPath = modelsBasePath + File.separator + "pth_models" + File.separator + modelName + ".pth";
+        // 标准化器文件路径
+        String scalerPath = modelsBasePath + File.separator + "pkl_files" + File.separator + modelName + "_scaler.pkl";
+        // 编码器文件路径
+        String encoderPath = modelsBasePath + File.separator + "pkl_files" + File.separator + modelName + "_encoder.pkl";
+        // SHAP背景数据文件路径
+        String backgroundPath = modelsBasePath + File.separator + "npy_data" + File.separator + modelName + "_background.npy";
+        
+        // 删除文件
+        deleteFileIfExists(pthPath, "模型权重文件");
+        deleteFileIfExists(scalerPath, "标准化器文件");
+        deleteFileIfExists(encoderPath, "编码器文件");
+        deleteFileIfExists(backgroundPath, "SHAP背景数据文件");
+    }
+    
+    /**
+     * 删除单个文件（如果存在）
+     */
+    private void deleteFileIfExists(String filePath, String fileType) {
+        File file = new File(filePath);
+        if (file.exists()) {
+            if (file.delete()) {
+                log.info("已删除{}: {}", fileType, filePath);
+            } else {
+                log.error("删除{}失败: {}", fileType, filePath);
+            }
+        } else {
+            log.debug("{}不存在: {}", fileType, filePath);
+        }
+    }
+    
+    /**
+     * 删除模型版本记录（仅删除非激活状态的记录）
+     */
+    private void deleteModelVersionRecords(String modelName) {
+        try {
+            LambdaQueryWrapper<ModelVersion> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(ModelVersion::getModelName, modelName)
+                       .ne(ModelVersion::getStatus, "active");
+            
+            java.util.List<ModelVersion> versions = modelVersionMapper.selectList(queryWrapper);
+            
+            if (versions.isEmpty()) {
+                log.info("未找到可删除的模型版本记录，模型名称: {}", modelName);
+                return;
+            }
+            
+            for (ModelVersion version : versions) {
+                try {
+                    modelVersionMapper.deleteById(version.getId());
+                    log.info("已删除模型版本记录，ID: {}, 版本: {}", version.getId(), version.getVersion());
+                } catch (Exception e) {
+                    log.error("删除模型版本记录失败，ID: {}", version.getId(), e);
+                }
+            }
+            
+            log.info("已删除模型版本记录，模型名称: {}, 删除数量: {}", modelName, versions.size());
+        } catch (Exception e) {
+            log.error("查询模型版本记录失败，模型名称: {}", modelName, e);
+        }
     }
 }

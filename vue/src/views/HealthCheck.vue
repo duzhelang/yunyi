@@ -126,7 +126,7 @@
     </div>
 
     <!-- 结果对话框 -->
-    <el-dialog v-model="resultDialogVisible" width="1200px" :close-on-click-modal="false" custom-class="result-dialog" :show-close="true">
+    <el-dialog v-model="resultDialogVisible" width="1200px" :close-on-click-modal="false" custom-class="result-dialog" :show-close="true" append-to-body>
       <div class="result-container">
         <div class="result-header" :class="riskLevelClass">
           <div class="result-header-main">
@@ -331,11 +331,6 @@ const chartItems = [
   { title: '因素贡献', key: 'waterfall' }
 ]
 
-const gaugeChartRef = ref(null)
-const radarChartRef = ref(null)
-const waterfallChartRef = ref(null)
-const comparisonChartRef = ref(null)
-
 const riskLevelClass = computed(() => getRiskClass(store.riskLevel))
 
 onMounted(() => {
@@ -354,10 +349,8 @@ function showResult() {
 function initECharts() {
   showECharts.value = true
   nextTick(() => {
-    const gaugeChart = gaugeChartRef.value ? echarts.init(gaugeChartRef.value) : null
-    const radarChart = radarChartRef.value ? echarts.init(radarChartRef.value) : null
-    const waterfallChart = waterfallChartRef.value ? echarts.init(waterfallChartRef.value) : null
-    const comparisonChart = comparisonChartRef.value ? echarts.init(comparisonChartRef.value) : null
+    const chartInstances = chartRefs.value.map(el => el ? echarts.init(el) : null)
+    const [gaugeChart, radarChart, comparisonChart, waterfallChart] = chartInstances
 
     if (gaugeChart) {
       const riskColor = store.riskProbability >= 60 ? '#F56C6C' : store.riskProbability >= 30 ? '#E6A23C' : '#67C23A'
@@ -625,7 +618,6 @@ function initECharts() {
     
     // 生成缩略图
     setTimeout(() => {
-      const chartInstances = [gaugeChart, radarChart, comparisonChart, waterfallChart]
       thumbnails.value = chartInstances.map(chart => {
         if (chart) {
           try {
@@ -646,10 +638,9 @@ function initECharts() {
 }
 
 function handleResize() {
-  const charts = [gaugeChartRef, radarChartRef, waterfallChartRef, comparisonChartRef]
-  charts.forEach(ref => {
-    if (ref.value) {
-      const chart = echarts.getInstanceByDom(ref.value)
+  chartRefs.value.forEach(el => {
+    if (el) {
+      const chart = echarts.getInstanceByDom(el)
       chart?.resize()
     }
   })

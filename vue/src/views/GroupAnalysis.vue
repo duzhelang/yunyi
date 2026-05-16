@@ -4,7 +4,14 @@
 
     <!-- 患者选择卡片 -->
     <div style="margin: 20px 0">
-      <el-card shadow="hover" class="feature-card">
+      <el-card shadow="hover" class="feature-card" style="position: relative;">
+        <ProgressOverlay 
+          :visible="loading"
+          title="正在进行群体分析"
+          :steps="groupAnalysisSteps"
+          :hints="groupAnalysisHints"
+          color="#409eff"
+        />
         <template #header>
           <div class="card-header">
             <span>患者选择</span>
@@ -354,6 +361,21 @@ import { DataAnalysis, Download, Delete, Clock, User, InfoFilled, PieChart, Tren
 import * as echarts from 'echarts'
 import request from '@/utils/request'
 import { CacheHelper } from '@/utils/cacheHelper'
+import ProgressOverlay from '@/components/common/ProgressOverlay.vue'
+
+const groupAnalysisSteps = [
+  '校验患者信息',
+  '提取健康特征',
+  'AI模型推理',
+  '汇总分析结果'
+]
+
+const groupAnalysisHints = [
+  '正在验证所选患者档案的完整性...',
+  '正在提取血糖、BMI、血压等关键健康指标...',
+  '正在调用AI模型进行风险评估，请耐心等待...',
+  '正在计算风险分布和特征重要性...'
+]
 
 // ========== 响应式数据 ==========
 const selectedProfileIds = ref([])

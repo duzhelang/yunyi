@@ -57,22 +57,35 @@ public class SinglePredictServiceImpl implements ISinglePredictService {
 				return Result.error("503", "Python环境未就绪，请联系管理员");
 			}
 
-			String modelBasePath = getActiveModelBasePath();
+			Map<String, String> modelPaths = getActiveModelPaths();
+			String modelBasePath = modelPaths.get("modelBasePath");
 
-			String[] arguments = new String[]{
-					pythonExe,
-					pythonScript,
-					String.valueOf(pregnancies),
-					String.valueOf(glucose),
-					String.valueOf(bloodPressure),
-					String.valueOf(skinThickness),
-					String.valueOf(insulin),
-					String.valueOf(bmi),
-					String.valueOf(diabetesPedigreeFunction),
-					String.valueOf(age),
-					"--model",
-					modelBasePath
-			};
+			java.util.List<String> argList = new java.util.ArrayList<>();
+			argList.add(pythonExe);
+			argList.add(pythonScript);
+			argList.add(String.valueOf(pregnancies));
+			argList.add(String.valueOf(glucose));
+			argList.add(String.valueOf(bloodPressure));
+			argList.add(String.valueOf(skinThickness));
+			argList.add(String.valueOf(insulin));
+			argList.add(String.valueOf(bmi));
+			argList.add(String.valueOf(diabetesPedigreeFunction));
+			argList.add(String.valueOf(age));
+			argList.add("--model");
+			argList.add(modelBasePath);
+
+			String scalerPath = modelPaths.get("scalerPath");
+			String encoderPath = modelPaths.get("encoderPath");
+			if (scalerPath != null && !scalerPath.isEmpty()) {
+				argList.add("--scaler");
+				argList.add(scalerPath);
+			}
+			if (encoderPath != null && !encoderPath.isEmpty()) {
+				argList.add("--encoder");
+				argList.add(encoderPath);
+			}
+
+			String[] arguments = argList.toArray(new String[0]);
 
 			String output = callPythonWithTimeout(arguments, 30);
 
@@ -198,7 +211,9 @@ public class SinglePredictServiceImpl implements ISinglePredictService {
 		return defaultValue;
 	}
 
-	private String getActiveModelBasePath() {
+	private Map<String, String> getActiveModelPaths() {
+		Map<String, String> paths = new HashMap<>();
+		String defaultBasePath = basePath + "data/models/pth_models/diabetes_model";
 		try {
 			ModelVersion activeModel = modelVersionService.getActiveModel();
 			if (activeModel != null && activeModel.getFilePath() != null) {
@@ -209,11 +224,32 @@ public class SinglePredictServiceImpl implements ISinglePredictService {
 				if (!new File(filePath).isAbsolute()) {
 					filePath = basePath + filePath;
 				}
-				return filePath;
+				paths.put("modelBasePath", filePath);
+
+				String scalerPath = activeModel.getScalerPath();
+				if (scalerPath != null && !scalerPath.isEmpty()) {
+					if (!new File(scalerPath).isAbsolute()) {
+						scalerPath = basePath + scalerPath;
+					}
+					paths.put("scalerPath", scalerPath);
+				}
+
+				String encoderPath = activeModel.getEncoderPath();
+				if (encoderPath != null && !encoderPath.isEmpty()) {
+					if (!new File(encoderPath).isAbsolute()) {
+						encoderPath = basePath + encoderPath;
+					}
+					paths.put("encoderPath", encoderPath);
+				}
+
+				log.info("激活模型路径 - base: {}, scaler: {}, encoder: {}",
+						filePath, scalerPath, encoderPath);
+				return paths;
 			}
 		} catch (Exception e) {
-			// 忽略异常，使用默认路径
+			log.warn("获取激活模型路径失败，使用默认路径", e);
 		}
-		return basePath + "python/diabetes_model";
+		paths.put("modelBasePath", defaultBasePath);
+		return paths;
 	}
 }

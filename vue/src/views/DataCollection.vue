@@ -27,7 +27,14 @@
       </el-col>
 
       <el-col :xs="24" :lg="12">
-        <el-card shadow="hover">
+        <el-card shadow="hover" style="position: relative;">
+          <ProgressOverlay 
+            :visible="preprocessing"
+            title="数据预处理中"
+            :steps="preprocessSteps"
+            :hints="preprocessHints"
+            color="#409eff"
+          />
           <template #header>
             <div class="card-header">
               <span>数据预处理</span>
@@ -118,7 +125,7 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="previewVisible" title="数据预览" width="800px">
+    <el-dialog v-model="previewVisible" title="数据预览" width="800px" append-to-body>
       <el-table :data="previewRows" border max-height="400">
         <el-table-column v-for="col in previewColumns" :key="col" :prop="col" :label="col" min-width="120" show-overflow-tooltip />
       </el-table>
@@ -132,6 +139,21 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Upload, Refresh } from '@element-plus/icons-vue'
 import request from '@/utils/request'
+import ProgressOverlay from '@/components/common/ProgressOverlay.vue'
+
+const preprocessSteps = [
+  '解析文件结构',
+  '处理缺失值',
+  '数据标准化',
+  '生成预处理结果'
+]
+
+const preprocessHints = [
+  '正在读取并解析数据文件...',
+  '正在使用选定策略填充缺失值...',
+  '正在进行数据标准化处理...',
+  '即将完成，请稍候...'
+]
 
 const uploadUrl = '/api/dataset/upload'
 const uploadHeaders = (() => {
@@ -170,7 +192,9 @@ const loadData = async () => {
       dataList.value = res.data?.records || []
       total.value = res.data?.total || 0
     }
-  } catch {} finally {
+  } catch (e) {
+    ElMessage.error('加载数据列表失败')
+  } finally {
     loading.value = false
   }
 }
@@ -181,7 +205,9 @@ const loadAllFiles = async () => {
     if (res.code === '200') {
       fileList.value = res.data || []
     }
-  } catch {}
+  } catch (e) {
+    ElMessage.error('加载文件列表失败')
+  }
 }
 
 const handleUploadSuccess = (res) => {

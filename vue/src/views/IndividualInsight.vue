@@ -3,7 +3,14 @@
     <h2>个体洞察</h2>
 
     <div style="margin: 20px 0">
-      <el-card shadow="hover">
+      <el-card shadow="hover" style="position: relative;">
+        <ProgressOverlay 
+          :visible="loading"
+          title="正在进行个体洞察分析"
+          :steps="analysisSteps"
+          :hints="analysisHints"
+          color="#409eff"
+        />
         <template #header>
           <div class="card-header">
             <span>患者选择</span>
@@ -137,7 +144,14 @@
       </div>
 
       <div style="margin: 20px 0">
-        <el-card shadow="hover">
+        <el-card shadow="hover" style="position: relative;">
+          <ProgressOverlay 
+            :visible="adviceLoading"
+            title="正在生成AI健康建议"
+            :steps="adviceSteps"
+            :hints="adviceHints"
+            color="#67c23a"
+          />
           <template #header>
             <div class="card-header">
               <span>健康建议</span>
@@ -316,6 +330,7 @@ import { Search, Check, Download, Odometer, DataAnalysis, Document, User } from 
 import * as echarts from 'echarts'
 import request from '@/utils/request'
 import { CacheHelper } from '@/utils/cacheHelper'
+import ProgressOverlay from '@/components/common/ProgressOverlay.vue'
 
 const selectedProfileId = ref(null)
 const patientList = ref([])
@@ -324,6 +339,34 @@ const loading = ref(false)
 const adviceLoading = ref(false)
 const healthAdvice = ref(null)
 const reportType = ref('full')
+
+const analysisSteps = [
+  '加载患者档案',
+  '计算风险指标',
+  '生成特征分析',
+  '渲染可视化图表'
+]
+
+const analysisHints = [
+  '正在获取患者健康数据...',
+  '基于机器学习模型计算风险概率...',
+  '分析各特征对风险的贡献度...',
+  '生成仪表盘和趋势图表...'
+]
+
+const adviceSteps = [
+  '分析风险等级',
+  '匹配医学知识库',
+  '生成个性化建议',
+  '整理输出结果'
+]
+
+const adviceHints = [
+  '正在评估当前风险等级...',
+  '从医学知识库中匹配相关建议...',
+  '根据个人情况定制健康方案...',
+  '整理并格式化建议内容...'
+]
 
 // 历史记录相关
 const selectedHistoryId = ref(null)

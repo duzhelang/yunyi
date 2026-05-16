@@ -352,9 +352,9 @@ CREATE TABLE `sys_model_version` (
 -- Records of sys_model_version (预置数据)
 -- ----------------------------
 INSERT INTO `sys_model_version` (`id`, `model_name`, `version`, `source`, `file_path`, `scaler_path`, `encoder_path`, `description`, `metrics`, `status`, `create_time`) VALUES 
-(1, 'diabetes_model', 'v1.0.0', 'online_train', 'data/models/pth_models/diabetes_model.pth', 'data/models/scaler/diabetes_scaler.pkl', 'data/models/encoder/diabetes_encoder.pkl', '基础糖尿病预测模型，使用逻辑回归算法', '{\"accuracy\": 0.85, \"precision\": 0.83, \"recall\": 0.87, \"f1\": 0.85}', 'inactive', '2026-02-20 10:00:00'),
-(2, 'diabetes_model', 'v1.1.0', 'online_train', 'data/models/pth_models/diabetes_model_v1.1.pth', 'data/models/scaler/diabetes_scaler_v1.1.pkl', 'data/models/encoder/diabetes_encoder_v1.1.pkl', '优化版糖尿病预测模型，使用随机森林算法', '{\"accuracy\": 0.875, \"precision\": 0.89, \"recall\": 0.85, \"f1\": 0.87}', 'active', '2026-03-02 10:30:00'),
-(3, 'diabetes_model', 'v2.0.0', 'online_train', 'data/models/pth_models/diabetes_model_v2.0.pth', 'data/models/scaler/diabetes_scaler_v2.0.pkl', 'data/models/encoder/diabetes_encoder_v2.0.pkl', '扩展特征版糖尿病预测模型，使用XGBoost算法', '{\"accuracy\": 0.892, \"precision\": 0.908, \"recall\": 0.875, \"f1\": 0.891}', 'inactive', '2026-03-16 16:45:00');
+(1, 'diabetes_model', 'v1.0.0', 'online_train', 'data/models/pth_models/diabetes_model.pth', 'data/models/pkl_files/diabetes_scaler.pkl', 'data/models/pkl_files/diabetes_encoder.pkl', '基础糖尿病预测模型，使用逻辑回归算法', '{\"accuracy\": 0.85, \"precision\": 0.83, \"recall\": 0.87, \"f1\": 0.85}', 'inactive', '2026-02-20 10:00:00'),
+(2, 'diabetes_model', 'v1.1.0', 'online_train', 'data/models/pth_models/diabetes_model_v1.1.pth', 'data/models/pkl_files/diabetes_scaler_v1.1.pkl', 'data/models/pkl_files/diabetes_encoder_v1.1.pkl', '优化版糖尿病预测模型，使用随机森林算法', '{\"accuracy\": 0.875, \"precision\": 0.89, \"recall\": 0.85, \"f1\": 0.87}', 'active', '2026-03-02 10:30:00'),
+(3, 'diabetes_model', 'v2.0.0', 'online_train', 'data/models/pth_models/diabetes_model_v2.0.pth', 'data/models/pkl_files/diabetes_scaler_v2.0.pkl', 'data/models/pkl_files/diabetes_encoder_v2.0.pkl', '扩展特征版糖尿病预测模型，使用XGBoost算法', '{\"accuracy\": 0.892, \"precision\": 0.908, \"recall\": 0.875, \"f1\": 0.891}', 'inactive', '2026-03-16 16:45:00');
 
 -- ----------------------------
 -- Table structure for diabetes_education

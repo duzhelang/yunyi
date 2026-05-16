@@ -528,7 +528,7 @@
 			},
 			goToAiChat() {
 				if (this.user && this.user.username) {
-					this.$router.push('/chat');
+					this.$router.push('/diabetes/chat');
 				} else {
 					this.$router.push('/login');
 				}

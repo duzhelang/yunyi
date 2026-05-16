@@ -45,6 +45,68 @@ except ImportError:
     print("[警告] scipy 未安装，百分位计算将使用近似算法。可执行: pip install scipy")
 
 # ==========================================
+# 辅助函数：智能查找相关文件
+# ==========================================
+def find_related_file(model_base, file_type):
+    """
+    智能查找与模型相关的 scaler 或 encoder 文件
+    文件命名规则：
+    1. data/models/pkl_files/diabetes_scaler_v1.1.pkl（版本化命名，分目录存储）
+    2. data/models/pth_models/scaler.pkl（通用命名，同目录存储）
+    3. model_base_scaler.pkl（默认拼接）
+    """
+    # 获取模型文件所在目录和基础名称
+    model_dir = os.path.dirname(model_base)
+    model_name = os.path.basename(model_base)
+    
+    # 提取版本号（如 diabetes_model_v2.0 -> v2.0）
+    version = None
+    import re
+    version_match = re.search(r'_v[\d.]+$', model_name)
+    if version_match:
+        version = model_name[version_match.start():]
+    
+    # 构建可能的文件路径列表
+    candidates = []
+    
+    # 1. 版本化命名，分目录存储（data/models/pkl_files/diabetes_scaler_v2.0.pkl）
+    if version:
+        base_name_without_version = model_name[:model_name.rfind('_v')]
+        # 提取模型类型前缀（如 diabetes_model -> diabetes）
+        type_prefix = base_name_without_version.replace('_model', '')
+        versioned_name = f"{type_prefix}_{file_type}{version}.pkl"
+        
+        # 从 pth_models 目录推断上级目录
+        if 'pth_models' in model_dir:
+            parent_dir = os.path.dirname(model_dir)
+            candidates.append(os.path.join(parent_dir, 'pkl_files', versioned_name))
+    else:
+        # 无版本号时，尝试通用命名（data/models/pkl_files/diabetes_scaler.pkl）
+        type_prefix = model_name.replace('_model', '')
+        generic_name = f"{type_prefix}_{file_type}.pkl"
+        
+        if 'pth_models' in model_dir:
+            parent_dir = os.path.dirname(model_dir)
+            candidates.append(os.path.join(parent_dir, 'pkl_files', generic_name))
+    
+    # 2. 通用命名，同目录存储（data/models/pth_models/scaler.pkl）
+    candidates.append(os.path.join(model_dir, f"{file_type}.pkl"))
+    
+    # 3. 默认拼接（model_base_scaler.pkl）
+    candidates.append(f"{model_base}_{file_type}.pkl")
+    
+    # 4. 同目录下带模型名前缀
+    candidates.append(os.path.join(model_dir, f"{model_name}_{file_type}.pkl"))
+    
+    # 查找第一个存在的文件
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            return candidate
+    
+    # 如果都不存在，返回默认拼接路径
+    return f"{model_base}_{file_type}.pkl"
+
+# ==========================================
 # 模型结构定义（必须与训练脚本一致）
 # ==========================================
 class DiabetesModel(nn.Module):
@@ -797,8 +859,10 @@ def main():
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
         sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
-    # 1. 参数解析（支持可选的 --model、--charts、--mc-iterations 参数）
+    # 1. 参数解析（支持可选的 --model、--scaler、--encoder、--charts、--mc-iterations 参数）
     model_base = None
+    custom_scaler_path = None
+    custom_encoder_path = None
     generate_charts = False  # 默认不生成图表（由前端ECharts渲染）
     mc_iterations = 10  # 默认MC Dropout迭代次数为10次
     
@@ -815,6 +879,30 @@ def main():
                 result = {
                     "status": "error",
                     "msg": "--model 参数需要指定模型路径",
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                print(json.dumps(result, ensure_ascii=False))
+                sys.exit(1)
+        elif arg == '--scaler':
+            if i + 1 < len(sys.argv):
+                custom_scaler_path = sys.argv[i + 1]
+                i += 2
+            else:
+                result = {
+                    "status": "error",
+                    "msg": "--scaler 参数需要指定scaler文件路径",
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                print(json.dumps(result, ensure_ascii=False))
+                sys.exit(1)
+        elif arg == '--encoder':
+            if i + 1 < len(sys.argv):
+                custom_encoder_path = sys.argv[i + 1]
+                i += 2
+            else:
+                result = {
+                    "status": "error",
+                    "msg": "--encoder 参数需要指定encoder文件路径",
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
                 print(json.dumps(result, ensure_ascii=False))
@@ -893,8 +981,21 @@ def main():
         model_base = os.path.join(script_dir, 'diabetes_model')  # 不含扩展名
     
     model_path = model_base + '.pth'
-    encoder_path = model_base + '_encoder.pkl'
-    scaler_path = model_base + '_scaler.pkl'
+    
+    # 智能查找 scaler 和 encoder 文件
+    if custom_scaler_path:
+        scaler_path = custom_scaler_path
+    else:
+        scaler_path = find_related_file(model_base, 'scaler')
+    
+    if custom_encoder_path:
+        encoder_path = custom_encoder_path
+    else:
+        encoder_path = find_related_file(model_base, 'encoder')
+
+    print(f"[路径] 模型: {model_path}", file=sys.stderr)
+    print(f"[路径] Scaler: {scaler_path}", file=sys.stderr)
+    print(f"[路径] Encoder: {encoder_path}", file=sys.stderr)
 
     # 4. 初始化结果容器
     result = {
@@ -965,7 +1066,14 @@ def main():
 
             use_enhanced = True
         else:
-            print("[警告] 模型文件不完整，将使用规则引擎", file=sys.stderr)
+            missing_files = []
+            if not os.path.exists(model_path):
+                missing_files.append(f"模型: {model_path}")
+            if not os.path.exists(scaler_path):
+                missing_files.append(f"Scaler: {scaler_path}")
+            if not os.path.exists(encoder_path):
+                missing_files.append(f"Encoder: {encoder_path}")
+            print(f"[警告] 模型文件不完整，缺失: {'; '.join(missing_files)}，将使用规则引擎", file=sys.stderr)
     except Exception as e:
         print(f"[错误] 模型加载或增强预测失败: {str(e)}", file=sys.stderr)
         print(traceback.format_exc(), file=sys.stderr)

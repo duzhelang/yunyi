@@ -167,7 +167,7 @@ public class TestFileController {
 
         String modelPath = propertyUtil.getPythonModelPath();
         if (StrUtil.isBlank(modelPath)) {
-            modelPath = System.getProperty("user.dir") + "/models/diabetes_model.pth";
+            modelPath = System.getProperty("user.dir") + "/data/models/pth_models/diabetes_model.pth";
         }
         File modelFile = new File(modelPath);
 

@@ -7,7 +7,7 @@ description: "Software-ODA125 项目知识库，包含项目结构、技术栈�
 
 ## 项目概览
 - **技术栈**: Spring Boot 3.3.5 + MyBatis Plus 3.5.9 + Vue 3 + Vite + Element Plus + PyTorch
-- **核心功能**: 糖尿病风险预测、健康档案管理、智能对话、群体分析、诊疗记录管理
+- **核心功能**: 糖尿病风险预测、在线训练（新建/增量）、健康档案管理、智能对话、群体分析、诊疗记录管理
 - **数据资产**: 详见 [data-assets](data-assets/SKILL.md) 技能
 
 ## 文档结构
@@ -36,13 +36,15 @@ docs/
 ├── python/                     # Python算法层
 │   ├── modules.md              # 文件清单、各脚本功能
 │   ├── model-architecture.md   # PyTorch模型结构
+│   ├── training.md             # 在线训练（train.py / incremental_train.py）
 │   ├── predictions.md          # 预测功能
 │   ├── ai-chatbot.md           # 糖尿病聊天机器人
-│   └── data-files.md           # Python数据文件（similar_cases.npy等）
+│   └── data-files.md           # Python数据文件（训练数据集、similar_cases.npy等）
 ├── business/                   # 核心业务功能
 │   ├── user-system.md          # 用户系统、RBAC
 │   ├── ai-chat.md              # 智能对话
 │   ├── prediction.md           # 预测工作台
+│   ├── online-training.md      # 在线训练（新建模型/增量训练）
 │   ├── health-profile.md       # 健康档案
 │   ├── treatment-record.md     # 诊疗档案
 │   ├── group-analysis.md       # 群体分析
@@ -88,6 +90,7 @@ docs/
 ### 核心模块
 - **用户系统**: RBAC权限控制，JWT认证
 - **预测系统**: PyTorch模型，SHAP解释
+- **在线训练**: 新建模型（train.py）、增量训练（incremental_train.py）、AUC/混淆矩阵评估
 - **健康档案**: 草稿持久化，DPF计算器
 - **智能对话**: 多模型支持，流式响应
 

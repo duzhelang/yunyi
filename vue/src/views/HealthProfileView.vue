@@ -27,6 +27,7 @@
           @file-change="handleFileChange"
           @open-dpf-calc="dpfDialogVisible = true"
           @open-dpf-info="dpfInfoDialogVisible = true"
+          @update-dpf="handleDpfUpdate"
         />
         <HealthAdviceCard :advice="currentAdvice" />
       </el-col>
@@ -180,6 +181,10 @@ function assignForm(newForm) {
 
 function assignTemp(newTemp) {
   Object.assign(temp, newTemp)
+}
+
+function handleDpfUpdate(value) {
+  store.diabetesPedigreeFunction = value
 }
 
 function handleLoadHistoryToForm(item) {

@@ -15,7 +15,14 @@
       <!-- 训练任务标签页 -->
       <el-tab-pane label="模型训练" name="training">
         <div class="create-section">
-          <el-card>
+          <el-card style="position: relative;">
+            <ProgressOverlay 
+              :visible="submitting"
+              title="启动训练任务"
+              :steps="trainingSteps"
+              :hints="trainingHints"
+              color="#67c23a"
+            />
             <template #header>
               <div class="card-header">
                 <span class="card-title">
@@ -68,13 +75,23 @@
                 <el-row :gutter="20">
                   <el-col :span="8">
                     <el-form-item label="基础模型" prop="incrementalParams.baseModelId" :rules="[{ required: true, message: '请选择基础模型', trigger: 'change' }]">
-                      <el-select v-model="taskForm.incrementalParams.baseModelId" placeholder="请选择要微调的基础模型" style="width: 100%">
+                      <el-select v-model="taskForm.incrementalParams.baseModelId" placeholder="请选择要微调的基础模型" style="width: 100%" filterable :filter-method="filterModels" @visible-change="onModelDropdownVisibleChange">
                         <el-option
-                          v-for="model in trainedModels"
+                          v-for="model in filteredModels"
                           :key="model.id"
                           :label="model.modelName + ' (' + model.version + ')'"
                           :value="model.id"
                         />
+                        <div v-if="trainedModels.length > modelPageSize" class="select-pagination">
+                          <el-pagination
+                            small
+                            layout="prev, pager, next"
+                            :total="trainedModels.length"
+                            :page-size="modelPageSize"
+                            :current-page="modelCurrentPage"
+                            @current-change="onModelPageChange"
+                          />
+                        </div>
                       </el-select>
                     </el-form-item>
                   </el-col>
@@ -267,13 +284,14 @@
         </div>
 
         <!-- 预测进度提示 -->
-        <div v-if="predicting" class="predict-progress">
-          <el-card>
-            <div class="progress-content">
-              <el-icon class="rotating"><Loading /></el-icon>
-              <span>正在执行预测，请稍候...</span>
-            </div>
-          </el-card>
+        <div v-if="predicting" class="predict-progress" style="position: relative;">
+          <ProgressOverlay 
+            :visible="predicting"
+            title="模型预测中"
+            :steps="predictionSteps"
+            :hints="predictionHints"
+            color="#409eff"
+          />
         </div>
 
         <!-- 预测结果列表 -->
@@ -411,6 +429,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Cpu, Plus, List, VideoPlay, Refresh, DataAnalysis, Document, Loading } from '@element-plus/icons-vue'
 import request from '@/utils/request'
+import ProgressOverlay from '@/components/common/ProgressOverlay.vue'
 
 const activeTab = ref('training')
 
@@ -468,6 +487,10 @@ const testFileList = ref([])
 const pythonScripts = ref([])
 const trainedModels = ref([])
 const availableModels = ref([])
+const filteredModels = ref([])
+const modelFilterText = ref('')
+const modelCurrentPage = ref(1)
+const modelPageSize = ref(10)
 const tableData = ref([])
 const predictResults = ref([])
 const loading = ref(false)
@@ -476,6 +499,34 @@ const submitting = ref(false)
 const scanning = ref(false)
 const scanningTestFiles = ref(false)
 const predicting = ref(false)
+
+const trainingSteps = [
+  '校验训练参数',
+  '加载训练数据',
+  '初始化模型',
+  '启动训练任务'
+]
+
+const trainingHints = [
+  '正在验证训练配置和参数...',
+  '正在加载和预处理训练数据集...',
+  '正在初始化神经网络模型...',
+  '正在启动训练任务，请稍候...'
+]
+
+const predictionSteps = [
+  '加载测试数据',
+  '加载预测模型',
+  '执行模型推理',
+  '生成预测结果'
+]
+
+const predictionHints = [
+  '正在读取和解析测试数据文件...',
+  '正在加载训练好的模型文件...',
+  '正在进行模型推理预测...',
+  '正在整理预测结果...'
+]
 const pageNum = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
@@ -528,11 +579,45 @@ const loadTrainedModels = async () => {
   try {
     const response = await request.get('/api/model/all')
     if (response.code === '200') {
-      trainedModels.value = response.data.filter(m => m.source === 'online_train').slice(0, 6)
+      trainedModels.value = response.data.filter(m => m.source === 'online_train')
       availableModels.value = response.data
+      filteredModels.value = trainedModels.value
     }
   } catch (error) {
     console.error('加载训练模型列表失败', error)
+  }
+}
+
+const filterModels = (query) => {
+  modelFilterText.value = query
+  modelCurrentPage.value = 1
+  updateFilteredModels()
+}
+
+const updateFilteredModels = () => {
+  let filtered = trainedModels.value
+  if (modelFilterText.value) {
+    const query = modelFilterText.value.toLowerCase()
+    filtered = trainedModels.value.filter(m => 
+      m.modelName.toLowerCase().includes(query) || 
+      (m.version && m.version.toLowerCase().includes(query))
+    )
+  }
+  const start = (modelCurrentPage.value - 1) * modelPageSize.value
+  const end = start + modelPageSize.value
+  filteredModels.value = filtered.slice(start, end)
+}
+
+const onModelPageChange = (page) => {
+  modelCurrentPage.value = page
+  updateFilteredModels()
+}
+
+const onModelDropdownVisibleChange = (visible) => {
+  if (visible) {
+    modelFilterText.value = ''
+    modelCurrentPage.value = 1
+    filteredModels.value = trainedModels.value.slice(0, modelPageSize.value)
   }
 }
 
@@ -1014,5 +1099,12 @@ onMounted(() => {
 .confusion-matrix .cm-fn {
   background-color: #fde2e2;
   color: #f56c6c;
+}
+
+.select-pagination {
+  padding: 8px;
+  border-top: 1px solid #e4e7ed;
+  display: flex;
+  justify-content: center;
 }
 </style>

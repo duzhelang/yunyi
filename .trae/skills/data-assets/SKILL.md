@@ -10,6 +10,7 @@ description: "Software-ODA125 项目的数据资产知识库。包含所有数�
 ### 数据资产专题
 - **[data-assets/overview.md](../../docs/data-assets/overview.md)**: 运行时数据目录总览（data/, logs/, files/）
 - **[data-assets/model-files.md](../../docs/data-assets/model-files.md)**: 模型文件存储（.pth, .pkl, .npy）
+- **[data-assets/training-data.md](../../docs/data-assets/training-data.md)**: 训练数据集（python/data/train/）
 - **[data-assets/database-assets.md](../../docs/data-assets/database-assets.md)**: 数据库预置数据（菜单、角色、预置统计）
 - **[data-assets/notes.md](../../docs/data-assets/notes.md)**: 其他数据相关注意事项（目录自动创建等）
 
@@ -21,12 +22,14 @@ description: "Software-ODA125 项目的数据资产知识库。包含所有数�
 ### Python
 - **[python/modules.md](../../docs/python/modules.md)**: Python脚本文件清单
 - **[python/model-architecture.md](../../docs/python/model-architecture.md)**: 模型结构、8个特征
+- **[python/training.md](../../docs/python/training.md)**: 在线训练（train.py/incremental_train.py）、数据集、评估指标
 - **[python/predictions.md](../../docs/python/predictions.md)**: 预测功能（单条/批量/SHAP）
 - **[python/ai-chatbot.md](../../docs/python/ai-chatbot.md)**: 聊天机器人
-- **[python/data-files.md](../../docs/python/data-files.md)**: Python数据文件（similar_cases.npy等）
+- **[python/data-files.md](../../docs/python/data-files.md)**: Python数据文件（训练数据集、similar_cases.npy等）
 
 ### 业务
 - **[business/data-flow.md](../../docs/business/data-flow.md)**: 数据流转说明（训练→模型→预测→AI问答）
+- **[business/online-training.md](../../docs/business/online-training.md)**: 在线训练功能（新建/增量训练）
 
 ### 指南
 - **[guides/startup.md](../../docs/guides/startup.md)**: 启动顺序
@@ -43,13 +46,15 @@ description: "Software-ODA125 项目的数据资产知识库。包含所有数�
 | sys_role | 角色表 |
 | sys_menu | 菜单表（32条，8大模块） |
 | user_health_profiles | 健康档案 |
-| sys_model_version | 模型版本 |
+| sys_model_version | 模型版本（含 metrics JSON） |
+| sys_train_task | 训练任务（含 accuracy/loss/precision/recall/f1/auc/confusion_matrix） |
 | sys_result | 预测结果（OnlineDate实体） |
 | sys_treatment_record | 诊疗档案（未在初始化SQL中定义） |
 
 ## ⚠️ 已知问题
 - `sys_treatment_record` 表未在初始化SQL中定义，需手动创建
 - 实体类 `OnlineDate.java` 映射到 `sys_result` 表，语义不匹配
+- 训练数据集文件（train_10000.csv等）需手动放入 `python/data/` 目录
 
 > 项目整体架构见 [oda-project](oda-project/SKILL.md) 技能
 > 开发规范见 `docs/standards/`

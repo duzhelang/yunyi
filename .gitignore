@@ -1,29 +1,15 @@
 # 项目专项
-# AI 模型 & 权重文件
-*.h5
-*.pkl
-*.pb
-*.onnx
-*.pt
-*.pth
-*.bin
-*.ckpt
-*.model
-*.weights
-*.scaler
-*.encoder
 secrets/
 application-secrets.yml
-diabetes_model.pth
 # 技能文档（禁止提交）
 **/SKILL.md
 /.trae/skills/
 
-# 项目文档目录（禁止提交）
-/docs/
-
 # 忽略所有 Markdown 文件
 *.md
+# 但不忽略 docs 目录下的文档（本地可见，不自动推送到远程）
+!docs/
+!docs/**/*.md
 
 /.claude/
 /.trae/memories/
@@ -36,8 +22,10 @@ diabetes_model.pth
 # 排除 Superpowers 工具文件夹
 /superpowers/
 
-# 数据集 & 业务数据
-data/
+# 数据集 & 业务数据（模型文件例外）
+data/*
+!data/models
+!data/models/**
 datasets/
 raw_data/
 python/data/

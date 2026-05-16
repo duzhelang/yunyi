@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -160,16 +161,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         List<Menu> roleMenus = new ArrayList<>();
         // 筛选当前用户角色的菜单
         for (Menu menu : menus) {
-            List<Menu> children = menu.getChildren();
-            // 先过滤子菜单，移除不在 menuIds 集合中的元素
-            children.removeIf(child -> !menuIds.contains(child.getId()));
+            // 使用 stream 过滤子菜单，避免直接修改共享对象
+            List<Menu> filteredChildren = menu.getChildren().stream()
+                .filter(child -> menuIds.contains(child.getId()))
+                .collect(Collectors.toList());
             
             // 如果父菜单有权限，或者子菜单有权限（子菜单不为空），则添加父菜单
-            if (menuIds.contains(menu.getId()) || !children.isEmpty()) {
+            if (menuIds.contains(menu.getId()) || !filteredChildren.isEmpty()) {
                 // 创建菜单副本，避免修改原对象
                 Menu menuCopy = new Menu();
                 BeanUtil.copyProperties(menu, menuCopy, true);
-                menuCopy.setChildren(new ArrayList<>(children));
+                menuCopy.setChildren(filteredChildren);
                 roleMenus.add(menuCopy);
             }
         }

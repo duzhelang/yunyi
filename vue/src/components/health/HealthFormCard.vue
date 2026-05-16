@@ -166,14 +166,16 @@
                 :min="0.08"
                 :max="2.42"
                 controls-position="right"
-                @update:model-value="updateFormField('DiabetesPedigreeFunction', $event)"
+                @update:model-value="updateDpfField"
               />
-              <el-button type="primary" plain size="small" class="dpf-calc-btn" @click="$emit('open-dpf-calc')">
-                <el-icon><Edit /></el-icon> 计算
-              </el-button>
-              <el-button type="info" plain size="small" class="dpf-info-btn" @click="$emit('open-dpf-info')">
-                <el-icon><InfoFilled /></el-icon> 说明
-              </el-button>
+              <div class="dpf-action-btns">
+                <el-button type="primary" plain size="small" class="dpf-calc-btn" @click="$emit('open-dpf-calc')">
+                  <el-icon><Edit /></el-icon> 计算
+                </el-button>
+                <el-button type="info" plain size="small" class="dpf-info-btn" @click="$emit('open-dpf-info')">
+                  <el-icon><InfoFilled /></el-icon> 说明
+                </el-button>
+              </div>
             </div>
             <div class="helper-text">* 家族遗传系数，点击"计算"自动评估</div>
           </el-form-item>
@@ -310,7 +312,8 @@ const emit = defineEmits([
   'evaluate-bp',
   'file-change',
   'open-dpf-calc',
-  'open-dpf-info'
+  'open-dpf-info',
+  'update-dpf'
 ])
 
 const uploadRef = ref(null)
@@ -318,6 +321,11 @@ const uploadRef = ref(null)
 /** 更新表单字段值，向父组件发送完整表单对象 */
 function updateFormField(field, value) {
   emit('update:form', { ...props.form, [field]: value })
+}
+
+/** 直接更新糖尿病谱系函数值，避免 Object.assign 触发 computed setter 失败 */
+function updateDpfField(value) {
+  emit('update-dpf', value)
 }
 
 /** 更新临时字段（身高/体重），向父组件发送完整 temp 对象 */
@@ -423,7 +431,8 @@ function handleFileChange(uploadFile) {
 .helper-text {
   font-size: 12px;
   color: #909399;
-  margin-top: 4px;
+  margin-top: 8px;
+  line-height: 1.4;
 }
 
 .action-bar {
@@ -513,15 +522,30 @@ function handleFileChange(uploadFile) {
 
 .dpf-input-group {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   align-items: center;
+  width: 100%;
 }
 .dpf-input-group .el-input-number {
   flex: 1;
+  min-width: 140px;
+}
+.dpf-action-btns {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 .dpf-calc-btn, .dpf-info-btn {
-  flex-shrink: 0;
   border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.dpf-calc-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(64, 128, 255, 0.2);
+}
+.dpf-info-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(144, 147, 153, 0.2);
 }
 
 .label-with-tip {
@@ -553,7 +577,12 @@ function handleFileChange(uploadFile) {
     width: 100%;
   }
   .dpf-input-group {
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .dpf-action-btns {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 @media (min-width: 769px) and (max-width: 1200px) {

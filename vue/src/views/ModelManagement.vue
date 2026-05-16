@@ -95,13 +95,13 @@
           <el-input v-model="newModel.version" placeholder="如 v2.0.0" />
         </el-form-item>
         <el-form-item label=".pth 路径" required>
-          <el-input v-model="newModel.filePath" placeholder="如 models/diabetes_model.pth" />
+          <el-input v-model="newModel.filePath" placeholder="如 data/models/pth_models/diabetes_model.pth" />
         </el-form-item>
         <el-form-item label="Scaler 路径">
-          <el-input v-model="newModel.scalerPath" placeholder="如 models/diabetes_model_scaler.pkl" />
+          <el-input v-model="newModel.scalerPath" placeholder="如 data/models/pkl_files/diabetes_model_scaler.pkl" />
         </el-form-item>
         <el-form-item label="Encoder 路径">
-          <el-input v-model="newModel.encoderPath" placeholder="如 models/diabetes_model_encoder.pkl" />
+          <el-input v-model="newModel.encoderPath" placeholder="如 data/models/pkl_files/diabetes_model_encoder.pkl" />
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="newModel.description" type="textarea" :rows="3" placeholder="模型用途、训练数据说明等" />

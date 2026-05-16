@@ -211,16 +211,23 @@ export function useHealthTools() {
       { data: dpfForm.sibling, weight: 0.5 },
       { data: dpfForm.grandparent, weight: 0.25 }
     ]
+    let hasAnyDiabetes = false
     familyMembers.forEach(member => {
       if (member.data.hasDiabetes) {
+        hasAnyDiabetes = true
         const age = member.data.ageAtDiagnosis || 50
         let ageFactor = 1.0
-        if (age < 40) ageFactor = 1.5
-        else if (age > 60) ageFactor = 0.7
+        if (age < 30) ageFactor = 1.8
+        else if (age < 40) ageFactor = 1.5
+        else if (age <= 50) ageFactor = 1.0
+        else if (age <= 60) ageFactor = 0.8
+        else ageFactor = 0.6
         totalScore += member.weight * ageFactor
       }
     })
-    dpfResult.value = Math.min(Math.max(baseValue + totalScore * 0.8, 0.08), 2.42)
+    dpfResult.value = hasAnyDiabetes
+      ? Math.min(Math.max(baseValue + totalScore * 0.8, 0.08), 2.42)
+      : baseValue
     ElMessage.success('计算完成')
   }
 

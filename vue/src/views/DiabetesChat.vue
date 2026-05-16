@@ -1,13 +1,13 @@
 <template>
   <div class="chat-wrapper">
     <div class="diabetes-chat-container">
-      <!-- 聊天头部 -->
       <div class="chat-header">
         <el-icon :size="24" class="doctor-icon"><ChatDotRound /></el-icon>
         <h3>糖尿病健康咨询助手</h3>
         <div class="status">
-          <button
+          <el-button
             class="mute-btn"
+            link
             @click="toggleMute"
             :title="isMuted ? '取消静音' : '静音'"
           >
@@ -19,17 +19,15 @@
               <line x1="17" y1="9" x2="21" y2="15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
               <line x1="21" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
             </svg>
-          </button>
+          </el-button>
           <span class="online-dot"></span>
           <span class="status-text">在线</span>
         </div>
       </div>
 
-      <!-- 聊天历史区域 -->
       <div class="chat-history" ref="chatHistory">
         <div v-if="messages.length === 0" class="welcome-message">
           <p>您好!我是糖尿病健康咨询助手,有任何关于糖尿病的问题都可以问我~</p>
-<!--          <p class="ai-tip">*AI生成内容仅供参考,具体请遵医嘱</p>-->
         </div>
 
         <div v-if="messages.length === 0" class="quick-questions-panel">
@@ -37,12 +35,12 @@
           <div v-for="group in quickQuestions" :key="group.category" class="question-group">
             <div class="group-label">{{ group.category }}</div>
             <div class="group-questions">
-              <span
+              <el-button
                 v-for="q in group.questions"
                 :key="q"
                 class="question-chip"
                 @click="askSample(q)"
-              >{{ q }}</span>
+              >{{ q }}</el-button>
             </div>
           </div>
         </div>
@@ -53,12 +51,12 @@
             <p class="content">
               <span v-if="msg.isUser || !msg.isTyping">{{ msg.displayContent }}</span>
               <span v-else>{{ msg.displayContent }}<span class="typing-cursor">|</span></span>
-<!--              <span class="ai-tip" v-if="!msg.isUser">*AI生成内容仅供参考,具体请遵医嘱</span>-->
             </p>
-            <button
+            <el-button
               v-if="!msg.isUser"
               class="speak-btn"
               :class="{ speaking: msg.isSpeaking }"
+              link
               @click="toggleSpeak(msg, index)"
               :title="msg.isSpeaking ? '停止朗读' : '朗读'"
             >
@@ -70,7 +68,7 @@
                 <rect x="17" y="7" width="2" height="10" rx="1" fill="#ef4444"/>
                 <rect x="20" y="5" width="2" height="14" rx="1" fill="#ef4444"/>
               </svg>
-            </button>
+            </el-button>
             <span class="time">{{ formatTime(msg.timestamp) }}</span>
           </div>
         </div>
@@ -82,9 +80,7 @@
         </div>
       </div>
 
-      <!-- 输入区域 -->
       <div class="input-area">
-        <!-- 管理员设置模型区域 -->
         <div v-if="isAdmin" class="model-setting">
           <el-button link @click="showModelSelector = !showModelSelector">⚙️ 设置默认模型</el-button>
           <div v-if="showModelSelector" class="model-selector">
@@ -102,59 +98,55 @@
           <el-tag style="margin-left:10px" size="small">当前默认：{{ defaultModel }}</el-tag>
         </div>
 
-        <input
-            link
-            v-model="question"
-            placeholder="请输入您的糖尿病相关问题..."
-            @keyup.enter="sendMessage"
-            @focus="inputFocused = true"
-            @blur="inputFocused = false"
-            :class="{ focused: inputFocused }"
-            :disabled="isLoading"
+        <el-input
+          v-model="question"
+          placeholder="请输入您的糖尿病相关问题..."
+          @keyup.enter="sendMessage"
+          :disabled="isLoading"
+          class="chat-input"
         />
-        <button @click="sendMessage" :disabled="isLoading" class="send-btn">
-          <span v-if="!isLoading">发送</span>
-          <i class="el-icon-loading" v-else></i>
-        </button>
+        <el-button type="primary" @click="sendMessage" :disabled="isLoading" :loading="isLoading" class="send-btn">
+          发送
+        </el-button>
       </div>
 
-      <!-- AI辅助工具 -->
       <div class="additional-features">
         <h2>📋 AI辅助工具</h2>
         <div class="feature-card card-plan">
           <div class="plan-header-row">
             <h3><span class="card-dot card-dot-green"></span>健康计划生成</h3>
-            <button v-if="healthPlan" class="collapse-btn" @click="planCollapsed = !planCollapsed">
+            <el-button v-if="healthPlan" class="collapse-btn" link @click="planCollapsed = !planCollapsed">
               {{ planCollapsed ? '展开计划 ▾' : '收起全部 ▴' }}
-            </button>
+            </el-button>
           </div>
-          <div class="feature-content">
+          <div class="feature-content plan-feature-content">
+            <ProgressOverlay 
+              :visible="isGeneratingPlan"
+              title="正在生成健康计划"
+              :steps="healthPlanSteps"
+              :hints="healthPlanHints"
+              color="#10b981"
+            />
             <div class="plan-form">
               <div class="form-item">
                 <label>风险等级</label>
-                <select v-model="riskLevel" class="plan-select">
-                  <option value="">请选择</option>
-                  <option value="low">低风险</option>
-                  <option value="medium">中风险</option>
-                  <option value="high">高风险</option>
-                </select>
+                <el-select v-model="riskLevel" class="plan-select" placeholder="请选择">
+                  <el-option label="低风险" value="low" />
+                  <el-option label="中风险" value="medium" />
+                  <el-option label="高风险" value="high" />
+                </el-select>
               </div>
               <div class="form-item">
                 <label>异常指标</label>
-                <div class="checkbox-group">
-                  <label v-for="indicator in indicators" :key="indicator">
-                    <input
-                        type="checkbox"
-                        :value="indicator"
-                        v-model="abnormalIndicators"
-                    />
+                <el-checkbox-group v-model="abnormalIndicators" class="checkbox-group">
+                  <el-checkbox v-for="indicator in indicators" :key="indicator" :value="indicator">
                     {{ indicator }}
-                  </label>
-                </div>
+                  </el-checkbox>
+                </el-checkbox-group>
               </div>
-              <button @click="generateHealthPlan" :disabled="!riskLevel || isLoading" class="feature-btn feature-btn-green">
+              <el-button @click="generateHealthPlan" :disabled="!riskLevel || isLoading" class="feature-btn feature-btn-green">
                 📋 生成健康计划
-              </button>
+              </el-button>
             </div>
             <div class="health-plan" v-if="healthPlan" v-show="!planCollapsed">
               <div v-for="(day, index) in healthPlan" :key="index" class="plan-day" :class="'plan-day-' + (index % 3)">
@@ -178,24 +170,25 @@
                 </div>
               </div>
             </div>
-            <button v-if="healthPlan" @click="savePlanToRecord" class="feature-btn feature-btn-outline-green" style="margin-top: 12px;">
+            <el-button v-if="healthPlan" @click="savePlanToRecord" class="feature-btn feature-btn-outline-green" style="margin-top: 12px;">
               💾 保存到诊疗档案
-            </button>
+            </el-button>
           </div>
         </div>
 
         <div class="feature-card card-report">
           <h3><span class="card-dot card-dot-blue"></span>报告解读</h3>
           <div class="feature-content">
-            <textarea
-                v-model="reportJson"
-                placeholder="请粘贴预测结果的JSON内容..."
-                rows="4"
-                class="report-textarea"
-            ></textarea>
-            <button @click="interpretReport" :disabled="!reportJson || isLoading" class="feature-btn feature-btn-blue">
+            <el-input
+              v-model="reportJson"
+              type="textarea"
+              placeholder="请粘贴预测结果的JSON内容..."
+              :rows="4"
+              class="report-textarea"
+            />
+            <el-button @click="interpretReport" :disabled="!reportJson || isLoading" class="feature-btn feature-btn-blue">
               📋 解读报告
-            </button>
+            </el-button>
             <div class="report-result" v-if="reportResult">
               <div class="report-result-header">
                 <span class="report-result-icon">📊</span>
@@ -208,7 +201,6 @@
       </div>
     </div>
 
-    <!-- 右侧悬浮滚动问题面板 -->
     <div v-if="messages.length > 0 || showRecipePanel"
          class="floating-side-panel"
          @mouseenter="pauseMarquee"
@@ -234,7 +226,6 @@
       </div>
     </div>
 
-    <!-- 控糖食谱侧边栏 -->
     <div class="recipe-sidebar" :class="{ expanded: showRecipePanel, 'has-side-panel': messages.length > 0 || showRecipePanel }">
       <div class="recipe-toggle" @click="showRecipePanel = !showRecipePanel">
         <span class="recipe-toggle-icon">🍎</span>
@@ -249,46 +240,43 @@
         <template v-if="recipeData">
           <h4>🍎 今日控糖食谱</h4>
           <div class="recipe-text" v-html="formatRecipe(recipeData)" @click="showRecipeDialog = true" style="cursor:pointer" title="点击查看大图"></div>
-          <button class="recipe-back-btn" @click="recipeData = null">← 返回重新生成</button>
+          <el-button class="recipe-back-btn" link @click="recipeData = null">← 返回重新生成</el-button>
         </template>
         <template v-else>
           <h4>食谱偏好设置</h4>
           <div class="recipe-prefs">
             <div class="form-item">
               <label>饮食偏好</label>
-              <div class="checkbox-group">
-                <label v-for="pref in dietPrefs" :key="pref">
-                  <input type="checkbox" :value="pref" v-model="selectedDietPrefs" />
+              <el-checkbox-group v-model="selectedDietPrefs" class="checkbox-group">
+                <el-checkbox v-for="pref in dietPrefs" :key="pref" :value="pref">
                   {{ pref }}
-                </label>
-              </div>
+                </el-checkbox>
+              </el-checkbox-group>
             </div>
             <div class="form-item">
               <label>餐次</label>
-              <select v-model="mealCount" class="plan-select">
-                <option value="3">一日三餐</option>
-                <option value="5">一日五餐（加餐）</option>
-              </select>
+              <el-select v-model="mealCount" class="plan-select">
+                <el-option label="一日三餐" value="3" />
+                <el-option label="一日五餐（加餐）" value="5" />
+              </el-select>
             </div>
             <div class="form-item">
               <label>口味偏好</label>
-              <select v-model="tastePref" class="plan-select">
-                <option value="清淡">清淡</option>
-                <option value="适中">适中</option>
-                <option value="重口">重口</option>
-              </select>
+              <el-select v-model="tastePref" class="plan-select">
+                <el-option label="清淡" value="清淡" />
+                <el-option label="适中" value="适中" />
+                <el-option label="重口" value="重口" />
+              </el-select>
             </div>
           </div>
-          <button @click="generateRecipe(true)" :disabled="isLoading || isRecipeLoading" class="recipe-gen-btn">
-            <span v-if="!isLoading && !isRecipeLoading">🍳 生成控糖食谱</span>
-            <span v-else-if="isRecipeLoading && !isLoading">⏳ 生成中...</span>
-            <i class="el-icon-loading" v-else></i>
-          </button>
+          <el-button @click="generateRecipe(true)" :disabled="isLoading || isRecipeLoading" :loading="isRecipeLoading" class="recipe-gen-btn">
+            🍳 生成控糖食谱
+          </el-button>
         </template>
       </div>
     </div>
 
-    <el-dialog v-model="showRecipeDialog" title="🍎 今日控糖食谱" width="680px" :close-on-click-modal="true" class="recipe-dialog">
+    <el-dialog v-model="showRecipeDialog" title="🍎 今日控糖食谱" width="680px" :close-on-click-modal="true" class="recipe-dialog" append-to-body>
       <div class="recipe-dialog-body">
         <div class="recipe-text recipe-dialog-text" v-if="recipeData" v-html="formatRecipe(recipeData)"></div>
       </div>
@@ -296,737 +284,168 @@
   </div>
 </template>
 
-<script>
-import request from '@/utils/request'
-import { ElMessage } from 'element-plus'
+<script setup>
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
+import { ChatDotRound } from '@element-plus/icons-vue'
+import ProgressOverlay from '@/components/common/ProgressOverlay.vue'
+import { quickQuestions } from '@/data/diabetesMockData'
+import { useModelConfig } from '@/composables/useModelConfig'
+import { useChat } from '@/composables/useChat'
+import { useHealthPlan } from '@/composables/useHealthPlan'
+import { useRecipe } from '@/composables/useRecipe'
+import { useReport } from '@/composables/useReport'
+import { useTTS } from '@/composables/useTTS'
+import { useMarquee } from '@/composables/useMarquee'
 
-export default {
-  name: 'DiabetesChat',
-  data() {
-    return {
-      messages: [],
-      question: '',
-      isLoading: false,
-      inputFocused: false,
-      typingTimer: null,
-      reportJson: '',
-      riskLevel: '',
-      abnormalIndicators: [],
-      healthPlan: null,
-      planCollapsed: false,
-      collapsedDays: [],
-      indicators: ['血糖', 'BMI', '血压', '胰岛素'],
-      // 控糖食谱
-      showRecipePanel: false,
-      recipeData: null,
-      isRecipeLoading: false,
-      showRecipeDialog: false,
-      reportResult: '',
-      dietPrefs: ['低GI', '高纤维', '低碳水', '无糖', '素食', '高蛋白'],
-      selectedDietPrefs: [],
-      mealCount: '3',
-      tastePref: '清淡',
-      quickQuestions: [
-        {
-          category: '基础认知',
-          questions: [
-            '空腹血糖正常值是多少？超过多少算糖尿病？',
-            '糖尿病能根治吗？有没有最新的治疗方法？'
-          ]
-        },
-        {
-          category: '风险评估',
-          questions: [
-            '我妈妈是糖尿病，我会不会遗传？'
-          ]
-        },
-        {
-          category: '症状识别',
-          questions: [
-            '糖尿病早期有哪些症状需要注意？',
-            '经常觉得口渴、尿多，是不是糖尿病前兆？',
-            '最近脚有点麻，是不是糖尿病神经病变？'
-          ]
-        },
-        {
-          category: '治疗与生活管理',
-          questions: [
-            '我刚刚确诊2型糖尿病，应该先控制饮食还是直接吃药？',
-            '晚饭没吃，为什么早上空腹血糖还是高？',
-            '得了糖尿病还能吃米饭和面食吗？怎么吃比较好？',
-            '糖尿病人可以吃水果吗？哪些水果比较安全？'
-          ]
-        }
-      ],
-      // 用户与模型配置
-      currentUser: null,
-      defaultModel: 'glm-4-flash',
-      selectedModel: 'glm-4-flash',
-      tempModel: 'glm-4-flash',
-      showModelSelector: false,
-      allQuestions: [],
-      marqueePaused: false,
-      marqueeAnimId: null,
-      isMuted: false,
-      _currentAudio: null,
-    }
-  },
-  computed: {
-    isAdmin() {
-      if (!this.currentUser) return false
-      const role = this.currentUser.role || ''
-      return role === 'ROLE_ADMIN' || role === 'admin'
-    }
-  },
-  watch: {
-    'messages.length'(newLen) {
-      if (newLen > 0) {
-        this.$nextTick(() => {
-          this.startMarquee();
-        });
-      }
-    },
-    showRecipePanel(val) {
-      if (val) {
-        this.$nextTick(() => {
-          this.startMarquee();
-        });
-      } else if (this.marqueeAnimId) {
-        cancelAnimationFrame(this.marqueeAnimId);
-        this.marqueeAnimId = null;
-      }
-    }
-  },
-  async mounted() {
-    const storedUser = localStorage.getItem("user")
-    if (storedUser) {
-      try {
-        this.currentUser = JSON.parse(storedUser)
-      } catch (e) { /* ignore */ }
-    }
+const route = useRoute()
 
-    // 加载系统默认模型（管理员和普通用户都需要获取）
-    await this.loadDefaultModel()
+const {
+  currentUser,
+  defaultModel,
+  selectedModel,
+  tempModel,
+  showModelSelector,
+  isAdmin,
+  loadDefaultModel,
+  setDefaultModel,
+  initUser
+} = useModelConfig()
 
-    // 所有用户都使用系统默认模型
-    this.selectedModel = this.defaultModel
+const {
+  marqueeTrack,
+  allQuestions,
+  initQuestions,
+  startMarquee,
+  pauseMarquee,
+  resumeMarquee,
+  stopMarquee
+} = useMarquee()
 
-    // 管理员额外允许切换模型
-    if (this.isAdmin) {
-      this.tempModel = this.defaultModel
-    }
+const {
+  messages,
+  question,
+  isLoading,
+  chatHistory,
+  sendMessage: sendMessageOriginal,
+  addUserMessage,
+  addBotMessage,
+  typeBotMessage,
+  scrollToBottom,
+  formatTime,
+  askSample: askSampleOriginal,
+  clearTypingTimer
+} = useChat(selectedModel)
 
-    // 检查URL参数，获取上下文信息
-    const query = this.$route.query;
-    if (query.context) {
-      this.messages.push({
-        isUser: false,
-        content: `根据您的检测结果：${query.context}，我可以为您提供更针对性的建议。`,
-        displayContent: `根据您的检测结果：${query.context}，我可以为您提供更针对性的建议。`,
-        isTyping: false,
-        timestamp: new Date()
-      });
-    }
+const {
+  isMuted,
+  speak,
+  stopSpeaking,
+  toggleSpeak,
+  toggleMute
+} = useTTS(messages)
 
-    // 初始化滚动问题列表（扁平化所有分类问题）
-    this.allQuestions = this.quickQuestions.reduce((arr, group) => {
-      return arr.concat(group.questions);
-    }, []);
-  },
-  methods: {
-    async loadDefaultModel() {
-      try {
-        const res = await request.get('/api/system/defaultModel')
-        if (res.code === '200') {
-          this.defaultModel = res.data
-          if (!this.isAdmin) {
-            this.selectedModel = this.defaultModel
-          }
-        }
-      } catch (e) {
-        console.error('获取默认模型失败', e)
-        ElMessage.warning('无法获取系统默认模型，使用本地默认值')
-      }
-    },
-    async setDefaultModel() {
-      if (!this.tempModel) return
-      try {
-        const res = await request.post('/api/system/defaultModel', null, {
-          params: { model: this.tempModel }
-        })
-        if (res.code === '200') {
-          this.defaultModel = this.tempModel
-          // 管理员自己也切换到新模型
-          this.selectedModel = this.tempModel
-          ElMessage.success('默认模型已更新，所有用户将使用此模型')
-          this.showModelSelector = false
-        } else {
-          ElMessage.error(res.msg || '设置失败')
-        }
-      } catch (e) {
-        ElMessage.error('请求异常，设置失败')
-      }
-    },
-    async sendMessage() {
-      if (!this.question.trim() || this.isLoading) return
-
-      this.messages.push({
-        isUser: true,
-        content: this.question.trim(),
-        displayContent: this.question.trim(),
-        timestamp: new Date()
-      })
-
-      const userQuestion = this.question.trim()
-      this.question = ''
-      this.isLoading = true
-
-      try {
-        const response = await request.post('/api/diabetes/chat', null, {
-          params: {
-            question: userQuestion,
-            provider: this.selectedModel   // 使用管理员设定的模型
-          }
-        })
-
-        if (response && response.code === '200') {
-          const botReply = response.data || '暂无有效回答'
-          const botMsgIndex = this.messages.push({
-            isUser: false,
-            content: botReply,
-            displayContent: '',
-            isTyping: true,
-            timestamp: new Date()
-          }) - 1
-
-          if (this.typingTimer) clearInterval(this.typingTimer)
-
-          let currentCharIndex = 0
-          this.typingTimer = setInterval(() => {
-            if (currentCharIndex < botReply.length) {
-              this.messages[botMsgIndex].displayContent += botReply[currentCharIndex]
-              currentCharIndex++
-              this.scrollToBottom()
-            } else {
-              clearInterval(this.typingTimer)
-              this.messages[botMsgIndex].isTyping = false
-              this.typingTimer = null
-              // 输出完成后自动朗读
-              if (!this.isMuted) {
-                this.$nextTick(() => this.speak(botMsgIndex))
-              }
-            }
-          }, 60)
-        } else {
-          const errorMsg = `服务提示:${response?.msg || '未知错误'}`
-          this.addBotMessage(errorMsg)
-        }
-      } catch (error) {
-        console.error('请求异常:', error)
-        const errorMsg = error.response?.data?.msg || '网络连接失败,请稍后重试'
-        this.addBotMessage(errorMsg)
-        ElMessage.error(errorMsg)
-      } finally {
-        this.isLoading = false
-        this.scrollToBottom()
-      }
-    },
-    addBotMessage(content) {
-      this.messages.push({
-        isUser: false,
-        content,
-        displayContent: content,
-        isTyping: false,
-        timestamp: new Date()
-      })
-    },
-    scrollToBottom() {
-      this.$nextTick(() => {
-        const chatContainer = this.$refs.chatHistory
-        if (chatContainer) {
-          chatContainer.scrollTop = chatContainer.scrollHeight
-        }
-      })
-    },
-    formatTime(timestamp) {
-      if (!timestamp) return ''
-      const date = new Date(timestamp)
-      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
-    },
-    async interpretReport() {
-      const prompt = `请作为糖尿病专科医生，对以下检测报告进行专业解读分析。要求：1.指出关键异常指标及其含义；2.评估糖尿病风险等级；3.给出具体的饮食、运动、监测建议。请用简洁的中文回答，控制在200字以内。\n\n报告内容：${this.reportJson}`
-      this.addUserMessage('请解读我的检测报告')
-      this.isLoading = true
-      try {
-        const response = await request.post('/api/diabetes/chat', null, {
-          params: { question: prompt, provider: this.selectedModel }
-        })
-        if (response && response.code === '200') {
-          const result = response.data || '暂无有效回答'
-          this.reportResult = result
-          this.typeBotMessage(result)
-          ElMessage.success('报告解读完成')
-        } else {
-          this.addBotMessage(`服务提示:${response?.msg || '未知错误'}`)
-        }
-      } catch (error) {
-        this.addBotMessage('网络连接失败，请稍后重试')
-      } finally {
-        this.isLoading = false
-      }
-    },
-    toggleDay(index) {
-      const i = this.collapsedDays.indexOf(index)
-      if (i === -1) this.collapsedDays.push(index)
-      else this.collapsedDays.splice(i, 1)
-    },
-    formatRecipe(data) {
-      if (!data || !data.meals) return ''
-      let html = ''
-      for (const meal of data.meals) {
-        html += `<div class="recipe-section">`
-        html += `<div class="recipe-meal">${meal.icon} ${meal.label}</div>`
-        html += `<div class="recipe-detail">`
-        for (const food of meal.foods) {
-          html += `<div class="recipe-food-row">`
-          html += `<span class="food-name">${food.name}</span>`
-          html += `<span class="food-portion">${food.portion}</span>`
-          html += `<span class="food-cal">${food.cal}</span>`
-          html += `</div>`
-        }
-        html += `</div>`
-        html += `<div class="recipe-summary"><span>📊 ${meal.gi}</span><span>🔥 ${meal.totalCal}</span></div>`
-        html += `</div>`
-      }
-      return html
-    },
-    getMockRecipe() {
-      return {
-        meals: [
-          {
-            label: '早餐', icon: '🌅', gi: 'GI≈48', totalCal: '总热量≈460kcal',
-            foods: [
-              { name: '全麦面包', portion: '2片', cal: '约160kcal' },
-              { name: '水煮鸡蛋', portion: '1个', cal: '约70kcal' },
-              { name: '无糖豆浆', portion: '200ml', cal: '约60kcal' },
-              { name: '凉拌黄瓜', portion: '100g', cal: '约30kcal' },
-              { name: '小番茄', portion: '5颗', cal: '约40kcal' },
-              { name: '脱脂牛奶', portion: '100ml', cal: '约35kcal' }
-            ]
-          },
-          {
-            label: '午餐', icon: '☀️', gi: 'GI≈52', totalCal: '总热量≈520kcal',
-            foods: [
-              { name: '杂粮饭', portion: '100g', cal: '约130kcal' },
-              { name: '清蒸鲈鱼', portion: '120g', cal: '约120kcal' },
-              { name: '蒜蓉西兰花', portion: '150g', cal: '约55kcal' },
-              { name: '凉拌木耳', portion: '80g', cal: '约35kcal' },
-              { name: '豆腐汤', portion: '1碗', cal: '约60kcal' },
-              { name: '杂粮饭搭配', portion: '荞麦馒头半个', cal: '约50kcal' }
-            ]
-          },
-          {
-            label: '晚餐', icon: '🌆', gi: 'GI≈50', totalCal: '总热量≈420kcal',
-            foods: [
-              { name: '荞麦面条', portion: '80g', cal: '约110kcal' },
-              { name: '鸡胸肉炒青椒', portion: '120g', cal: '约130kcal' },
-              { name: '清炒生菜', portion: '150g', cal: '约30kcal' },
-              { name: '凉拌海带丝', portion: '80g', cal: '约20kcal' },
-              { name: '番茄蛋花汤', portion: '1碗', cal: '约50kcal' },
-              { name: '蒸南瓜', portion: '100g', cal: '约22kcal' }
-            ]
-          }
-        ]
-      }
-    },
-    getMockPlan(level) {
-      const mockData = {
-        low: [
-          { diet: '早餐：全麦面包2片+水煮蛋1个+无糖豆浆200ml（GI≈45，约320kcal）', exercise: '快走30分钟（约150kcal）', notes: '餐后1小时运动，保持血糖稳定' },
-          { diet: '午餐：杂粮饭100g+清蒸鱼100g+蒜蓉西兰花150g（GI≈48，约420kcal）', exercise: '瑜伽20分钟', notes: '午餐七分饱，细嚼慢咽' },
-          { diet: '晚餐：荞麦面80g+鸡胸肉炒青椒+凉拌黄瓜（GI≈46，约380kcal）', exercise: '散步30分钟', notes: '晚餐宜早，睡前3小时不进食' },
-          { diet: '早餐：燕麦片30g+脱脂牛奶200ml+煮鸡蛋1个（GI≈42，约290kcal）', exercise: '晨间拉伸15分钟', notes: '燕麦选择整粒燕麦，避免即食型' },
-          { diet: '午餐：糙米饭100g+虾仁豆腐+清炒菠菜（GI≈44，约400kcal）', exercise: '游泳30分钟', notes: '多摄入优质蛋白和膳食纤维' },
-          { diet: '晚餐：玉米1根+番茄炒蛋+凉拌海带丝（GI≈50，约350kcal）', exercise: '太极拳20分钟', notes: '主食粗细搭配，每餐有蔬菜' },
-          { diet: '早餐：全麦三明治+无糖酸奶150g+苹果半个（GI≈43，约310kcal）', exercise: '骑行30分钟', notes: '保持规律作息，定期监测空腹血糖' }
-        ],
-        medium: [
-          { diet: '早餐：荞麦馒头1个+水煮蛋1个+无糖豆浆200ml（GI≈48，约300kcal）', exercise: '快走40分钟', notes: '严格控制精制碳水摄入' },
-          { diet: '午餐：糙米饭80g+清蒸鲈鱼100g+炒苦瓜150g（GI≈46，约380kcal）', exercise: '力量训练20分钟', notes: '苦瓜有助于辅助控糖' },
-          { diet: '晚餐：藜麦粥+凉拌鸡丝+炒生菜（GI≈42，约340kcal）', exercise: '散步40分钟', notes: '晚餐减少主食量，增加蔬菜比例' },
-          { diet: '早餐：山药100g+煮鸡蛋1个+无糖豆浆（GI≈45，约270kcal）', exercise: '八段锦15分钟', notes: '山药代替部分主食，控制总量' },
-          { diet: '午餐：杂粮饭80g+蒜蓉虾+清炒油麦菜（GI≈44，约370kcal）', exercise: '慢跑20分钟', notes: '每周至少运动5天，每次30分钟以上' },
-          { diet: '晚餐：南瓜小米粥+凉拌豆腐+炒青菜（GI≈48，约310kcal）', exercise: '瑜伽25分钟', notes: '保持心情舒畅，避免情绪波动影响血糖' },
-          { diet: '早餐：全麦吐司2片+无糖酸奶+小番茄（GI≈44，约290kcal）', exercise: '游泳25分钟', notes: '坚持记录饮食日记和血糖值' }
-        ],
-        high: [
-          { diet: '早餐：燕麦片25g+脱脂牛奶200ml+水煮蛋蛋白2个（GI≈40，约240kcal）', exercise: '遵医嘱适度活动', notes: '严格遵医嘱用药，勿自行调整' },
-          { diet: '午餐：杂粮饭60g+清蒸鱼80g+大量绿叶蔬菜（GI≈44，约330kcal）', exercise: '饭后散步15分钟', notes: '严格控制总热量摄入' },
-          { diet: '晚餐：荞麦面50g+鸡胸肉50g+清炒苦瓜（GI≈43，约280kcal）', exercise: '床上伸展运动10分钟', notes: '监测餐后2小时血糖，记录异常波动' },
-          { diet: '早餐：蒸南瓜150g+煮鸡蛋1个+无糖豆浆200ml（GI≈46，约260kcal）', exercise: '室内慢走15分钟', notes: '出现头晕眼花等症状立即测血糖' },
-          { diet: '午餐：糙米饭60g+蒜蓉虾仁60g+炒西兰花200g（GI≈43，约310kcal）', exercise: '坐姿上肢运动15分钟', notes: '保持充足睡眠，避免熬夜' },
-          { diet: '晚餐：小米粥150ml+蒸豆腐+炒青菜（GI≈47，约250kcal）', exercise: '深呼吸放松训练10分钟', notes: '每周至少复诊一次，及时调整方案' },
-          { diet: '早餐：全麦面包1片+无糖酸奶150g+黄瓜半根（GI≈42，约220kcal）', exercise: '散步15分钟（有人陪同）', notes: '随身携带糖果或饼干，防止低血糖' }
-        ]
-      }
-      return mockData[level] || mockData.low
-    },
-    async generateHealthPlan() {
-      const levelMap = { low: '低风险', medium: '中风险', high: '高风险' }
-      const indicators = this.abnormalIndicators.length > 0 ? this.abnormalIndicators.join('、') : '无特殊异常'
-      const planPrompt = `请作为糖尿病专科医生，根据以下信息生成一周健康计划。要求严格按JSON格式返回一个数组，每个元素包含diet(饮食建议)、exercise(运动建议)、notes(注意事项)三个字段，共7天。只返回JSON数组，不要其他文字。\n\n风险等级：${levelMap[this.riskLevel]}\n异常指标：${indicators}`
-      this.addUserMessage(`请问我要注意什么（${levelMap[this.riskLevel]}，异常指标：${indicators}）`)
-      this.isLoading = true
-      let usedMock = false
-      try {
-        const response = await request.post('/api/diabetes/chat', null, {
-          params: { question: planPrompt, provider: this.selectedModel }
-        })
-        if (response && response.code === '200') {
-          const reply = response.data || ''
-          let planData = null
-          try {
-            const jsonMatch = reply.match(/\[[\s\S]*\]/)
-            if (jsonMatch) planData = JSON.parse(jsonMatch[0])
-          } catch (e) { /* parse failed */ }
-          if (planData && Array.isArray(planData) && planData.length >= 5) {
-            this.healthPlan = planData.slice(0, 7)
-          } else {
-            this.healthPlan = this.getMockPlan(this.riskLevel)
-            usedMock = true
-          }
-        } else {
-          this.healthPlan = this.getMockPlan(this.riskLevel)
-          usedMock = true
-        }
-      } catch (error) {
-        this.healthPlan = this.getMockPlan(this.riskLevel)
-        usedMock = true
-      }
-      this.planCollapsed = false
-      this.collapsedDays = []
-      if (usedMock) {
-        this.typeBotMessage('已为您生成标准健康计划，请查看下方卡片了解详情')
-        ElMessage.info('AI生成异常，已使用标准方案')
-      } else {
-        try {
-          const summaryPrompt = `请作为糖尿病专科医生，针对以下一周健康计划，用3-5句话总结核心要点和特别注意事项。只说重点，不要逐天罗列，用简洁中文回答。\n${JSON.stringify(this.healthPlan)}`
-          const summaryRes = await request.post('/api/diabetes/chat', null, {
-            params: { question: summaryPrompt, provider: this.selectedModel }
-          })
-          if (summaryRes && summaryRes.code === '200') {
-            this.typeBotMessage(summaryRes.data || '健康计划已生成，请查看下方卡片')
-          } else {
-            this.typeBotMessage('健康计划已生成，请查看下方卡片了解详情')
-          }
-        } catch (e) {
-          this.typeBotMessage('健康计划已生成，请查看下方卡片了解详情')
-        }
-        ElMessage.success('健康计划已生成')
-      }
-      this.showRecipePanel = true
-      this.isLoading = false
-      this.generateRecipe(true)
-    },
-    async generateRecipe(fromSidebar) {
-      this.recipeData = this.getMockRecipe()
-      this.isRecipeLoading = true
-      const prefs = this.selectedDietPrefs.length > 0 ? this.selectedDietPrefs.join('、') : '低GI、高纤维'
-      const meals = this.mealCount === '5' ? '一日五餐（含上午加餐和下午加餐）' : '一日三餐'
-      const prompt = `请作为糖尿病营养师生成一天的控糖食谱。严格按以下格式返回，每行一道菜用"|"分隔菜品名、分量、热量：
-          【早餐】
-          菜品名 | 分量 | 热量kcal
-          （每道菜一行，继续列出）
-          每餐小计：GI≈XX | 总热量≈XXXkcal
-          【午餐】
-          （同上格式）
-          【晚餐】
-          （同上格式）
-          饮食偏好：${prefs}
-          餐次安排：${meals}
-          口味偏好：${this.tastePref}`
-      try {
-        const response = await request.post('/api/diabetes/chat', null, {
-          params: { question: prompt, provider: this.selectedModel }
-        })
-        if (response && response.code === '200' && response.data) {
-          const parsed = this.parseRecipeText(response.data)
-          if (parsed && parsed.meals && parsed.meals.length >= 2) {
-            this.recipeData = parsed
-            ElMessage.success('控糖食谱已生成')
-          } else {
-            ElMessage.info('已使用标准食谱方案')
-          }
-        } else {
-          ElMessage.info('已使用标准食谱方案')
-        }
-      } catch (error) {
-        ElMessage.info('已使用标准食谱方案')
-      } finally {
-        this.isRecipeLoading = false
-      }
-      this.$nextTick(() => this.saveRecipeToRecord())
-    },
-    parseRecipeText(text) {
-      const result = { meals: [] }
-      const lines = text.split('\n')
-      let curMeal = null
-      for (const line of lines) {
-        const t = line.trim()
-        if (!t) continue
-        const mealMatch = t.match(/【(.+?)】|^([早午晚]餐|加餐|上午|下午|晚间)/)
-        if (mealMatch) {
-          if (curMeal && curMeal.foods.length > 0) result.meals.push(curMeal)
-          const label = mealMatch[1] || mealMatch[2]
-          let icon = '🍽️'
-          if (/早/.test(label)) icon = '🌅'
-          else if (/午/.test(label)) icon = '☀️'
-          else if (/晚/.test(label)) icon = '🌆'
-          else if (/加餐|上午|下午|晚间/.test(label)) icon = '🍎'
-          curMeal = { label, icon, gi: 'GI≈--', totalCal: '总热量≈--kcal', foods: [] }
-          continue
-        }
-        if (!curMeal) continue
-        if (/每餐小计|小计|GI|总热量|全天总/.test(t)) {
-          const parts = t.split('|').map(s => s.trim()).filter(Boolean)
-          if (parts.length >= 2) {
-            curMeal.gi = parts[0].replace(/每餐小计[：:]?\s*/, '')
-            curMeal.totalCal = parts[1]
-          }
-          result.meals.push(curMeal)
-          curMeal = null
-          continue
-        }
-        if (t.includes('|')) {
-          const parts = t.split('|').map(s => s.trim()).filter(Boolean)
-          if (parts.length >= 3) {
-            curMeal.foods.push({ name: parts[0], portion: parts[1], cal: parts[2] })
-          } else if (parts.length === 2) {
-            curMeal.foods.push({ name: parts[0], portion: parts[1], cal: '' })
-          }
-        }
-      }
-      if (curMeal && curMeal.foods.length > 0) result.meals.push(curMeal)
-      return result
-    },
-    async callChatApi(prompt, successMsg) {
-      this.isLoading = true
-      try {
-        const response = await request.post('/api/diabetes/chat', null, {
-          params: { question: prompt, provider: this.selectedModel }
-        })
-        if (response && response.code === '200') {
-          this.typeBotMessage(response.data || '暂无有效回答')
-          ElMessage.success(successMsg)
-        } else {
-          this.addBotMessage(`服务提示:${response?.msg || '未知错误'}`)
-        }
-      } catch (error) {
-        this.addBotMessage('网络连接失败，请稍后重试')
-      } finally {
-        this.isLoading = false
-      }
-    },
-    addUserMessage(content) {
-      this.messages.push({
-        isUser: true,
-        content,
-        displayContent: content,
-        timestamp: new Date()
-      })
-      this.scrollToBottom()
-    },
-    typeBotMessage(content) {
-      const botMsgIndex = this.messages.push({
-        isUser: false,
-        content,
-        displayContent: '',
-        isTyping: true,
-        timestamp: new Date()
-      }) - 1
-
-      if (this.typingTimer) clearInterval(this.typingTimer)
-
-      let currentCharIndex = 0
-      this.typingTimer = setInterval(() => {
-        if (currentCharIndex < content.length) {
-          this.messages[botMsgIndex].displayContent += content[currentCharIndex]
-          currentCharIndex++
-          this.scrollToBottom()
-        } else {
-          clearInterval(this.typingTimer)
-          this.messages[botMsgIndex].isTyping = false
-          this.typingTimer = null
-          // 输出完成后自动朗读
-          if (!this.isMuted) {
-            this.$nextTick(() => this.speak(botMsgIndex))
-          }
-        }
-      }, 30)
-    },
-    askSample(sampleQ) {
-      this.question = sampleQ;
-      this.sendMessage();
-    },
-    toggleSpeak(msg, index) {
-      if (msg.isSpeaking) {
-        this.stopSpeaking()
-      } else {
-        this.speak(index)
-      }
-    },
-    async speak(index) {
-      // 停止当前正在播放的音频
-      this.stopSpeaking()
-
-      const msg = this.messages[index]
-      if (!msg || msg.isUser) return
-
-      msg.isSpeaking = true
-
-      try {
-        const response = await request.post('/api/diabetes/tts', { text: msg.content })
-
-        if (response && response.code === '200' && response.data) {
-          const audioData = response.data
-          const audioBlob = this.base64ToBlob(audioData, 'audio/wav')
-          const audioUrl = URL.createObjectURL(audioBlob)
-
-          this._currentAudio = new Audio(audioUrl)
-          this._currentAudio.onended = () => {
-            msg.isSpeaking = false
-            URL.revokeObjectURL(audioUrl)
-            this._currentAudio = null
-          }
-          this._currentAudio.onerror = () => {
-            msg.isSpeaking = false
-            URL.revokeObjectURL(audioUrl)
-            this._currentAudio = null
-          }
-          await this._currentAudio.play()
-        } else {
-          msg.isSpeaking = false
-          console.error('TTS合成失败:', response?.msg)
-        }
-      } catch (error) {
-        msg.isSpeaking = false
-        console.error('TTS请求异常:', error)
-      }
-    },
-    base64ToBlob(base64, mimeType) {
-      const byteCharacters = atob(base64)
-      const byteNumbers = new Array(byteCharacters.length)
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i)
-      }
-      const byteArray = new Uint8Array(byteNumbers)
-      return new Blob([byteArray], { type: mimeType })
-    },
-    stopSpeaking() {
-      if (this._currentAudio) {
-        this._currentAudio.pause()
-        this._currentAudio.currentTime = 0
-        this._currentAudio = null
-      }
-      this.messages.forEach(m => {
-        if (!m.isUser) m.isSpeaking = false
-      })
-    },
-    toggleMute() {
-      this.isMuted = !this.isMuted
-      if (this.isMuted) {
-        this.stopSpeaking()
-      }
-    },
-    startMarquee() {
-      if (this.marqueeAnimId) return;
-      const track = this.$refs.marqueeTrack;
-      if (!track) return;
-      const speed = 0.3;
-      const animate = () => {
-        if (!this.marqueePaused) {
-          const currentY = parseFloat(track.style.transform?.match(/-?[\d.]+/)?.[0] || 0);
-          const halfHeight = track.scrollHeight / 2;
-          const newY = currentY - speed;
-          track.style.transform = `translateY(${Math.abs(newY) >= halfHeight ? 0 : newY}px)`;
-        }
-        this.marqueeAnimId = requestAnimationFrame(animate);
-      };
-      this.marqueeAnimId = requestAnimationFrame(animate);
-    },
-    pauseMarquee() {
-      this.marqueePaused = true;
-    },
-    resumeMarquee() {
-      this.marqueePaused = false;
-    },
-    async savePlanToRecord() {
-      if (!this.healthPlan || this.healthPlan.length === 0) {
-        ElMessage.warning('暂无健康计划可保存')
-        return
-      }
-      try {
-        const planText = this.healthPlan.map((day, i) =>
-          `第${i + 1}天:\n  饮食: ${day.diet}\n  运动: ${day.exercise}\n  注意: ${day.notes}`
-        ).join('\n\n')
-        const summary = `基于风险等级(${this.riskLevel === 'high' ? '高' : this.riskLevel === 'medium' ? '中' : '低'})生成的${this.healthPlan.length}天健康计划`
-        const payload = {
-          recordType: 'ai_plan',
-          recordDate: new Date().toISOString().replace('T', ' ').substring(0, 19),
-          diagnosis: summary,
-          treatmentPlan: planText
-        }
-        const res = await request.post('/api/patient-visit', payload)
-        if (res && res.code === '200') {
-          ElMessage.success('已保存到诊疗档案')
-        } else {
-          ElMessage.error(res?.msg || '保存失败')
-        }
-      } catch (e) {
-        console.error('保存计划失败', e)
-        ElMessage.error('保存失败')
-      }
-    },
-    formatRecipeForSave(recipe) {
-      if (!recipe || !recipe.meals) return ''
-      return recipe.meals.map(meal => {
-        const foods = meal.foods.map(f => `${f.name} ${f.portion} ${f.cal}`).join(' · ')
-        return `${meal.icon} ${meal.label}\n  ${foods}\n  📊 ${meal.gi} · 🔥 ${meal.totalCal}`
-      }).join('\n\n')
-    },
-    async saveRecipeToRecord() {
-      if (!this.recipeData || !this.recipeData.meals) return
-      try {
-        const recipeText = this.formatRecipeForSave(this.recipeData)
-        const mealCount = this.recipeData.meals.length
-        const prefs = this.selectedDietPrefs.length > 0 ? this.selectedDietPrefs.join('、') : '低GI、高纤维'
-        const payload = {
-          recordType: 'ai_plan',
-          recordDate: new Date().toISOString().replace('T', ' ').substring(0, 19),
-          diagnosis: `控糖食谱 - ${mealCount}餐${this.tastePref}饮食方案（${prefs}）`,
-          treatmentPlan: recipeText
-        }
-        await request.post('/api/patient-visit', payload)
-      } catch (e) {
-        console.error('自动保存食谱失败', e)
-      }
-    }
-  },
-  beforeDestroy() {
-    this.stopSpeaking()
-    if (this.marqueeAnimId) {
-      cancelAnimationFrame(this.marqueeAnimId);
-      this.marqueeAnimId = null;
-    }
-    if (this.typingTimer) {
-      clearInterval(this.typingTimer)
-    }
+const onBotMessageComplete = (index) => {
+  if (!isMuted.value) {
+    nextTick(() => speak(index))
   }
 }
+
+const {
+  riskLevel,
+  abnormalIndicators,
+  healthPlan,
+  planCollapsed,
+  collapsedDays,
+  isGeneratingPlan,
+  indicators,
+  toggleDay,
+  generateHealthPlan,
+  savePlanToRecord
+} = useHealthPlan(selectedModel, { addUserMessage, typeBotMessage, isLoading })
+
+const healthPlanSteps = [
+  '分析风险指标',
+  '生成饮食建议',
+  '制定运动方案',
+  '整理注意事项'
+]
+
+const healthPlanHints = [
+  '正在根据您的风险等级和异常指标进行分析...',
+  '为您量身定制低GI、高纤维的饮食方案...',
+  '设计适合您身体状况的运动计划...',
+  '整理关键健康提醒和注意事项...'
+]
+
+const {
+  reportJson,
+  reportResult,
+  interpretReport
+} = useReport(selectedModel, { addUserMessage, typeBotMessage, isLoading })
+
+const {
+  showRecipePanel,
+  recipeData,
+  isRecipeLoading,
+  showRecipeDialog,
+  dietPrefs,
+  selectedDietPrefs,
+  mealCount,
+  tastePref,
+  formatRecipe,
+  generateRecipe,
+  saveRecipeToRecord
+} = useRecipe(selectedModel, isLoading)
+
+const sendMessage = sendMessageOriginal
+const askSample = askSampleOriginal
+
+watch(() => messages.value.length, () => {
+  if (messages.value.length > 0) {
+    nextTick(() => startMarquee())
+  }
+})
+
+watch(showRecipePanel, (val) => {
+  if (val) {
+    nextTick(() => startMarquee())
+  } else {
+    stopMarquee()
+  }
+})
+
+onMounted(async () => {
+  initUser()
+  await loadDefaultModel()
+  selectedModel.value = defaultModel.value
+  if (isAdmin.value) {
+    tempModel.value = defaultModel.value
+  }
+
+  const query = route.query
+  if (query.context) {
+    messages.value.push({
+      isUser: false,
+      content: `根据您的检测结果：${query.context}，我可以为您提供更针对性的建议。`,
+      displayContent: `根据您的检测结果：${query.context}，我可以为您提供更针对性的建议。`,
+      isTyping: false,
+      isSpeaking: false,
+      timestamp: new Date()
+    })
+  }
+
+  initQuestions()
+})
+
+onBeforeUnmount(() => {
+  stopSpeaking()
+  stopMarquee()
+  clearTypingTimer()
+})
 </script>
 
 <style scoped>
-/* 外层 flex 布局 */
 .chat-wrapper {
   display: flex;
   justify-content: center;
@@ -1039,7 +458,6 @@ export default {
   min-height: 600px;
 }
 
-/* 原有样式保持完全不变 */
 .diabetes-chat-container {
   flex: 1;
   max-width: 800px;
@@ -1183,7 +601,6 @@ export default {
   color: inherit;
 }
 
-/* 朗读按钮 */
 .speak-btn {
   display: inline-flex;
   align-items: center;
@@ -1213,7 +630,6 @@ export default {
   animation: speakPulse 1.2s infinite;
 }
 
-/* 静音按钮 */
 .mute-btn {
   display: inline-flex;
   align-items: center;
@@ -1238,14 +654,6 @@ export default {
 @keyframes speakPulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3); }
   50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
-}
-
-.ai-tip {
-  display: block;
-  font-size: 10px;
-  color: #94a3b8;
-  margin-top: 8px;
-  font-style: italic;
 }
 
 .typing-cursor {
@@ -1286,7 +694,6 @@ export default {
   40% { transform: scale(1); }
 }
 
-/* 输入区域 */
 .input-area {
   display: flex;
   padding: 18px 24px;
@@ -1297,20 +704,19 @@ export default {
   flex-wrap: wrap;
 }
 
-.input-area input {
+.chat-input {
   flex: 1;
   min-width: 200px;
-  padding: 14px 20px;
-  border: 1px solid #cbd5e1;
-  border-radius: 24px;
-  outline: none;
-  font-size: 15px;
-  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.input-area input:focus {
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+.chat-input :deep(.el-input__wrapper) {
+  border-radius: 24px;
+  padding: 8px 20px;
+  box-shadow: 0 0 0 1px #cbd5e1;
+}
+
+.chat-input :deep(.el-input__wrapper:focus-within) {
+  box-shadow: 0 0 0 1px #4a90e2, 0 0 0 3px rgba(74, 144, 226, 0.15);
 }
 
 .send-btn {
@@ -1336,7 +742,6 @@ export default {
   cursor: not-allowed;
 }
 
-/* 模型设置区域新增样式 */
 .model-setting {
   display: flex;
   align-items: center;
@@ -1355,7 +760,6 @@ export default {
   margin-right: 8px;
 }
 
-/* 附加功能区域 */
 .additional-features {
   margin-top: 40px;
   padding: 0 24px;
@@ -1396,7 +800,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.3) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
   pointer-events: none;
@@ -1464,19 +868,24 @@ export default {
   gap: 16px;
 }
 
+.plan-feature-content {
+  position: relative;
+}
+
 .report-textarea {
   width: 100%;
-  padding: 14px 16px;
-  border: 1px solid #e2e8f0;
+}
+
+.report-textarea :deep(.el-textarea__inner) {
   border-radius: 10px;
+  padding: 14px 16px;
   font-size: 14px;
   resize: vertical;
-  outline: none;
   background: #fafbfc;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
-.report-textarea:focus {
+.report-textarea :deep(.el-textarea__inner:focus) {
   border-color: #4a90e2;
   box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.12);
   background: white;
@@ -1507,7 +916,6 @@ export default {
   box-shadow: none;
 }
 
-/* 计划头部行 + 折叠按钮 */
 .plan-header-row {
   display: flex;
   align-items: center;
@@ -1540,7 +948,6 @@ export default {
   border-color: #4a90e2;
 }
 
-/* 控糖食谱侧边栏 */
 .recipe-sidebar {
   position: absolute;
   right: 100px;
@@ -1728,15 +1135,6 @@ export default {
   color: #475569;
 }
 
-.recipe-hint {
-  font-size: 12px;
-  color: #94a3b8;
-  text-align: center;
-  margin: 0;
-  padding-top: 8px;
-  border-top: 1px dashed #e2e8f0;
-}
-
 .recipe-gen-btn {
   display: block;
   width: 100%;
@@ -1838,29 +1236,6 @@ export default {
   font-size: 12px;
 }
 
-:deep(.recipe-text .recipe-gi-line) {
-  display: inline-block;
-  background: #fef3c7;
-  color: #92400e;
-  padding: 2px 10px;
-  border-radius: 4px;
-  font-size: 13px;
-  margin: 2px 0;
-}
-
-:deep(.recipe-text .recipe-ing-line) {
-  display: inline-block;
-  font-size: 13px;
-  color: #57534e;
-  line-height: 1.7;
-}
-
-:deep(.recipe-text .recipe-divider) {
-  border: none;
-  border-top: 1px dashed #f0e0d0;
-  margin: 8px 0;
-}
-
 :deep(.recipe-text .recipe-summary) {
   display: flex;
   justify-content: space-between;
@@ -1877,26 +1252,6 @@ export default {
 
 :deep(.recipe-text .recipe-summary span) {
   display: inline-block;
-}
-
-.report-interpretation {
-  background: #f0f9eb;
-  border-radius: 8px;
-  padding: 16px;
-  margin-top: 8px;
-}
-
-.report-interpretation h4 {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 12px;
-}
-
-.interpretation-content {
-  color: #64748b;
-  line-height: 1.5;
-  font-size: 14px;
 }
 
 .plan-form {
@@ -1918,17 +1273,7 @@ export default {
 }
 
 .plan-select {
-  padding: 8px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.plan-select:focus {
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+  width: 100%;
 }
 
 .checkbox-group {
@@ -1937,13 +1282,8 @@ export default {
   gap: 16px;
 }
 
-.checkbox-group label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: #475569;
-  cursor: pointer;
+.checkbox-group .el-checkbox {
+  margin-right: 0;
 }
 
 .health-plan {
@@ -2125,7 +1465,7 @@ export default {
   white-space: pre-wrap;
 }
 
-.recipe-dialog .el-dialog__header {
+.recipe-dialog :deep(.el-dialog__header) {
   background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
   border-radius: 12px 12px 0 0;
   padding: 18px 24px;
@@ -2133,19 +1473,19 @@ export default {
   border-bottom: 1px solid #fde2c8;
 }
 
-.recipe-dialog .el-dialog__title {
+.recipe-dialog :deep(.el-dialog__title) {
   font-size: 18px;
   font-weight: 600;
   color: #e67e22;
 }
 
-.recipe-dialog .el-dialog__body {
+.recipe-dialog :deep(.el-dialog__body) {
   padding: 20px 24px;
   max-height: 70vh;
   overflow-y: auto;
 }
 
-.recipe-dialog .el-dialog {
+.recipe-dialog :deep(.el-dialog) {
   border-radius: 12px;
   overflow: hidden;
 }
@@ -2193,7 +1533,6 @@ export default {
   padding: 12px 18px;
 }
 
-/* 示例问题面板 */
 .quick-questions-panel {
   background: #f1f5f9;
   border-radius: 12px;
@@ -2236,7 +1575,6 @@ export default {
    box-shadow: 0 2px 6px rgba(74,144,226,0.15);
  }
 
- /* ========== 右侧悬浮跑马灯面板 ========== */
  .floating-side-panel {
    margin-top: 50px;
    margin-left: 40px;
@@ -2289,7 +1627,6 @@ export default {
    transform: translateX(4px);
  }
 
- /* 响应式设计 */
 @media (max-width: 768px) {
   .diabetes-chat-container {
     width: 100%;

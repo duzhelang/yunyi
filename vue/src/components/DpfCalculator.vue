@@ -39,6 +39,19 @@
               <span class="risk-badge" :class="dpfRiskClass">{{ dpfRiskText }}</span>
             </div>
           </div>
+          <div v-if="calcSummary" class="dpf-calc-summary">
+            <div class="summary-title">计算明细</div>
+            <div v-for="(item, idx) in calcSummary" :key="idx" class="summary-row">
+              <span>{{ item.member }}</span>
+              <span>{{ item.detail }}</span>
+              <span class="summary-score">+{{ item.score.toFixed(3) }}</span>
+            </div>
+            <div class="summary-row summary-total">
+              <span>最终结果</span>
+              <span></span>
+              <span class="summary-score">{{ dpfResult.toFixed(3) }}</span>
+            </div>
+          </div>
           <div class="dpf-result-bar">
             <div class="dpf-bar-track">
               <div class="dpf-bar-fill" :style="{ width: dpfBarWidth + '%' }"></div>
@@ -86,7 +99,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { User, DataAnalysis, Document, Promotion, Check } from '@element-plus/icons-vue'
 
@@ -104,29 +117,75 @@ const familyMembers = ref([
   { key: 'grandparent', label: '祖父母', avatar: '👴', hasDiabetes: false, ageAtDiagnosis: 60 }
 ])
 
-const dpfResult = ref(props.modelValue || 0.08)
+const dpfResult = ref(props.modelValue || 0.5)
+const calcSummary = ref(null)
+
+watch(visible, (val) => {
+  if (val) {
+    dpfResult.value = props.modelValue || 0.5
+    calcSummary.value = null
+    familyMembers.value.forEach(m => {
+      m.hasDiabetes = false
+      m.ageAtDiagnosis = m.key === 'grandparent' ? 60 : m.key === 'sibling' ? 40 : 50
+    })
+  }
+})
+
+function getAgeFactor(age) {
+  if (age < 30) return 1.8
+  if (age < 40) return 1.5
+  if (age <= 50) return 1.0
+  if (age <= 60) return 0.8
+  return 0.6
+}
+
+function getAgeFactorLabel(age) {
+  if (age < 30) return '极早发型'
+  if (age < 40) return '早发型'
+  if (age <= 50) return '中年型'
+  if (age <= 60) return '中老年型'
+  return '晚发型'
+}
 
 function calculate() {
   const baseValue = 0.08
   let totalScore = 0
   const weights = { father: 0.5, mother: 0.5, sibling: 0.5, grandparent: 0.25 }
+  const weightLabels = { father: '父亲', mother: '母亲', sibling: '兄弟姐妹', grandparent: '祖父母' }
+  const summary = []
+  let hasAnyDiabetes = false
+
   familyMembers.value.forEach(member => {
     if (member.hasDiabetes) {
+      hasAnyDiabetes = true
       const age = member.ageAtDiagnosis || 50
-      let ageFactor = 1.0
-      if (age < 40) ageFactor = 1.5
-      else if (age > 60) ageFactor = 0.7
-      totalScore += (weights[member.key] || 0.5) * ageFactor
+      const weight = weights[member.key] || 0.5
+      const ageFactor = getAgeFactor(age)
+      const score = weight * ageFactor
+      totalScore += score
+      summary.push({
+        member: weightLabels[member.key] || member.label,
+        detail: `权重${weight} × ${getAgeFactorLabel(age)}(${age}岁)×${ageFactor}`,
+        score: score
+      })
     }
   })
-  dpfResult.value = Math.min(Math.max(baseValue + totalScore * 0.8, 0.08), 2.42)
+
+  if (!hasAnyDiabetes) {
+    dpfResult.value = baseValue
+    calcSummary.value = [{ member: '无家族史', detail: '基础值', score: baseValue }]
+  } else {
+    dpfResult.value = Math.min(Math.max(baseValue + totalScore * 0.8, 0.08), 2.42)
+    calcSummary.value = summary
+  }
   ElMessage.success('计算完成')
 }
 
 function apply() {
-  emit('update:modelValue', parseFloat(dpfResult.value.toFixed(3)))
+  const val = parseFloat(dpfResult.value.toFixed(3))
+  emit('update:modelValue', val)
   visible.value = false
-  ElMessage.success(`已应用谱系函数值：${dpfResult.value.toFixed(3)}`)
+  ElMessage.success(`已应用谱系函数值：${val.toFixed(3)}`)
 }
 
 const dpfRiskClass = computed(() => {
@@ -186,4 +245,47 @@ const dpfBarWidth = computed(() => {
 .dpf-weight-table { display: flex; flex-direction: column; gap: 6px; }
 .weight-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f5f7fa; border-radius: 6px; font-size: 13px; }
 .weight-value { font-weight: 600; color: #4080FF; }
+
+.dpf-calc-summary {
+  margin: 16px 0;
+  padding: 14px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e4e7ed;
+}
+.summary-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #dcdfe6;
+}
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #606266;
+}
+.summary-row + .summary-row {
+  border-top: 1px solid #f0f2f5;
+}
+.summary-score {
+  font-weight: 600;
+  color: #4080FF;
+  min-width: 60px;
+  text-align: right;
+}
+.summary-total {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 2px solid #4080FF !important;
+  font-weight: 600;
+  color: #303133;
+}
+.summary-total .summary-score {
+  font-size: 15px;
+}
 </style>

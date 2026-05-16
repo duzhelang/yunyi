@@ -92,7 +92,7 @@ files:
     path: ${base.path}/python/diabetes_chat.py
   # 模型文件路径（默认，实际从 sys_model_version 表读取激活模型）
   pythonModelPath:
-    path: ${base.path}/data/models/diabetes_model.pth
+    path: ${base.path}/data/models/pth_models/diabetes_model.pth
 
 
 zhipu:
@@ -113,7 +113,7 @@ mimo-omni:
 mimo-tts:
   api:
     api-key: ${MIMO_TTS_API_KEY:}
-    base-url: https://api.xiaomimimo.com/anthropic/v1/messages
+    base-url: https://api.xiaomimimo.com/anthropic/v1
 
 patient-visit:
   max-records: 50

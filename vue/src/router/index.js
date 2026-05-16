@@ -172,22 +172,39 @@ const hasPermissionForPath = (path) => {
     const menus = JSON.parse(storeMenus)
     const normalizedPath = path.replace(/^\//, '').toLowerCase()
     
-    // 检查一级菜单
-    for (const menu of menus) {
+    const checkMenuMatch = (menu) => {
       if (menu.path && menu.path.replace(/^\//, '').toLowerCase() === normalizedPath) {
         return true
       }
       if (menu.pagePath && menu.pagePath.toLowerCase() === normalizedPath) {
         return true
       }
-      
-      // 检查子菜单
-      if (menu.children && menu.children.length) {
-        for (const child of menu.children) {
-          if (child.path && child.path.replace(/^\//, '').toLowerCase() === normalizedPath) {
+      if (menu.pagePath && mapPagePath[menu.pagePath]) {
+        const mappedName = mapPagePath[menu.pagePath]
+        if (mappedName.toLowerCase() === normalizedPath) {
+          return true
+        }
+      }
+      if (menu.path) {
+        const pathSegments = menu.path.split('/').filter(Boolean)
+        const lastSegment = pathSegments[pathSegments.length - 1]
+        if (lastSegment && mapPagePath[lastSegment]) {
+          const mappedName = mapPagePath[lastSegment]
+          if (mappedName.toLowerCase() === normalizedPath) {
             return true
           }
-          if (child.pagePath && child.pagePath.toLowerCase() === normalizedPath) {
+        }
+      }
+      return false
+    }
+    
+    for (const menu of menus) {
+      if (checkMenuMatch(menu)) {
+        return true
+      }
+      if (menu.children && menu.children.length) {
+        for (const child of menu.children) {
+          if (checkMenuMatch(child)) {
             return true
           }
         }
@@ -216,7 +233,6 @@ router.beforeEach((to, from, next) => {
     if (storeMenus) {
       if (pendingPaths.has(to.fullPath)) {
         pendingPaths.delete(to.fullPath)
-        // 检查是否是权限问题
         if (!hasPermissionForPath(to.path)) {
           ElMessage.warning('您没有权限访问该页面，请联系管理员分配权限')
           localStorage.setItem('lastRouteError', 'permission')
