@@ -1,0 +1,240 @@
+# Software-ODA125 云医智护糖尿病健康管理系统
+## 工作流 & 架构 Mermaid 流程图合集
+
+## 一、系统整体架构工作流
+```mermaid
+flowchart TD
+    A[用户访问系统] --> B[Vue3 前端<br/>Vite 5 · 5173端口]
+    B -->|HTTP RESTful API| C[SpringBoot 后端<br/>Spring Boot 3.3.5 · 9090端口]
+
+    B --> B1[Login.vue<br/>JWT认证+路由守卫]
+    B --> B2[Aside.vue<br/>数据库驱动动态菜单]
+    B --> B3[Pinia状态管理<br/>MainStore/HealthStore]
+    B --> B4[Axios统一请求封装<br/>Token拦截器]
+    B --> B5[15个Composables<br/>组合式函数复用]
+
+    C --> C1[JwtInterceptor<br/>JWT拦截器权限校验]
+    C --> C2[30个Controller<br/>169个API接口]
+    C --> C3[Service业务逻辑层<br/>ServiceImpl实现]
+    C --> C4[MyBatis-Plus 3.5.9<br/>Mapper数据访问层]
+    C --> C5[UsePythonUtils<br/>Python子进程调用工具]
+
+    C --> D[MySQL 8.0 数据库<br/>25张业务表]
+    C --> E[Redis<br/>Spring Cache缓存]
+    C --> F[Python 3.12 算法层<br/>PyTorch 2.11 / SHAP 0.46 / Pandas]
+    F --> G[AI大模型服务<br/>智谱GLM-4 / DeepSeek / Kimi / MiMo]
+```
+
+## 二、八大业务模块总工作流
+```mermaid
+flowchart TD
+    subgraph 前端入口
+    Login[用户登录认证<br/>JWT + 数据库驱动动态路由 + RBAC]
+    end
+
+    Login --> M1[用户认证模块<br/>登录/注册/密码修改]
+    Login --> M2[系统管理模块<br/>用户/角色/菜单/配置]
+    Login --> M3[AI模型中心模块<br/>数据集管理/在线训练/模型版本]
+    Login --> M4[用户服务模块<br/>快检/健康档案/AI问诊/诊疗/打卡]
+    Login --> M5[诊断服务模块<br/>医生工作台/个体洞察/群体分析]
+    Login --> M6[维修工单模块<br/>报修/指派/处理/评价闭环]
+    Login --> M7[教育资源模块<br/>科普文章/视频/留言]
+    Login --> M8[报表统计模块<br/>运营数据可视化/导出]
+```
+
+## 三、核心预测数据流（单条预测）
+```mermaid
+flowchart TD
+    A[用户录入8项健康指标<br/>怀孕次数/血糖/血压/皮褶厚度/胰岛素/BMI/DPF/年龄] --> B[前端Pinia状态存储<br/>useDraftPersistence草稿缓存]
+    B -->|POST /api/predict/single| C[SinglePredictController]
+    C --> D[SinglePredictServiceImpl<br/>参数范围校验]
+    D --> E[ModelVersionService<br/>获取激活模型路径]
+    E --> F[UsePythonUtils.callPythonAndGetOutput<br/>调用predict_single.py · 30秒超时]
+    F --> G[Python推理引擎<br/>PyTorch模型 + MC Dropout不确定性估计 + SHAP归因]
+    G --> H[返回JSON结果<br/>风险概率/置信区间/特征重要性/图表Base64]
+    H --> I[前端ECharts渲染<br/>仪表盘/雷达图/瀑布图/特征柱状图]
+    I --> J{用户选择}
+    J -->|保存| K[写入user_health_profiles表<br/>生成AI健康建议]
+    J -->|跳转问诊| L[携带预测数据至DiabetesChat<br/>上下文感知AI对话]
+```
+
+## 四、批量预测数据流
+```mermaid
+flowchart TD
+    A[上传CSV测试文件] --> B[解析入库sys_testfile表]
+    B --> C[选择测试文件+模型]
+    C -->|POST /api/predict/batch| D[PredictController]
+    D --> E[UsePythonUtils.callPython<br/>调用predict.py]
+    E --> F[Python批量推理<br/>逐行预测+结果汇总]
+    F --> G[保存JSON结果至data/json/]
+    G --> H[前端展示预测结果<br/>支持下载/删除/批量管理]
+```
+
+## 五、AI模型在线训练数据流
+```mermaid
+flowchart TD
+    A[管理员上传CSV训练集<br/>或扫描训练目录] --> B[解析入库sys_trainfile表<br/>自动检测数据质量/样本数/列信息]
+    B --> C[创建训练任务<br/>配置超参数:学习率/轮次/批大小]
+    C -->|POST /api/train-task/start| D[TrainTaskService<br/>@Async异步执行]
+    D --> E[调用train.py或incremental_train.py]
+    E --> F[Python Pandas数据预处理<br/>缺失值填充/特征缩放]
+    F --> G[PyTorch三层全连接网络训练<br/>fc1→fc2→fc3 + Dropout]
+    G --> H[输出模型文件.pth + scaler + encoder]
+    H --> I[自动注册模型版本<br/>sys_model_version表<br/>记录准确率/损失/F1/AUC]
+    I --> J[管理员查看训练指标<br/>混淆矩阵/趋势图/雷达对比]
+    J --> K[激活模型版本<br/>供单条/批量预测调用]
+```
+
+## 六、智能问答 AI 数据流
+```mermaid
+flowchart TD
+    A[用户输入健康问题] --> B[前端useChat组合式函数<br/>消息管理/打字机效果/自动滚动]
+    B -->|POST /api/diabetes/chat| C[DiabetesController]
+    C --> D[读取sys_config表<br/>获取默认大模型配置]
+    D --> E[调用diabetes_chat.py<br/>provider + api_key + question]
+    E --> F[OpenAI兼容SDK<br/>调用智谱GLM-4/DeepSeek/Kimi/MiMo]
+    F --> G[流式响应SSE返回文本]
+    G --> H[前端打字机效果逐字渲染<br/>Markdown格式化展示]
+    H --> I{可选操作}
+    I -->|TTS语音播报| J[POST /api/diabetes/tts<br/>MiMo音色定制]
+    I -->|上下文携带| K[从预测结果页携带数据<br/>回答更精准]
+```
+
+## 七、全周期健康管理数据流
+```mermaid
+flowchart TD
+    A[用户填写健康档案<br/>11项生理指标+生活方式] --> B[useHealthForm表单校验<br/>useDraftPersistence草稿缓存]
+    B -->|POST /api/health-profile/save-and-predict| C[HealthProfileController]
+    C --> D[写入user_health_profiles表]
+    D --> E[同步调用AI风险预测<br/>生成prediction_json]
+    E --> F[AI生成个性化健康建议<br/>ai_advice字段]
+    F --> G{用户操作}
+    G -->|发送给医生| H[send-to-doctor<br/>标记PENDING状态]
+    G -->|每日打卡| I[treatment_checkin表<br/>饮食/运动/用药/血糖]
+    G -->|查看趋势| J[ECharts趋势图<br/>血糖/血压/体重/DPF历史]
+    H --> K[医生工作台<br/>查看待诊断列表]
+    K --> L[提交诊断结果<br/>diagnosis_result更新DONE]
+```
+
+## 八、诊疗记录与患者就诊数据流
+```mermaid
+flowchart TD
+    A[患者就诊] --> B{记录类型}
+    B -->|诊疗档案| C[sys_treatment_record<br/>诊断结果/治疗方案/医生信息]
+    B -->|就诊记录| D[patient_visit_record<br/>主诉/诊断/血糖/血压/HbA1c]
+    C --> E[支持Excel批量导入导出]
+    D --> F[图表数据趋势查询<br/>glucose/bp/weight/bmi]
+    F --> G[软删除+自动淘汰<br/>保留最近5次诊疗记录]
+    G --> H[患者诊疗历史总览<br/>医生诊断辅助]
+```
+
+## 九、维修工单完整工作流
+```mermaid
+flowchart TD
+    A[用户提交报修<br/>故障类型/紧急程度/附件] --> B[创建工单 pending状态<br/>sys_repair_order表]
+    B --> C[运维管理员查看待处理工单]
+    C --> D{分配方式}
+    D -->|管理员指派| E[assign工单 assigned状态]
+    D -->|维修员认领| F[claim工单 assigned状态]
+    E & F --> G[开始处理 processing<br/>添加sys_repair_log日志]
+    G --> H[工单完成 completed]
+    H --> I[用户确认确认]
+    I --> J{用户评价}
+    J -->|满意| K[提交评价 1-5星<br/>sys_repair_evaluation]
+    J -->|不满意| L[重新打开工单 reopen]
+    L --> G
+    K --> M[工单关闭 closed]
+    M --> N[系统工单统计分析<br/>处理时长/满意度/类型分布]
+```
+
+## 十、数据分析与预处理数据流
+```mermaid
+flowchart TD
+    A[选择目标数据集<br/>sys_trainfile/sys_testfile] --> B[查看数据统计信息<br/>缺失值/异常值/样本分布]
+    B --> C{选择操作类型}
+    C --> C1[数据清洗<br/>去重/缺失值填充删除]
+    C --> C2[编码缩放<br/>归一化/标准化]
+    C --> C3[样本平衡<br/>上下采样]
+    C --> C4[特征工程<br/>特征衍生/筛选]
+    C --> C5[数据集划分<br/>训练/验证/测试集]
+    C1 & C2 & C3 & C4 & C5 --> D[POST /api/data/preprocess<br/>Python Pandas处理]
+    D --> E[前端多维度可视化<br/>直方图/热力图/聚类散点图]
+    D --> F[支持下载处理后CSV数据]
+```
+
+## 十一、群体分析 & 个体洞察数据流
+```mermaid
+flowchart TD
+    A[选择样本/数据集] --> B{分析类型}
+    B -->|个体洞察| B1[GET /api/insight/id<br/>SHAP归因分析]
+    B -->|相似病例| B2[余弦相似度匹配<br/>predict_single.py --similar]
+    B -->|历史趋势| B3[GET /api/patient-visit/chart-data<br/>血糖/血压/体重趋势]
+    B -->|群体分析| B4[POST /api/analysis/group<br/>分布/聚类/相关性]
+    B1 & B2 & B3 & B4 --> C[后端调用Python分析脚本]
+    C --> D[返回结构化JSON数据]
+    D --> E[analysis_record表持久化]
+    E --> F[ECharts渲染各类统计图表<br/>9种图表类型]
+```
+
+## 十二、RBAC权限与动态路由工作流
+```mermaid
+flowchart TD
+    A[用户登录] --> B[后端验证用户名密码]
+    B --> C[签发JWT Token<br/>含userId+密码签名]
+    C --> D[前端存储Token至localStorage]
+    D --> E[路由守卫beforeEach触发]
+    E --> F{Token有效性校验}
+    F -->|有效| G[请求sys_menu表<br/>按角色获取菜单权限]
+    F -->|无效/过期| H[重定向至Login.vue]
+    G --> I[动态添加路由<br/>router.addRoute]
+    I --> J[Aside.vue渲染侧边菜单<br/>数据库驱动 零代码新增页面]
+    J --> K[每次API请求<br/>JwtInterceptor拦截校验]
+    K --> L{权限判断}
+    L -->|通过| M[Controller处理业务]
+    L -->|拒绝| N[返回401/403]
+```
+
+## 十三、角色操作矩阵
+```mermaid
+flowchart LR
+    subgraph 管理员Admin
+    A1[用户管理] --> A2[角色菜单配置]
+    A2 --> A3[模型训练部署]
+    A3 --> A4[系统配置管理]
+    A4 --> A5[数据集管理]
+    end
+
+    subgraph 医生Doctor
+    B1[医生工作台] --> B2[待诊断列表]
+    B2 --> B3[个体洞察分析]
+    B3 --> B4[群体统计分析]
+    B4 --> B5[诊疗记录管理]
+    end
+
+    subgraph 普通用户User
+    C1[风险快检] --> C2[健康档案管理]
+    C2 --> C3[AI智能问诊]
+    C3 --> C4[每日打卡]
+    C4 --> C5[就诊记录]
+    C5 --> C6[教育资源]
+    end
+
+    subgraph 运维人员Ops
+    D1[工单处理] --> D2[日志记录]
+    D2 --> D3[工单统计]
+    end
+```
+
+## 代码规模概览
+| 指标 | 数量 |
+|------|------|
+| Controller控制器 | 30个 |
+| API接口 | 169个 |
+| 数据库表 | 25张 |
+| Python脚本 | 8个 |
+| Vue页面组件 | 15+个 |
+| Composables组合式函数 | 15个 |
+| AI模型支持 | 6种 |
+| ECharts图表类型 | 9种 |
+| 预置用户角色 | 4种 |
+| 代码总行数 | 36,000+行 |
