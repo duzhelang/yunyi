@@ -26,8 +26,21 @@
       <el-button type="primary" @click="exp" class="ml-5">导出</el-button>
     </div>
 
-    <el-table :data="tableData" border stripe :header-cell-class-name="'headerBg'"  @selection-change="handleSelectionChange">
+    <el-table :data="tableData" border stripe :header-cell-class-name="'headerBg'" @selection-change="handleSelectionChange" :row-key="row => row.id" :expand-row-keys="expandedRowKeys" @expand-change="onExpandChange">
       <el-table-column type="selection" width="55"></el-table-column>
+      <el-table-column type="expand">
+        <template #default="{ row }">
+          <div class="expand-detail">
+            <el-descriptions :column="2" border size="small">
+              <el-descriptions-item label="真实姓名">{{ row.realName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="性别">{{ row.sex || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="年龄">{{ row.age ?? '-' }}</el-descriptions-item>
+              <el-descriptions-item label="紧急联系人">{{ row.emergencyContact || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="与患者关系">{{ row.emergencyRelation || '-' }}</el-descriptions-item>
+            </el-descriptions>
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column prop="id" label="ID" width="80"></el-table-column>
       <el-table-column prop="username" label="用户名" width="140"></el-table-column>
       <el-table-column prop="role" label="角色">
@@ -41,14 +54,9 @@
       <el-table-column prop="email" label="邮箱"></el-table-column>
       <el-table-column prop="phone" label="电话"></el-table-column>
       <el-table-column prop="address" label="地址"></el-table-column>
-      <el-table-column prop="realName" label="真实姓名"></el-table-column>
-      <el-table-column prop="sex" label="性别"></el-table-column>
-      <el-table-column prop="age" label="年龄"></el-table-column>
-      <el-table-column prop="emergencyContact" label="紧急联系人"></el-table-column>
-      <el-table-column prop="emergencyRelation" label="与患者关系"></el-table-column>
-      <el-table-column label="操作"  width="500" align="center">
+      <el-table-column label="操作" width="500" align="center">
         <template #default="scope">
-         <el-button type="success" @click="handleEdit(scope.row)">编辑</el-button>
+          <el-button type="success" @click="handleEdit(scope.row)">编辑</el-button>
           <el-popconfirm
               class="ml-5"
               confirm-button-text='确定'
@@ -156,7 +164,8 @@ export default {
       multipleSelection: [],
       roles: [],
       vis: false,
-      stuVis: false
+      stuVis: false,
+      expandedRowKeys: []
     }
   },
   created() {
@@ -182,6 +191,9 @@ export default {
       request.get("/role").then(res => {
         this.roles = res.data
       })
+    },
+    onExpandChange(row, expandedRows) {
+      this.expandedRowKeys = expandedRows.map(item => item.id)
     },
     saveUpdateUser() {
       request.post("/user/saveUpdateUser", this.form).then(res => {
@@ -259,5 +271,8 @@ export default {
 <style>
 .headerBg {
   background: #eee!important;
+}
+.expand-detail {
+  padding: 16px 24px;
 }
 </style>

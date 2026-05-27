@@ -4,6 +4,7 @@
     title="糖尿病谱系函数说明"
     width="620px"
     custom-class="dpf-info-dialog"
+    :append-to-body="true"
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <div class="dpf-info-content">

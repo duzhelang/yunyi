@@ -7,6 +7,7 @@
     custom-class="result-dialog"
     :show-close="true"
     :before-close="handleBeforeClose"
+    :append-to-body="true"
     destroy-on-close
   >
     <div class="result-container" v-loading="loading" element-loading-text="正在加载检测结果..." element-loading-background="rgba(255,255,255,0.9)">
@@ -789,5 +790,77 @@ function handleReEvaluate() {
 
 .carousel-display .risk-description {
   display: none !important;
+}
+
+.carousel-display .chart-controls {
+  display: none !important;
+}
+
+.carousel-display .indicators-legend {
+  display: none !important;
+}
+
+.carousel-display .data-source {
+  display: none !important;
+}
+
+.carousel-display .chart-legend {
+  display: none !important;
+}
+
+.carousel-display .factor-details {
+  display: none !important;
+}
+
+.carousel-display .data-summary {
+  display: none !important;
+}
+
+.carousel-display .risk-overlay {
+  transform: translate(-50%, -30%) !important;
+}
+
+.carousel-display .risk-value {
+  font-size: 36px !important;
+}
+
+.carousel-display .risk-label {
+  font-size: 16px !important;
+}
+
+.carousel-display .progress-mode {
+  display: none !important;
+}
+
+.carousel-display .center-overlay {
+  transform: translate(-50%, -40%) !important;
+}
+
+.carousel-display .probability-circle {
+  width: 80px !important;
+  height: 80px !important;
+}
+
+.carousel-display .probability-value {
+  font-size: 20px !important;
+}
+
+.carousel-display .risk-legend {
+  display: none !important;
+}
+
+.carousel-display .risk-advice {
+  display: none !important;
+}
+
+.carousel-display .risk-gauge-chart,
+.carousel-display .health-radar-chart,
+.carousel-display .indicator-compare-chart,
+.carousel-display .risk-distribution-chart,
+.carousel-display .factor-waterfall-chart {
+  padding: 8px !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
 }
 </style>

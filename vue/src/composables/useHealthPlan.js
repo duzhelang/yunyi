@@ -3,10 +3,35 @@ import request from '@/utils/request'
 import { ElMessage } from 'element-plus'
 import { mockPlans } from '@/data/diabetesMockData'
 
+const CACHE_KEY = 'health_plan_cache'
+const CACHE_TTL = 2 * 60 * 1000
+
+function saveCache(data) {
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }))
+  } catch (e) { /* ignore */ }
+}
+
+function loadCache() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const { data, ts } = JSON.parse(raw)
+    if (Date.now() - ts > CACHE_TTL) {
+      sessionStorage.removeItem(CACHE_KEY)
+      return null
+    }
+    return data
+  } catch (e) {
+    return null
+  }
+}
+
 export function useHealthPlan(selectedModel, { addUserMessage, typeBotMessage, isLoading }) {
-  const riskLevel = ref('')
-  const abnormalIndicators = ref([])
-  const healthPlan = ref(null)
+  const cached = loadCache()
+  const riskLevel = ref(cached?.riskLevel || '')
+  const abnormalIndicators = ref(cached?.abnormalIndicators || [])
+  const healthPlan = ref(cached?.healthPlan || null)
   const planCollapsed = ref(false)
   const collapsedDays = ref([])
   const isGeneratingPlan = ref(false)
@@ -51,6 +76,7 @@ export function useHealthPlan(selectedModel, { addUserMessage, typeBotMessage, i
       healthPlan.value = mockPlans[riskLevel.value] || mockPlans.low
       usedMock = true
     }
+    saveCache({ riskLevel: riskLevel.value, abnormalIndicators: abnormalIndicators.value, healthPlan: healthPlan.value })
     planCollapsed.value = false
     collapsedDays.value = []
     if (usedMock) {

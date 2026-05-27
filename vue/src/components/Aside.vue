@@ -1,10 +1,14 @@
 <template>
-  <el-menu :openeds="opens" style="min-height: 100%; overflow-x: hidden" background-color="transparent"
+  <el-menu :openeds="opens" :style="{ width: isCollapse ? '80px' : '200px' }" :class="{ 'is-collapse': isCollapse }" style="min-height: 100%; overflow-x: hidden" background-color="transparent"
            text-color="rgba(50, 50, 50, 0.95)" active-text-color="#5eead4" :collapse-transition="false" :collapse="isCollapse" router
            class="aside-menu">
-    <div class="sidebar-header" v-show="logoTextShow">
-      <div class="logo-title">云医智护</div>
-      <div class="logo-subtitle">糖尿病诊断系统</div>
+    <div class="sidebar-header" :class="{ 'sidebar-header--collapse': isCollapse }">
+      <div class="logo-title" v-show="!isCollapse">云医智护</div>
+      <div class="logo-subtitle" v-show="!isCollapse">糖尿病诊断系统</div>
+      <div class="logo-icon-only" v-show="isCollapse">
+        <div class="logo-icon-circle">云</div>
+        <div class="logo-icon-label">云医智护</div>
+      </div>
     </div>
     <div v-for="item in menus" :key="item.id">
       <!-- 父菜单（有子菜单） -->
@@ -15,7 +19,7 @@
               <component :is="getIconComponent(item.icon)" />
             </el-icon>
             <el-icon v-else><Menu /></el-icon>
-            {{ item.name }}
+            <span class="menu-title-text">{{ item.name }}</span>
           </template>
           <div v-for="subItem in item.children" :key="subItem.id">
             <el-menu-item v-if="subItem.path || subItem.pagePath || subItem.page_path" :index="getMenuIndex(subItem)">
@@ -23,19 +27,19 @@
                 <component :is="getIconComponent(subItem.icon)" />
               </el-icon>
               <el-icon v-else><Menu /></el-icon>
-              <template #title>{{ subItem.name }}</template>
+              <template #title><span class="menu-title-text">{{ subItem.name }}</span></template>
             </el-menu-item>
           </div>
         </el-sub-menu>
       </div>
       <!-- 一级叶子菜单（有路径） -->
-      <div v-else-if="item.path || item.pagePath || item.page_path">
+      <div v-else-if="item.path || item.pagePath || item.page_path" class="top-level-leaf">
         <el-menu-item :index="getMenuIndex(item)">
           <el-icon v-if="item.icon">
             <component :is="getIconComponent(item.icon)" />
           </el-icon>
           <el-icon v-else><Menu /></el-icon>
-          <template #title>{{ item.name }}</template>
+          <template #title><span class="menu-title-text">{{ item.name }}</span></template>
         </el-menu-item>
       </div>
     </div>
@@ -167,12 +171,12 @@ export default {
   top: 0;
   left: 0;
   height: 100vh !important;
-  width: 200px !important;
   z-index: 999 !important;
   overflow-y: auto;
   background: linear-gradient(to right, #6a7077, #acb0b6, #f0f7fff7) !important;
   border-right: none !important;
   box-shadow: 1px 0 6px rgba(0, 0, 0, 0.12);
+  transition: width 0.3s ease;
 }
 
 .aside-menu::-webkit-scrollbar {
@@ -192,8 +196,85 @@ export default {
   background: rgba(255, 255, 255, 0.35);
 }
 
-.el-menu--collapse span {
-  visibility: hidden;
+.sidebar-header--collapse {
+  padding: 16px 0 12px !important;
+}
+
+.sidebar-header--collapse .logo-icon-only {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-header--collapse .logo-icon-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5eead4, #3b82f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-header--collapse .logo-icon-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.el-menu--collapse .el-sub-menu__title .el-sub-menu__icon-arrow {
+  display: none;
+}
+
+.el-menu--collapse .el-menu-item,
+.el-menu--collapse .el-sub-menu__title {
+  height: auto;
+  padding: 10px 0 !important;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  line-height: normal;
+  margin: 4px 6px;
+}
+
+.el-menu--collapse .top-level-leaf .el-menu-item {
+  padding: 14px 0 !important;
+  margin: 6px 6px;
+}
+
+.el-menu--collapse .top-level-leaf .el-menu-item .el-icon {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.el-menu--collapse .top-level-leaf .menu-title-text {
+  font-size: 13px;
+}
+
+.el-menu--collapse .el-menu-item .el-icon,
+.el-menu--collapse .el-sub-menu__title > .el-icon {
+  margin-right: 0;
+  margin-bottom: 4px;
+  font-size: 22px;
+}
+
+.el-menu--collapse .menu-title-text {
+  display: block;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70px;
 }
 
 .el-menu-item,

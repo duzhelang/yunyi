@@ -13,17 +13,16 @@ import { useChartTheme } from './chartTheme'
  */
 export function useChart(options = {}) {
   const { getOption, props, autoResize = true } = options
-  
-  // 图表容器引用
+
   const chartRef = ref(null)
-  // ECharts实例
   const chartInstance = ref(null)
-  // 是否正在加载
   const loading = ref(false)
-  // 是否有错误
   const hasError = ref(false)
-  // 错误信息
   const errorMessage = ref('')
+  let resizeObserver = null
+  let resizeTimer = null
+  let updateTimer = null
+  let isUnmounted = false
   
   // 获取主题配置
   const theme = useChartTheme()
@@ -33,24 +32,45 @@ export function useChart(options = {}) {
    */
   function initChart() {
     if (!chartRef.value) return
-    
+
     try {
-      // 销毁旧实例
       if (chartInstance.value) {
         chartInstance.value.dispose()
       }
-      
-      // 创建新实例
+
       chartInstance.value = echarts.init(chartRef.value, theme.getTheme())
-      
-      // 设置初始配置
-      updateChart()
-      
-      // 监听窗口大小变化
+      scheduleUpdate()
+
       if (autoResize) {
         window.addEventListener('resize', handleResize)
+
+        let prevW = 0
+        let prevH = 0
+        resizeObserver = new ResizeObserver((entries) => {
+          const entry = entries[0]
+          if (!entry || !chartInstance.value) return
+          const { width, height } = entry.contentRect
+          clearTimeout(resizeTimer)
+          if (width > 0 && height > 0) {
+            const oldW = prevW
+            const oldH = prevH
+            prevW = width
+            prevH = height
+            resizeTimer = setTimeout(() => {
+              if (isUnmounted || !chartInstance.value) return
+              if ((oldW < 10 || oldH < 10) && getOption) {
+                const option = getOption()
+                if (option) {
+                  chartInstance.value.setOption(option, { notMerge: true })
+                }
+              }
+              chartInstance.value.resize()
+            }, 80)
+          }
+        })
+        resizeObserver.observe(chartRef.value)
       }
-      
+
       hasError.value = false
       errorMessage.value = ''
     } catch (error) {
@@ -61,46 +81,62 @@ export function useChart(options = {}) {
   }
   
   /**
-   * 更新图表配置
+   * 防抖调度图表更新
+   * 合并同一事件循环内的多次调用（watch + ResizeObserver 同时触发）
    */
-  function updateChart() {
-    if (!chartInstance.value || !getOption) return
-    
-    try {
-      loading.value = true
-      const option = getOption()
-      if (option) {
-        chartInstance.value.setOption(option, true)
-      }
-    } catch (error) {
-      hasError.value = true
-      errorMessage.value = `图表更新失败: ${error.message}`
-      console.error('图表更新失败:', error)
-    } finally {
-      loading.value = false
-    }
+  function scheduleUpdate() {
+    clearTimeout(updateTimer)
+    updateTimer = setTimeout(() => {
+      if (isUnmounted || !chartInstance.value || !getOption) return
+      nextTick(() => {
+        if (isUnmounted || !chartInstance.value) return
+        try {
+          loading.value = true
+          const option = getOption()
+          if (option) {
+            chartInstance.value.setOption(option, { notMerge: true })
+            chartInstance.value.resize()
+          }
+        } catch (error) {
+          hasError.value = true
+          errorMessage.value = `图表更新失败: ${error.message}`
+          console.error('图表更新失败:', error)
+        } finally {
+          loading.value = false
+        }
+      })
+    }, 16)
   }
-  
-  /**
-   * 处理窗口大小变化
-   */
+
   function handleResize() {
-    if (chartInstance.value) {
-      chartInstance.value.resize()
-    }
+    clearTimeout(resizeTimer)
+    resizeTimer = setTimeout(() => {
+      if (!isUnmounted && chartInstance.value) {
+        chartInstance.value.resize()
+      }
+    }, 50)
   }
   
   /**
    * 销毁图表
    */
   function disposeChart() {
+    isUnmounted = true
+    clearTimeout(resizeTimer)
+    clearTimeout(updateTimer)
+
     if (chartInstance.value) {
       chartInstance.value.dispose()
       chartInstance.value = null
     }
-    
+
     if (autoResize) {
       window.removeEventListener('resize', handleResize)
+
+      if (resizeObserver) {
+        resizeObserver.disconnect()
+        resizeObserver = null
+      }
     }
   }
   
@@ -109,6 +145,7 @@ export function useChart(options = {}) {
    */
   function reload() {
     disposeChart()
+    isUnmounted = false
     nextTick(() => {
       initChart()
     })
@@ -146,27 +183,22 @@ export function useChart(options = {}) {
     return chartInstance.value
   }
   
-  // 监听props变化，自动更新图表
   if (props) {
     watch(
       () => props,
       () => {
-        nextTick(() => {
-          updateChart()
-        })
+        scheduleUpdate()
       },
       { deep: true }
     )
   }
-  
-  // 组件挂载时初始化图表
+
   onMounted(() => {
     nextTick(() => {
       initChart()
     })
   })
-  
-  // 组件卸载时销毁图表
+
   onUnmounted(() => {
     disposeChart()
   })
@@ -178,7 +210,7 @@ export function useChart(options = {}) {
     hasError,
     errorMessage,
     initChart,
-    updateChart,
+    updateChart: scheduleUpdate,
     disposeChart,
     reload,
     exportImage,

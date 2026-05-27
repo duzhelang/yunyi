@@ -342,283 +342,300 @@ onUnmounted(() => {
 })
 
 function showResult() {
+  activeChartIndex.value = 0
   resultDialogVisible.value = true
-  nextTick(() => initECharts())
+  nextTick(() => {
+    setTimeout(() => initECharts(), 350)
+  })
+}
+
+function ensureChartInit(index) {
+  const el = chartRefs.value[index]
+  if (!el) return null
+  const existing = echarts.getInstanceByDom(el)
+  if (existing) return existing
+  return echarts.init(el)
+}
+
+function renderGaugeChart(chart) {
+  const riskColor = store.riskProbability >= 60 ? '#F56C6C' : store.riskProbability >= 30 ? '#E6A23C' : '#67C23A'
+  chart.setOption({
+    series: [{
+      type: 'gauge',
+      startAngle: 210,
+      endAngle: -30,
+      min: 0,
+      max: 100,
+      splitNumber: 10,
+      itemStyle: { color: riskColor },
+      progress: {
+        show: true,
+        width: 18,
+        roundCap: true,
+        itemStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 1, y2: 0,
+            colorStops: [
+              { offset: 0, color: '#67C23A' },
+              { offset: 0.5, color: '#E6A23C' },
+              { offset: 1, color: '#F56C6C' }
+            ]
+          }
+        }
+      },
+      pointer: {
+        icon: 'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z',
+        length: '55%',
+        width: 8,
+        offsetCenter: [0, '-10%'],
+        itemStyle: { color: 'auto', shadowColor: 'rgba(0,0,0,0.2)', shadowBlur: 5 }
+      },
+      axisLine: {
+        lineStyle: {
+          width: 18,
+          color: [[0.3, '#67C23A'], [0.7, '#E6A23C'], [1, '#F56C6C']]
+        },
+        roundCap: true
+      },
+      axisTick: { distance: -22, length: 6, lineStyle: { color: '#fff', width: 1 } },
+      splitLine: { distance: -25, length: 12, lineStyle: { color: '#fff', width: 2 } },
+      axisLabel: { color: '#666', distance: 30, fontSize: 11 },
+      detail: {
+        valueAnimation: true,
+        formatter: '{value}%',
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: riskColor,
+        offsetCenter: [0, '40%'],
+        textStyle: { textShadowColor: 'rgba(0,0,0,0.1)', textShadowBlur: 5 }
+      },
+      title: {
+        offsetCenter: [0, '65%'],
+        fontSize: 13,
+        color: '#999'
+      },
+      data: [{ value: store.riskProbability, name: '患病概率' }],
+      animationDuration: 1500,
+      animationEasingUpdate: 'cubicOut'
+    }]
+  })
+}
+
+function renderRadarChart(chart) {
+  const featureNames = ['血糖', 'BMI', '血压', '胰岛素', '皮褶厚度', '年龄', '遗传']
+  const userValues = [
+    Math.min(store.glucose / 200 * 100, 100),
+    Math.min(store.bmi / 40 * 100, 100),
+    Math.min(store.bloodPressure / 200 * 100, 100),
+    Math.min(store.insulin / 200 * 100, 100),
+    Math.min(store.skinThickness / 50 * 100, 100),
+    Math.min(store.age / 100 * 100, 100),
+    Math.min(store.diabetesPedigreeFunction / 2.5 * 100, 100)
+  ]
+  const normalValues = [45, 55, 60, 25, 40, 35, 20]
+  const radarColor = store.riskProbability >= 60 ? 'rgba(245,108,108,' : store.riskProbability >= 30 ? 'rgba(230,162,60,' : 'rgba(103,194,58,'
+  chart.setOption({
+    radar: {
+      indicator: featureNames.map(name => ({ name, max: 100 })),
+      radius: '65%',
+      center: ['50%', '55%'],
+      nameGap: 8,
+      nameTextStyle: { color: '#666', fontSize: 12, fontWeight: 500 },
+      splitArea: {
+        areaStyle: {
+          color: ['rgba(64,128,255,0.02)', 'rgba(64,128,255,0.05)', 'rgba(64,128,255,0.02)', 'rgba(64,128,255,0.05)', 'rgba(64,128,255,0.02)']
+        }
+      },
+      axisLine: { lineStyle: { color: 'rgba(64,128,255,0.15)' } },
+      splitLine: { lineStyle: { color: 'rgba(64,128,255,0.1)' } }
+    },
+    series: [{
+      type: 'radar',
+      data: [
+        {
+          value: userValues,
+          name: '您的指标',
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: { width: 2.5, color: radarColor + '0.8)', shadowColor: radarColor + '0.3)', shadowBlur: 8 },
+          areaStyle: { color: { type: 'radial', x: 0.5, y: 0.5, r: 0.5, colorStops: [{ offset: 0, color: radarColor + '0.4)' }, { offset: 1, color: radarColor + '0.05)' }] } },
+          itemStyle: { color: radarColor + '1)', borderColor: '#fff', borderWidth: 2 }
+        },
+        {
+          value: normalValues,
+          name: '正常参考',
+          symbol: 'diamond',
+          symbolSize: 5,
+          lineStyle: { width: 1.5, type: 'dashed', color: 'rgba(144,147,153,0.6)' },
+          areaStyle: { color: 'rgba(144,147,153,0.05)' },
+          itemStyle: { color: 'rgba(144,147,153,0.8)' }
+        }
+      ],
+      animationDuration: 1500
+    }],
+    tooltip: {
+      trigger: 'item',
+      formatter: function(params) {
+        let html = `<b>${params.name}</b><br/>`
+        params.value.forEach((val, i) => {
+          html += `${featureNames[i]}: ${val.toFixed(1)}%<br/>`
+        })
+        return html
+      }
+    },
+    legend: {
+      bottom: 0,
+      itemWidth: 12,
+      itemHeight: 12,
+      textStyle: { color: '#666', fontSize: 11 }
+    }
+  })
+}
+
+function renderComparisonChart(chart) {
+  const metricLabels = ['血糖', 'BMI', '血压', '胰岛素']
+  const userMetricValues = [store.glucose, store.bmi, store.bloodPressure, store.insulin]
+  const refValues = [90, 22, 120, 50]
+  const refRanges = [[70, 100], [18.5, 24], [90, 140], [16, 166]]
+  chart.setOption({
+    grid: { left: '3%', right: '5%', bottom: '10%', top: '15%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: metricLabels,
+      axisLine: { lineStyle: { color: '#E5E7EB' } },
+      axisTick: { show: false },
+      axisLabel: { color: '#666', fontSize: 12 }
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { lineStyle: { color: '#F0F0F0', type: 'dashed' } }
+    },
+    tooltip: {
+      trigger: 'axis',
+      formatter: function(params) {
+        let html = `<b>${params[0].name}</b><br/>`
+        params.forEach(p => {
+          html += `${p.marker} ${p.seriesName}: <b>${p.value}</b><br/>`
+        })
+        const idx = params[0].dataIndex
+        html += `正常范围: ${refRanges[idx][0]} ~ ${refRanges[idx][1]}`
+        return html
+      }
+    },
+    legend: {
+      top: 0,
+      itemWidth: 12,
+      itemHeight: 12,
+      textStyle: { color: '#666', fontSize: 11 }
+    },
+    series: [
+      {
+        name: '您的值',
+        type: 'bar',
+        data: userMetricValues.map((v, i) => ({
+          value: v,
+          itemStyle: {
+            color: v >= refRanges[i][0] && v <= refRanges[i][1]
+              ? { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#4080FF' }, { offset: 1, color: '#79BBFF' }] }
+              : { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#F56C6C' }, { offset: 1, color: '#F89898' }] },
+            borderRadius: [4, 4, 0, 0]
+          }
+        })),
+        barWidth: '25%',
+        animationDuration: 1000,
+        animationDelay: function(idx) { return idx * 100 }
+      },
+      {
+        name: '正常参考',
+        type: 'bar',
+        data: refValues,
+        barWidth: '25%',
+        itemStyle: { color: 'rgba(144,147,153,0.3)', borderRadius: [4, 4, 0, 0] },
+        animationDuration: 1000,
+        animationDelay: function(idx) { return idx * 100 + 200 }
+      }
+    ]
+  })
+}
+
+function renderWaterfallChart(chart) {
+  if (store.featureImportance.length === 0 || store.featureNames.length === 0) return
+  const importanceLabels = store.featureNames.map(n => {
+    const map = { Pregnancies: '怀孕次数', Glucose: '血糖', BloodPressure: '血压',
+      SkinThickness: '皮褶厚度', Insulin: '胰岛素', BMI: 'BMI',
+      DiabetesPedigreeFunction: '遗传', Age: '年龄' }
+    return map[n] || n
+  })
+  const sortedData = store.featureImportance.map((v, i) => ({ value: v, label: importanceLabels[i] }))
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+  chart.setOption({
+    grid: { left: '3%', right: '8%', bottom: '15%', top: '10%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: sortedData.map(d => d.label),
+      axisLabel: { rotate: 35, fontSize: 11, color: '#666' },
+      axisLine: { lineStyle: { color: '#E5E7EB' } },
+      axisTick: { show: false }
+    },
+    yAxis: {
+      type: 'value',
+      name: '影响程度',
+      nameTextStyle: { color: '#999', fontSize: 11 },
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { lineStyle: { color: '#F0F0F0', type: 'dashed' } }
+    },
+    tooltip: {
+      trigger: 'axis',
+      formatter: function(params) {
+        const p = params[0]
+        return `${p.name}<br/>影响值: <b>${p.value.toFixed(4)}</b><br/>${p.value >= 0 ? '升高风险' : '降低风险'}`
+      }
+    },
+    series: [{
+      type: 'bar',
+      data: sortedData.map(d => ({
+        value: d.value,
+        itemStyle: {
+          color: d.value >= 0
+            ? { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#F56C6C' }, { offset: 1, color: '#F89898' }] }
+            : { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#67C23A' }, { offset: 1, color: '#95D475' }] },
+          borderRadius: d.value >= 0 ? [4, 4, 0, 0] : [0, 0, 4, 4]
+        }
+      })),
+      barWidth: '50%',
+      animationDuration: 1200,
+      animationEasing: 'elasticOut',
+      label: {
+        show: true,
+        position: 'top',
+        formatter: function(p) { return p.value >= 0 ? '+' + p.value.toFixed(2) : p.value.toFixed(2) },
+        fontSize: 10,
+        color: '#999'
+      }
+    }]
+  })
 }
 
 function initECharts() {
   showECharts.value = true
   nextTick(() => {
-    const chartInstances = chartRefs.value.map(el => el ? echarts.init(el) : null)
-    const [gaugeChart, radarChart, comparisonChart, waterfallChart] = chartInstances
-
-    if (gaugeChart) {
-      const riskColor = store.riskProbability >= 60 ? '#F56C6C' : store.riskProbability >= 30 ? '#E6A23C' : '#67C23A'
-      gaugeChart.setOption({
-        series: [{
-          type: 'gauge',
-          startAngle: 210,
-          endAngle: -30,
-          min: 0,
-          max: 100,
-          splitNumber: 10,
-          itemStyle: { color: riskColor },
-          progress: {
-            show: true,
-            width: 18,
-            roundCap: true,
-            itemStyle: {
-              color: {
-                type: 'linear',
-                x: 0, y: 0, x2: 1, y2: 0,
-                colorStops: [
-                  { offset: 0, color: '#67C23A' },
-                  { offset: 0.5, color: '#E6A23C' },
-                  { offset: 1, color: '#F56C6C' }
-                ]
-              }
-            }
-          },
-          pointer: {
-            icon: 'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z',
-            length: '55%',
-            width: 8,
-            offsetCenter: [0, '-10%'],
-            itemStyle: { color: 'auto', shadowColor: 'rgba(0,0,0,0.2)', shadowBlur: 5 }
-          },
-          axisLine: {
-            lineStyle: {
-              width: 18,
-              color: [[0.3, '#67C23A'], [0.7, '#E6A23C'], [1, '#F56C6C']]
-            },
-            roundCap: true
-          },
-          axisTick: { distance: -22, length: 6, lineStyle: { color: '#fff', width: 1 } },
-          splitLine: { distance: -25, length: 12, lineStyle: { color: '#fff', width: 2 } },
-          axisLabel: { color: '#666', distance: 30, fontSize: 11 },
-          detail: {
-            valueAnimation: true,
-            formatter: '{value}%',
-            fontSize: 28,
-            fontWeight: 'bold',
-            color: riskColor,
-            offsetCenter: [0, '40%'],
-            textStyle: { textShadowColor: 'rgba(0,0,0,0.1)', textShadowBlur: 5 }
-          },
-          title: {
-            offsetCenter: [0, '65%'],
-            fontSize: 13,
-            color: '#999'
-          },
-          data: [{ value: store.riskProbability, name: '患病概率' }],
-          animationDuration: 1500,
-          animationEasingUpdate: 'cubicOut'
-        }]
-      })
-    }
-
-    if (radarChart) {
-      const featureNames = ['血糖', 'BMI', '血压', '胰岛素', '皮褶厚度', '年龄', '遗传']
-      const userValues = [
-        Math.min(store.glucose / 200 * 100, 100),
-        Math.min(store.bmi / 40 * 100, 100),
-        Math.min(store.bloodPressure / 200 * 100, 100),
-        Math.min(store.insulin / 200 * 100, 100),
-        Math.min(store.skinThickness / 50 * 100, 100),
-        Math.min(store.age / 100 * 100, 100),
-        Math.min(store.diabetesPedigreeFunction / 2.5 * 100, 100)
-      ]
-      const normalValues = [45, 55, 60, 25, 40, 35, 20]
-      const radarColor = store.riskProbability >= 60 ? 'rgba(245,108,108,' : store.riskProbability >= 30 ? 'rgba(230,162,60,' : 'rgba(103,194,58,'
-      radarChart.setOption({
-        radar: {
-          indicator: featureNames.map(name => ({ name, max: 100 })),
-          radius: '65%',
-          center: ['50%', '55%'],
-          nameGap: 8,
-          nameTextStyle: { color: '#666', fontSize: 12, fontWeight: 500 },
-          splitArea: {
-            areaStyle: {
-              color: ['rgba(64,128,255,0.02)', 'rgba(64,128,255,0.05)', 'rgba(64,128,255,0.02)', 'rgba(64,128,255,0.05)', 'rgba(64,128,255,0.02)']
-            }
-          },
-          axisLine: { lineStyle: { color: 'rgba(64,128,255,0.15)' } },
-          splitLine: { lineStyle: { color: 'rgba(64,128,255,0.1)' } }
-        },
-        series: [{
-          type: 'radar',
-          data: [
-            {
-              value: userValues,
-              name: '您的指标',
-              symbol: 'circle',
-              symbolSize: 6,
-              lineStyle: { width: 2.5, color: radarColor + '0.8)', shadowColor: radarColor + '0.3)', shadowBlur: 8 },
-              areaStyle: { color: { type: 'radial', x: 0.5, y: 0.5, r: 0.5, colorStops: [{ offset: 0, color: radarColor + '0.4)' }, { offset: 1, color: radarColor + '0.05)' }] } },
-              itemStyle: { color: radarColor + '1)', borderColor: '#fff', borderWidth: 2 }
-            },
-            {
-              value: normalValues,
-              name: '正常参考',
-              symbol: 'diamond',
-              symbolSize: 5,
-              lineStyle: { width: 1.5, type: 'dashed', color: 'rgba(144,147,153,0.6)' },
-              areaStyle: { color: 'rgba(144,147,153,0.05)' },
-              itemStyle: { color: 'rgba(144,147,153,0.8)' }
-            }
-          ],
-          animationDuration: 1500
-        }],
-        tooltip: {
-          trigger: 'item',
-          formatter: function(params) {
-            let html = `<b>${params.name}</b><br/>`
-            params.value.forEach((val, i) => {
-              html += `${featureNames[i]}: ${val.toFixed(1)}%<br/>`
-            })
-            return html
-          }
-        },
-        legend: {
-          bottom: 0,
-          itemWidth: 12,
-          itemHeight: 12,
-          textStyle: { color: '#666', fontSize: 11 }
-        }
-      })
-    }
-
-    if (waterfallChart && store.featureImportance.length > 0 && store.featureNames.length > 0) {
-      const importanceLabels = store.featureNames.map(n => {
-        const map = { Pregnancies: '怀孕次数', Glucose: '血糖', BloodPressure: '血压',
-          SkinThickness: '皮褶厚度', Insulin: '胰岛素', BMI: 'BMI',
-          DiabetesPedigreeFunction: '遗传', Age: '年龄' }
-        return map[n] || n
-      })
-      const sortedData = store.featureImportance.map((v, i) => ({ value: v, label: importanceLabels[i] }))
-        .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
-      waterfallChart.setOption({
-        grid: { left: '3%', right: '8%', bottom: '15%', top: '10%', containLabel: true },
-        xAxis: {
-          type: 'category',
-          data: sortedData.map(d => d.label),
-          axisLabel: { rotate: 35, fontSize: 11, color: '#666' },
-          axisLine: { lineStyle: { color: '#E5E7EB' } },
-          axisTick: { show: false }
-        },
-        yAxis: {
-          type: 'value',
-          name: '影响程度',
-          nameTextStyle: { color: '#999', fontSize: 11 },
-          axisLine: { show: false },
-          axisTick: { show: false },
-          splitLine: { lineStyle: { color: '#F0F0F0', type: 'dashed' } }
-        },
-        tooltip: {
-          trigger: 'axis',
-          formatter: function(params) {
-            const p = params[0]
-            return `${p.name}<br/>影响值: <b>${p.value.toFixed(4)}</b><br/>${p.value >= 0 ? '升高风险' : '降低风险'}`
-          }
-        },
-        series: [{
-          type: 'bar',
-          data: sortedData.map(d => ({
-            value: d.value,
-            itemStyle: {
-              color: d.value >= 0
-                ? { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#F56C6C' }, { offset: 1, color: '#F89898' }] }
-                : { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#67C23A' }, { offset: 1, color: '#95D475' }] },
-              borderRadius: d.value >= 0 ? [4, 4, 0, 0] : [0, 0, 4, 4]
-            }
-          })),
-          barWidth: '50%',
-          animationDuration: 1200,
-          animationEasing: 'elasticOut',
-          label: {
-            show: true,
-            position: 'top',
-            formatter: function(p) { return p.value >= 0 ? '+' + p.value.toFixed(2) : p.value.toFixed(2) },
-            fontSize: 10,
-            color: '#999'
-          }
-        }]
-      })
-    }
-
-    if (comparisonChart) {
-      const metricLabels = ['血糖', 'BMI', '血压', '胰岛素']
-      const userMetricValues = [store.glucose, store.bmi, store.bloodPressure, store.insulin]
-      const refValues = [90, 22, 120, 50]
-      const refRanges = [[70, 100], [18.5, 24], [90, 140], [16, 166]]
-      comparisonChart.setOption({
-        grid: { left: '3%', right: '5%', bottom: '10%', top: '15%', containLabel: true },
-        xAxis: {
-          type: 'category',
-          data: metricLabels,
-          axisLine: { lineStyle: { color: '#E5E7EB' } },
-          axisTick: { show: false },
-          axisLabel: { color: '#666', fontSize: 12 }
-        },
-        yAxis: {
-          type: 'value',
-          axisLine: { show: false },
-          axisTick: { show: false },
-          splitLine: { lineStyle: { color: '#F0F0F0', type: 'dashed' } }
-        },
-        tooltip: {
-          trigger: 'axis',
-          formatter: function(params) {
-            let html = `<b>${params[0].name}</b><br/>`
-            params.forEach(p => {
-              html += `${p.marker} ${p.seriesName}: <b>${p.value}</b><br/>`
-            })
-            const idx = params[0].dataIndex
-            html += `正常范围: ${refRanges[idx][0]} ~ ${refRanges[idx][1]}`
-            return html
-          }
-        },
-        legend: {
-          top: 0,
-          itemWidth: 12,
-          itemHeight: 12,
-          textStyle: { color: '#666', fontSize: 11 }
-        },
-        series: [
-          {
-            name: '您的值',
-            type: 'bar',
-            data: userMetricValues.map((v, i) => ({
-              value: v,
-              itemStyle: {
-                color: v >= refRanges[i][0] && v <= refRanges[i][1]
-                  ? { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#4080FF' }, { offset: 1, color: '#79BBFF' }] }
-                  : { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#F56C6C' }, { offset: 1, color: '#F89898' }] },
-                borderRadius: [4, 4, 0, 0]
-              }
-            })),
-            barWidth: '25%',
-            animationDuration: 1000,
-            animationDelay: function(idx) { return idx * 100 }
-          },
-          {
-            name: '正常参考',
-            type: 'bar',
-            data: refValues,
-            barWidth: '25%',
-            itemStyle: { color: 'rgba(144,147,153,0.3)', borderRadius: [4, 4, 0, 0] },
-            animationDuration: 1000,
-            animationDelay: function(idx) { return idx * 100 + 200 }
-          }
-        ]
-      })
-    }
+    setTimeout(() => {
+    const gaugeChart = ensureChartInit(0)
+    if (gaugeChart) renderGaugeChart(gaugeChart)
 
     window.addEventListener('resize', handleResize)
-    
-    // 生成缩略图
+
+    // 生成缩略图（延迟等待首个图表渲染完成）
     setTimeout(() => {
-      thumbnails.value = chartInstances.map(chart => {
+      const allCharts = chartRefs.value.map((el, i) => {
+        if (i === 0) return echarts.getInstanceByDom(el)
+        return null
+      })
+      thumbnails.value = allCharts.map(chart => {
         if (chart) {
           try {
             return chart.getDataURL({
@@ -634,6 +651,7 @@ function initECharts() {
         return null
       })
     }, 2000)
+    }, 200)
   })
 }
 
@@ -652,12 +670,26 @@ function setChartRef(el, index) {
   }
 }
 
+function initLazyChart(index) {
+  let chart = echarts.getInstanceByDom(chartRefs.value[index])
+  if (chart) {
+    chart.resize()
+    return chart
+  }
+  chart = echarts.init(chartRefs.value[index])
+  const key = chartItems[index].key
+  if (key === 'gauge') renderGaugeChart(chart)
+  else if (key === 'radar') renderRadarChart(chart)
+  else if (key === 'comparison') renderComparisonChart(chart)
+  else if (key === 'waterfall') renderWaterfallChart(chart)
+  return chart
+}
+
 function prevChart() {
   if (activeChartIndex.value > 0) {
     activeChartIndex.value--
     nextTick(() => {
-      const chart = echarts.getInstanceByDom(chartRefs.value[activeChartIndex.value])
-      chart?.resize()
+      setTimeout(() => initLazyChart(activeChartIndex.value), 50)
     })
   }
 }
@@ -666,8 +698,7 @@ function nextChart() {
   if (activeChartIndex.value < chartItems.length - 1) {
     activeChartIndex.value++
     nextTick(() => {
-      const chart = echarts.getInstanceByDom(chartRefs.value[activeChartIndex.value])
-      chart?.resize()
+      setTimeout(() => initLazyChart(activeChartIndex.value), 50)
     })
   }
 }
@@ -675,8 +706,7 @@ function nextChart() {
 function goToChart(index) {
   activeChartIndex.value = index
   nextTick(() => {
-    const chart = echarts.getInstanceByDom(chartRefs.value[index])
-    chart?.resize()
+    setTimeout(() => initLazyChart(index), 50)
   })
 }
 

@@ -5,6 +5,7 @@
     width="680px"
     custom-class="tool-dialog"
     :close-on-click-modal="false"
+    :append-to-body="true"
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <div class="tool-dialog-body">

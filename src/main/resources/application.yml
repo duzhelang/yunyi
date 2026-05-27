@@ -116,5 +116,5 @@ mimo-tts:
     base-url: https://api.xiaomimimo.com/anthropic/v1
 
 patient-visit:
-  max-records: 50
+  max-records: 100
 

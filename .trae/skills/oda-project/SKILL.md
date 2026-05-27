@@ -1,16 +1,19 @@
----
+***
+
 name: "oda-project"
-description: "Software-ODA125 项目知识库，包含项目结构、技术栈、核心功能、API文档、数据库设计等完整信息。当询问项目架构、功能模块、技术细节、业务逻辑时使用。"
----
+description: "Software-ODA125 项目知识库，包含项目结构、技术栈、核心功能、API文档、数据库设计等完整信息。当询问项目架构、功能模块、技术细节、业务逻辑，查找文件时使用。"
+-----------------------------------------------------------------------------------------------------
 
 # oda-project
 
 ## 项目概览
+
 - **技术栈**: Spring Boot 3.3.5 + MyBatis Plus 3.5.9 + Vue 3 + Vite + Element Plus + PyTorch
 - **核心功能**: 糖尿病风险预测、在线训练（新建/增量）、健康档案管理、智能对话、群体分析、诊疗记录管理
 - **数据资产**: 详见 [data-assets](data-assets/SKILL.md) 技能
 
 ## 文档结构
+
 ```
 docs/
 ├── architecture/               # 架构与概览
@@ -76,25 +79,29 @@ docs/
 ## 快速参考
 
 ### 核心目录
+
 - **后端代码**: `src/main/java/com/oda/springboot/`
 - **前端代码**: `vue/src/`
 - **Python算法**: `python/`
 - **数据库脚本**: `sql/`
 
 ### 关键配置
+
 - **后端配置**: `src/main/resources/application.yml`
 - **前端运行时配置**: `vue/public/config.js`（导出 serverIp）
 - **前端构建配置**: `vue/vite.config.js`
 - **依赖管理**: `pom.xml`（后端）, `package.json`（前端）, `requirements.txt`（Python）
 
 ### 核心模块
+
 - **用户系统**: RBAC权限控制，JWT认证
 - **预测系统**: PyTorch模型，SHAP解释
-- **在线训练**: 新建模型（train.py）、增量训练（incremental_train.py）、AUC/混淆矩阵评估
+- **在线训练**: 新建模型（train.py）、增量训练（incremental\_train.py）、AUC/混淆矩阵评估
 - **健康档案**: 草稿持久化，DPF计算器
 - **智能对话**: 多模型支持，流式响应
 
 ### 开发规范
+
 - 后端遵循阿里巴巴Java开发手册
 - 前端使用Composition API
 - 数据库使用MyBatis Plus
@@ -102,6 +109,7 @@ docs/
 - 详细规范见 `docs/standards/`
 
 ## 使用场景
+
 1. **项目结构查询**: 了解目录结构和文件位置
 2. **技术栈咨询**: 查询使用的技术和框架
 3. **功能模块说明**: 了解各功能模块的实现
@@ -109,3 +117,4 @@ docs/
 5. **数据库设计**: 了解表结构和字段
 6. **开发规范**: 获取编码规范和最佳实践
 7. **数据资产**: 查询数据文件、模型存储等，参见 data-assets 技能
+

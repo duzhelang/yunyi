@@ -162,12 +162,14 @@ onBeforeUnmount(() => {
   justify-content: center;
   z-index: 100;
   border-radius: 16px;
+  overflow: auto;
 }
 
 .progress-overlay-content {
   text-align: center;
-  padding: 40px;
+  padding: 30px;
   max-width: 400px;
+  max-height: 100%;
 }
 
 .pulse-ring-container {

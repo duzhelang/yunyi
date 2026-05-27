@@ -119,7 +119,7 @@
               {{ planCollapsed ? '展开计划 ▾' : '收起全部 ▴' }}
             </el-button>
           </div>
-          <div class="feature-content plan-feature-content">
+          <div class="feature-content plan-feature-content" :class="{ 'generating-active': isGeneratingPlan }">
             <ProgressOverlay 
               :visible="isGeneratingPlan"
               title="正在生成健康计划"
@@ -144,7 +144,7 @@
                   </el-checkbox>
                 </el-checkbox-group>
               </div>
-              <el-button @click="generateHealthPlan" :disabled="!riskLevel || isLoading" class="feature-btn feature-btn-green">
+              <el-button @click="handleGenerateHealthPlan" :disabled="!riskLevel || isLoading" class="feature-btn feature-btn-green">
                 📋 生成健康计划
               </el-button>
             </div>
@@ -401,6 +401,16 @@ const {
 const sendMessage = sendMessageOriginal
 const askSample = askSampleOriginal
 
+const handleGenerateHealthPlan = async () => {
+  await generateHealthPlan()
+  showRecipePanel.value = true
+  nextTick(() => {
+    if (!recipeData.value) {
+      generateRecipe(true)
+    }
+  })
+}
+
 watch(() => messages.value.length, () => {
   if (messages.value.length > 0) {
     nextTick(() => startMarquee())
@@ -421,6 +431,10 @@ onMounted(async () => {
   selectedModel.value = defaultModel.value
   if (isAdmin.value) {
     tempModel.value = defaultModel.value
+  }
+
+  if (recipeData.value) {
+    showRecipePanel.value = true
   }
 
   const query = route.query
@@ -870,6 +884,11 @@ onBeforeUnmount(() => {
 
 .plan-feature-content {
   position: relative;
+  overflow: hidden;
+}
+
+.plan-feature-content.generating-active {
+  min-height: 500px;
 }
 
 .report-textarea {

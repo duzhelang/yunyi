@@ -124,10 +124,16 @@ public class FileScanService {
                 result.put("newFiles", (Integer) result.get("newFiles") + 1);
                 log.info("新增文件记录: {}", fileName);
             } else {
-                updateFileRecord(existingFile, file);
-                fileMapper.updateById(existingFile);
-                result.put("updatedFiles", (Integer) result.get("updatedFiles") + 1);
-                log.info("更新文件记录: {}", fileName);
+                String currentHash = calculateFileHash(file);
+                String storedHash = existingFile.getMd5();
+                if (!currentHash.equals(storedHash)) {
+                    updateFileRecord(existingFile, file);
+                    fileMapper.updateById(existingFile);
+                    result.put("updatedFiles", (Integer) result.get("updatedFiles") + 1);
+                    log.info("更新文件记录: {}", fileName);
+                } else {
+                    log.info("文件未变更，跳过: {}", fileName);
+                }
             }
 
             result.put("totalFiles", (Integer) result.get("totalFiles") + 1);

@@ -148,6 +148,73 @@
         </div>
 
         <div class="table-section">
+          <!-- 训练概览统计 -->
+          <el-row :gutter="16" class="train-stats-row">
+            <el-col :span="4">
+              <el-card shadow="hover" class="stat-card">
+                <div class="stat-value">{{ trainStats.total }}</div>
+                <div class="stat-label">总任务数</div>
+              </el-card>
+            </el-col>
+            <el-col :span="5">
+              <el-card shadow="hover" class="stat-card stat-success">
+                <div class="stat-value">{{ trainStats.completed }}</div>
+                <div class="stat-label">已完成</div>
+              </el-card>
+            </el-col>
+            <el-col :span="5">
+              <el-card shadow="hover" class="stat-card stat-primary">
+                <div class="stat-value">{{ trainStats.running }}</div>
+                <div class="stat-label">运行中</div>
+              </el-card>
+            </el-col>
+            <el-col :span="5">
+              <el-card shadow="hover" class="stat-card stat-danger">
+                <div class="stat-value">{{ trainStats.failed }}</div>
+                <div class="stat-label">失败</div>
+              </el-card>
+            </el-col>
+            <el-col :span="5">
+              <el-card shadow="hover" class="stat-card stat-accent">
+                <div class="stat-value">{{ (trainStats.bestAccuracy * 100).toFixed(1) }}%</div>
+                <div class="stat-label">最佳准确率</div>
+              </el-card>
+            </el-col>
+          </el-row>
+
+          <!-- 图表分析区域（可折叠） -->
+          <el-collapse v-model="activeChartsCollapse" class="charts-collapse">
+            <el-collapse-item name="charts">
+              <template #title>
+                <div class="collapse-title">
+                  <el-icon><DataAnalysis /></el-icon>
+                  <span>可视化分析面板</span>
+                  <el-tag size="small" type="info" style="margin-left: 8px;">点击展开/收起</el-tag>
+                </div>
+              </template>
+              <el-row :gutter="16" class="train-charts-row">
+                <el-col :span="14">
+                  <TrainingTrendChart :tasks="tableData" />
+                </el-col>
+                <el-col :span="10">
+                  <TrainingRadarCompareChart :tasks="tableData" />
+                </el-col>
+              </el-row>
+
+              <el-row :gutter="16" class="train-charts-row">
+                <el-col :span="14">
+                  <TrainingHyperparamChart :tasks="tableData" />
+                </el-col>
+                <el-col :span="10">
+                  <TrainingConfusionHeatmap
+                    :confusionMatrix="displayConfusionMatrix"
+                    :taskName="displayConfusionTaskName"
+                  />
+                </el-col>
+              </el-row>
+            </el-collapse-item>
+          </el-collapse>
+
           <el-card>
             <template #header>
               <div class="card-header">
@@ -165,7 +232,26 @@
               v-loading="loading"
               stripe
               border
+              :row-key="row => row.id"
+              :expand-row-keys="expandedRowKeys"
+              @expand-change="onExpandChange"
             >
+              <el-table-column type="expand">
+                <template #default="{ row }">
+                  <div class="expand-detail">
+                    <div v-if="row.status === 'completed'" class="expand-metrics-section">
+                      <h4 class="expand-section-title">性能指标可视化</h4>
+                      <TaskMetricsChart :task="row" />
+                    </div>
+                    <el-descriptions :column="4" border size="small" class="expand-params-table">
+                      <el-descriptions-item label="学习率">{{ row.learningRate ?? '-' }}</el-descriptions-item>
+                      <el-descriptions-item label="批次大小">{{ row.batchSize ?? '-' }}</el-descriptions-item>
+                      <el-descriptions-item label="训练轮次">{{ row.epochs ?? '-' }}</el-descriptions-item>
+                      <el-descriptions-item label="优化器">{{ row.optimizer ?? '-' }}</el-descriptions-item>
+                    </el-descriptions>
+                  </div>
+                </template>
+              </el-table-column>
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="taskName" label="任务名称" min-width="180" />
               <el-table-column prop="trainFileName" label="训练文件" min-width="150" />
@@ -177,7 +263,7 @@
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="性能指标" width="500">
+              <el-table-column label="性能指标" min-width="320">
                 <template #default="scope">
                   <div v-if="scope.row.status === 'completed'" class="metrics">
                     <span class="metric-item">准确率: {{ scope.row.accuracy }}</span>
@@ -425,13 +511,26 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Cpu, Plus, List, VideoPlay, Refresh, DataAnalysis, Document, Loading } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import ProgressOverlay from '@/components/common/ProgressOverlay.vue'
+import { TrainingTrendChart, TrainingRadarCompareChart, TrainingHyperparamChart, TrainingConfusionHeatmap, TaskMetricsChart } from '@/components/charts'
 
 const activeTab = ref('training')
+const activeChartsCollapse = ref(['charts'])
+
+watch(activeChartsCollapse, (newVal) => {
+  if (newVal.includes('charts')) {
+    const delays = [100, 300, 500]
+    delays.forEach(delay => {
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'))
+      }, delay)
+    })
+  }
+})
 
 const taskForm = ref({
   trainFileId: null,
@@ -588,6 +687,46 @@ const loadTrainedModels = async () => {
   }
 }
 
+/** 训练任务统计数据 */
+const trainStats = computed(() => {
+  const list = tableData.value
+  return {
+    total: list.length,
+    completed: list.filter(t => t.status === 'completed').length,
+    running: list.filter(t => t.status === 'running').length,
+    failed: list.filter(t => t.status === 'failed').length,
+    bestAccuracy: list.filter(t => t.accuracy != null).reduce((max, t) => Math.max(max, t.accuracy), 0)
+  }
+})
+
+/** 展开行相关状态 */
+const expandedRowKeys = ref([])
+
+function onExpandChange(row, expanded) {
+  if (expanded) {
+    if (!expandedRowKeys.value.includes(row.id)) {
+      expandedRowKeys.value = [...expandedRowKeys.value, row.id]
+    }
+  } else {
+    expandedRowKeys.value = expandedRowKeys.value.filter(id => id !== row.id)
+  }
+}
+
+/** 默认混淆矩阵任务：取第一个有混淆矩阵的已完成任务 */
+const defaultConfusionTask = computed(() => {
+  return tableData.value.find(t => t.status === 'completed' && t.confusionMatrix) || null
+})
+
+/** 当前显示的混淆矩阵数据（取第一个展开行，否则用默认） */
+const displayConfusionMatrix = computed(() => {
+  const firstExpanded = tableData.value.find(t => expandedRowKeys.value.includes(t.id))
+  return firstExpanded?.confusionMatrix || defaultConfusionTask.value?.confusionMatrix || null
+})
+const displayConfusionTaskName = computed(() => {
+  const firstExpanded = tableData.value.find(t => expandedRowKeys.value.includes(t.id))
+  return firstExpanded?.taskName || defaultConfusionTask.value?.taskName || ''
+})
+
 const filterModels = (query) => {
   modelFilterText.value = query
   modelCurrentPage.value = 1
@@ -631,8 +770,23 @@ const loadData = async () => {
       }
     })
     if (response.code === '200') {
-      tableData.value = response.data.records
+      tableData.value = response.data.records.map(r => {
+        if (r.hyperParams) {
+          try {
+            const hp = typeof r.hyperParams === 'string' ? JSON.parse(r.hyperParams) : r.hyperParams
+            r.learningRate = hp.learningRate ?? r.learningRate
+            r.batchSize = hp.batchSize ?? r.batchSize
+            r.epochs = hp.epochs ?? r.epochs
+            r.optimizer = hp.optimizer ?? r.optimizer
+          } catch {}
+        }
+        r.optimizer = r.optimizer || 'Adam'
+        return r
+      })
       total.value = response.data.total
+      if (tableData.value.length > 0) {
+        expandedRowKeys.value = [tableData.value[0].id]
+      }
     }
   } catch (error) {
     ElMessage.error('加载失败')
@@ -668,8 +822,9 @@ const scanFiles = async () => {
     const response = await request.post('/api/dataset/scan')
     if (response.code === '200') {
       const data = response.data
-      ElMessage.success(`扫描完成：新增 ${data.newFiles}，更新 ${data.updatedFiles}，共 ${data.totalFiles} 个文件`)
-      loadFileList()
+      const unchanged = data.totalFiles - data.newFiles - data.updatedFiles
+      ElMessage.success(`扫描完成：新增 ${data.newFiles}，更新 ${data.updatedFiles}，未变更 ${unchanged}，共 ${data.totalFiles} 个文件`)
+      await Promise.all([loadFileList(), loadTrainedModels()])
     } else {
       ElMessage.error(response.msg || '扫描失败')
     }
@@ -686,7 +841,8 @@ const scanTestFiles = async () => {
     const response = await request.post('/api/dataset/scan-test')
     if (response.code === '200') {
       const data = response.data
-      ElMessage.success(`扫描完成：新增 ${data.newFiles}，更新 ${data.updatedFiles}，共 ${data.totalFiles} 个文件`)
+      const unchanged = data.totalFiles - data.newFiles - data.updatedFiles
+      ElMessage.success(`扫描完成：新增 ${data.newFiles}，更新 ${data.updatedFiles}，未变更 ${unchanged}，共 ${data.totalFiles} 个文件`)
       loadTestFiles()
     } else {
       ElMessage.error(response.msg || '扫描失败')
@@ -717,7 +873,7 @@ const startTask = async () => {
     const response = await request.post('/api/train-task/start', taskForm.value)
     if (response.code === '200') {
       ElMessage.success('训练任务已启动')
-      loadData()
+      await Promise.all([loadData(), loadTrainedModels()])
       taskForm.value.modelName = ''
     } else {
       ElMessage.error(response.msg || '启动失败')
@@ -836,7 +992,7 @@ const deleteTask = async (row) => {
     const response = await request.delete(`/api/train-task/${row.id}`)
     if (response.code === '200') {
       ElMessage.success('删除成功')
-      loadData()
+      await Promise.all([loadData(), loadTrainedModels()])
     } else {
       ElMessage.error(response.msg || '删除失败')
     }
@@ -913,6 +1069,12 @@ onMounted(() => {
   loadTrainedModels()
   loadData()
   loadPredictResults()
+  nextTick(() => {
+    const delays = [100, 300, 600]
+    delays.forEach(delay => {
+      setTimeout(() => window.dispatchEvent(new Event('resize')), delay)
+    })
+  })
 })
 </script>
 
@@ -986,7 +1148,8 @@ onMounted(() => {
 .metrics {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 2px 8px;
+  grid-template-rows: repeat(3, auto);
+  gap: 2px 12px;
 }
 
 .metric-item {
@@ -1106,5 +1269,121 @@ onMounted(() => {
   border-top: 1px solid #e4e7ed;
   display: flex;
   justify-content: center;
+}
+
+/* 训练统计卡片样式 */
+.train-stats-row {
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  text-align: center;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #262626;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #8c8c8c;
+  margin-top: 6px;
+}
+
+.stat-success .stat-value { color: #52c41a; }
+.stat-primary .stat-value { color: #1890ff; }
+.stat-danger .stat-value { color: #f5222d; }
+.stat-accent .stat-value { color: #722ed1; }
+
+/* 图表区域样式 */
+.train-charts-row {
+  margin-bottom: 16px;
+}
+
+/* 折叠面板样式 */
+.charts-collapse {
+  margin-bottom: 16px;
+  border: none;
+}
+
+.charts-collapse :deep(.el-collapse-item__header) {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
+  border-radius: 8px;
+  padding: 0 16px;
+  height: 48px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+  border: 1px solid #e4e7ed;
+  margin-bottom: 8px;
+}
+
+.charts-collapse :deep(.el-collapse-item__wrap) {
+  border: none;
+  background: transparent;
+}
+
+.charts-collapse :deep(.el-collapse-item__content) {
+  padding: 0;
+}
+
+.collapse-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 展开行详情样式 */
+.expand-detail {
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 6px;
+}
+
+.expand-metrics-section {
+  padding: 8px 0;
+}
+
+.expand-section-title {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  padding-left: 10px;
+  border-left: 3px solid #1890ff;
+}
+
+.expand-params-table {
+  margin-top: 12px;
+}
+</style>
+
+<style>
+.expand-detail .expand-params-table .el-descriptions__body .el-descriptions__table {
+  border-collapse: collapse;
+  width: 85%;
+}
+
+.expand-detail .expand-params-table .el-descriptions__label {
+  width: 56px !important;
+  min-width: 56px !important;
+  white-space: nowrap;
+}
+
+.expand-detail .expand-params-table .el-descriptions__content {
+  width: auto !important;
+  min-width: 0 !important;
+  white-space: nowrap;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
 }
 </style>

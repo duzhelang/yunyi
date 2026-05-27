@@ -3,14 +3,39 @@ import request from '@/utils/request'
 import { ElMessage } from 'element-plus'
 import { mockRecipe } from '@/data/diabetesMockData'
 
+const CACHE_KEY = 'recipe_cache'
+const CACHE_TTL = 2 * 60 * 1000
+
 function escapeHtml(str) {
   if (!str) return ''
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
 }
 
+function saveCache(data) {
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }))
+  } catch (e) { /* ignore */ }
+}
+
+function loadCache() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const { data, ts } = JSON.parse(raw)
+    if (Date.now() - ts > CACHE_TTL) {
+      sessionStorage.removeItem(CACHE_KEY)
+      return null
+    }
+    return data
+  } catch (e) {
+    return null
+  }
+}
+
 export function useRecipe(selectedModel, isLoading) {
+  const cached = loadCache()
   const showRecipePanel = ref(false)
-  const recipeData = ref(null)
+  const recipeData = ref(cached || null)
   const isRecipeLoading = ref(false)
   const showRecipeDialog = ref(false)
   const dietPrefs = ['低GI', '高纤维', '低碳水', '无糖', '素食', '高蛋白']
@@ -107,6 +132,7 @@ export function useRecipe(selectedModel, isLoading) {
         const parsed = parseRecipeText(response.data)
         if (parsed && parsed.meals && parsed.meals.length >= 2) {
           recipeData.value = parsed
+          saveCache(parsed)
           ElMessage.success('控糖食谱已生成')
         } else {
           ElMessage.info('已使用标准食谱方案')

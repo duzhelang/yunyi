@@ -50,16 +50,14 @@ export default {
     this.getUser()
   },
   methods: {
-    collapse() {  // 点击收缩按钮触发
+    collapse() {
       this.isCollapse = !this.isCollapse
-      if (this.isCollapse) {  // 收缩
-        this.sideWidth = 64
+      if (this.isCollapse) {
+        this.sideWidth = 80
         this.collapseBtnClass = 'Expand'
-        this.logoTextShow = false
-      } else {   // 展开
+      } else {
         this.sideWidth = 200
         this.collapseBtnClass = 'Fold'
-        this.logoTextShow = true
       }
     },
     getUser() {

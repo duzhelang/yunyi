@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="糖尿病谱系函数计算器" width="680px" :close-on-click-modal="false" custom-class="dpf-dialog">
+  <el-dialog v-model="visible" title="糖尿病谱系函数计算器" width="680px" :close-on-click-modal="false" custom-class="dpf-dialog" :append-to-body="true">
     <div class="dpf-dialog-content">
       <div class="dpf-section">
         <div class="dpf-section-header">

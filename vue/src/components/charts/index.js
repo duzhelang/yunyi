@@ -16,6 +16,13 @@ import ConfidenceIntervalChart from './ConfidenceIntervalChart.vue'
 import RiskDistributionChart from './RiskDistributionChart.vue'
 import FeatureImportanceChart from './FeatureImportanceChart.vue'
 
+// 导入第三阶段图表组件
+import TrainingTrendChart from './TrainingTrendChart.vue'
+import TrainingRadarCompareChart from './TrainingRadarCompareChart.vue'
+import TrainingHyperparamChart from './TrainingHyperparamChart.vue'
+import TrainingConfusionHeatmap from './TrainingConfusionHeatmap.vue'
+import TaskMetricsChart from './TaskMetricsChart.vue'
+
 // 导入composable
 import { useChart } from './useChart'
 import { useChartTheme } from './chartTheme'
@@ -34,6 +41,13 @@ export {
   ConfidenceIntervalChart,
   RiskDistributionChart,
   FeatureImportanceChart,
+  
+  // 第三阶段图表组件
+  TrainingTrendChart,
+  TrainingRadarCompareChart,
+  TrainingHyperparamChart,
+  TrainingConfusionHeatmap,
+  TaskMetricsChart,
   
   // Composable
   useChart,
@@ -54,6 +68,13 @@ export default {
   ConfidenceIntervalChart,
   RiskDistributionChart,
   FeatureImportanceChart,
+  
+  // 第三阶段图表组件
+  TrainingTrendChart,
+  TrainingRadarCompareChart,
+  TrainingHyperparamChart,
+  TrainingConfusionHeatmap,
+  TaskMetricsChart,
   
   // Composable
   useChart,
@@ -78,6 +99,12 @@ export const ChartPlugin = {
     app.component('ConfidenceIntervalChart', ConfidenceIntervalChart)
     app.component('RiskDistributionChart', RiskDistributionChart)
     app.component('FeatureImportanceChart', FeatureImportanceChart)
+    
+    // 注册第三阶段图表组件
+    app.component('TrainingTrendChart', TrainingTrendChart)
+    app.component('TrainingRadarCompareChart', TrainingRadarCompareChart)
+    app.component('TrainingHyperparamChart', TrainingHyperparamChart)
+    app.component('TrainingConfusionHeatmap', TrainingConfusionHeatmap)
   }
 }
 

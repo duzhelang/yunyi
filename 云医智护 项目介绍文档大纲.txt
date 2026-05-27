@@ -1,0 +1,287 @@
+# 云医智护 项目介绍文档大纲
+
+> 最后更新：2026-05-28 | 基于代码仓库实际数据校准
+
+---
+
+## 1. 封面
+
+- **项目名称**：云医智护 — 糖尿病智能诊断与健康管理系统
+- **英文名称**：Cloud Medical Intelligence — Diabetes Diagnosis & Health Management System
+- **项目代号**：Software-ODA125
+- **团队成员 / 作者 / 指导老师 / 完成日期**
+- **项目 Logo**（如有）
+
+---
+
+## 2. 摘要
+
+- **一句话定位**：融合深度学习与现代Web技术的糖尿病风险筛查与全周期健康管理平台
+- **核心功能概述**：风险预测、AI问诊、健康档案、群体分析、模型管理、维修工单
+- **关键技术**：PyTorch三层神经网络 + SHAP可解释性 + MC Dropout不确定性估计 + 多模型AI编排 + Vue3 Composition API重构
+- **核心数据**：30个Controller · 169个API · 25张表 · 9种图表 · 8个Python脚本 · 4种AI大模型 · 15个Composables · 36,000+行代码
+
+---
+
+## 3. 目录
+
+---
+
+## 4. 项目背景与需求分析
+
+### 4.1 行业背景
+- 糖尿病患病率数据（全球、中国，IDF糖尿病地图数据）
+- 传统筛查痛点：效率低、数据分散、缺乏个性化、黑盒模型不可解释
+- 医疗AI监管趋势：可解释性（XAI）成为刚需
+
+### 4.2 用户角色与需求
+- **普通用户**：自助风险检测、健康档案管理、AI咨询、每日打卡
+- **医生/诊断员**：患者数据深度分析、群体统计、诊断辅助、个体洞察
+- **运维人员**：故障报修处理、工单管理
+- **管理员**：模型训练与部署、权限管理、数据集管理、系统配置
+
+### 4.3 项目目标
+- 构建"预测→解释→管理→分析"全流程闭环
+- 实现可解释AI（SHAP + MC Dropout不确定性估计），让黑盒透明化
+- 打造生产级前后端架构（Vue3 + Spring Boot 3.3.5 + Python子进程），支持快速迭代
+- 数据库驱动动态路由 + RBAC权限，零代码新增页面
+
+---
+
+## 5. 技术架构
+
+### 5.1 整体架构图
+- **五层架构**：展示层（Vue 3.4）→ 网关层（JWT拦截器）→ 业务层（Spring Boot 3.3.5）→ AI引擎层（Python 3.12）→ 数据层（MySQL 8.0 + Redis）
+- 前后端分离、RESTful API（169个端点）
+- Python子进程模式由后端按需调用（UsePythonUtils工具类）
+
+### 5.2 技术栈说明
+
+| 层级 | 技术 | 选型理由 |
+|------|------|----------|
+| 前端 | Vue 3.4 + Element Plus 2.4 + ECharts 5.6 + Pinia 2.1 + Vite 5 | Composition API灵活，15个Composables复用，体积相对Vue2减少87% |
+| 后端 | Spring Boot 3.3.5 + MyBatis-Plus 3.5.9 + JWT (Auth0 java-jwt 3.10.3) + Java 17 | 最新LTS，轻量ORM，无状态认证 |
+| AI引擎 | Python 3.12 + PyTorch 2.11 + SHAP 0.46 + Pandas | 三层全连接网络，SHAP可解释性，MC Dropout不确定性估计 |
+| AI大模型 | 智谱GLM-4 / DeepSeek / Kimi / MiMo | OpenAI兼容接口统一调用，后端降级保障 |
+| 数据 | MySQL 8.0 + Redis + Spring Cache | 25张业务表，关系型+缓存双引擎 |
+| API文档 | SpringDoc OpenAPI 3 (springdoc-openapi 2.2.0) | 替代springfox，原生支持Spring Boot 3 |
+| 部署 | Docker + Nginx | 容器化，支持横向扩展 |
+
+### 5.3 数据流图
+- 用户输入 → API Gateway → Controller → Service → UsePythonUtils → Python子进程 → 模型预测 → 结果回写DB → 前端ECharts可视化
+
+---
+
+## 6. 核心功能模块
+
+### 6.1 风险预测与可解释AI
+- **单条预测**：8项指标输入 → SinglePredictController → predict_single.py → 概率 + 风险等级 + 置信区间（MC Dropout 15次迭代）
+- **批量预测**：CSV上传 → predict.py → 批量推理 → JSON结果导出
+- **SHAP可视化**：特征重要性柱状图、瀑布图、雷达图（9种图表类型）
+- **不确定性估计**：MC Dropout → 95%置信区间，量化预测可靠性
+- **模型热切换**：sys_model_version表管理，管理员激活不同版本
+
+### 6.2 多模型AI智能问诊
+- **模型切换**：智谱GLM-4 / DeepSeek / Kimi / MiMo，统一OpenAI兼容接口
+- **强身份约束**：糖尿病专科医生角色扮演
+- **TTS语音播报**：MiMo音色定制，适配老年用户
+- **上下文感知**：从预测结果页携带数据跳转DiabetesChat，回答更精准
+- **前端体验**：useChat组合式函数实现打字机效果、消息管理、自动滚动
+
+### 6.3 全周期健康管理
+- **健康档案**：11项生理指标 + 生活方式数据录入，趋势图（血糖/血压/体重/DPF历史）
+- **每日打卡**：饮食/运动/用药/血糖四项任务，useDailyCheckin进度可视化
+- **诊疗档案**：就诊记录、诊断结论、治疗方案，软删除 + 自动淘汰（保留最近5次）
+- **风险快检**：快速评估，结果自动存档至user_health_profiles
+- **健康计划**：useHealthPlan自动生成一周健康计划（风险评估 + Mock回退）
+- **控糖食谱**：useRecipe根据饮食偏好生成食谱（安全HTML处理）
+
+### 6.4 数据看板与群体分析
+- **个人报告**：历史趋势、指标对比、风险变化
+- **群体分析**：年龄分布、性别/风险占比、BMI-血糖散点图、风险热力图
+- **个体洞察**：SHAP归因分析、相似病例余弦匹配
+- **持久化**：analysis_record表存储分析结果，支持历史查询
+- **导出功能**：Excel / PDF报告下载
+
+### 6.5 AI模型管理（MLOps实践）
+- **训练集管理**：CSV自动扫描入库、数据质量检测（质量等级/样本数/列信息）
+- **在线训练**：超参数配置（lr/epochs/batch_size）、@Async异步任务、进度实时推送
+- **增量训练**：incremental_train.py支持加载已有权重、复用预处理器、冻结层级选择
+- **模型版本管理**：注册（file_path + scaler_path + encoder_path）、激活部署、6项评估指标（accuracy/loss/recall/precision/f1/auc）、混淆矩阵
+- **对外统一接口**：激活模型自动供单条/批量预测调用
+
+### 6.6 运维中心
+- **维修工单系统**：提交→指派/认领→处理→完成→评价→关闭 全闭环
+- **工单状态机**：pending → assigned → processing → completed → closed（支持reopen）
+- **处理日志**：sys_repair_log记录每次操作
+- **满意度评价**：1-5星评分 + 评价内容
+
+### 6.7 教育资源
+- **科普文章**：diabetes_education表，HTML富文本内容，分类管理
+- **健康视频**：diabetes_video表，视频播放（video.js），类型筛选
+- **社区留言**：education_comment表，用户互动
+
+### 6.8 权限与安全
+- **RBAC模型**：4种角色（管理员/医生/用户/运维），sys_role_menu三级控制
+- **JWT无状态认证**：Auth0 java-jwt，Token含用户密码签名防篡改
+- **数据库驱动路由**：sys_menu表动态生成前端路由，零代码新增页面
+- **API安全**：密钥环境变量注入，JwtInterceptor拦截器统一校验
+- **数据隔离**：通过Token提取userId，用户只能查看自己的数据
+
+---
+
+## 7. 数据库设计
+
+### 7.1 E-R图
+- 核心实体：用户、角色、菜单、健康档案、预测记录、训练任务、模型版本、维修工单
+
+### 7.2 核心表结构（25张表）
+- **用户权限（4张）**：sys_user（15条预置用户，4种角色）、sys_role、sys_role_menu、sys_menu（30条菜单记录）
+- **系统管理（3张）**：sys_config、sys_dict、sys_message
+- **健康数据（5张）**：user_health_profiles（11项指标+prediction_json）、prediction_record（SHAP值）、diabetes_record、sys_result、analysis_record
+- **诊疗相关（3张）**：sys_treatment_record、treatment_checkin、patient_visit_record
+- **AI模型训练（4张）**：sys_trainfile（数据质量检测）、sys_testfile、sys_train_task（6项指标+混淆矩阵）、sys_model_version（三路径管理+激活状态）
+- **教育资源（3张）**：diabetes_education、diabetes_video、education_comment
+- **维修工单（3张）**：sys_repair_order（4种状态流转）、sys_repair_log、sys_repair_evaluation
+
+### 7.3 关键设计
+- JSON字段存储：图表Base64、生活方式数据、性能指标、超参数、附件数组
+- 软删除机制：patient_visit_record.is_deleted
+- 自动淘汰：诊疗档案保留最近5次，健康档案保留30条
+- 外键关联：health_profile_id、user_id、order_id等建立实体关系
+
+---
+
+## 8. 前端架构设计
+
+### 8.1 Vue3 Composition API全量应用
+- **15个Composables组合式函数**：useHealthForm / usePrediction / useHealthChart / useHealthHistory / useDailyCheckin / useHealthPlan / useRecipe / useChat / useTTS / useModelConfig / useMarquee / useDraftPersistence / useHealthValidator / useHealthTools / useGlobalSound
+- **组件拆分**：HealthProfileView拆分为13个独立子组件
+- **Pinia状态管理**：MainStore + HealthStore
+
+### 8.2 数据可视化
+- **ECharts 5.6**：9种图表类型（仪表盘/雷达图/瀑布图/柱状图/散点图/热力图/趋势折线图/直方图/饼图）
+- **图表主题系统**：chartTheme.js + useChart.js统一管理
+- **训练指标可视化**：混淆矩阵热力图、超参数对比图、雷达对比图、趋势折线图
+
+### 8.3 性能优化
+| 指标 | Vue2升级前 | Vue3升级后 | 提升 |
+|------|-----------|-----------|------|
+| 首屏体积(gzip) | 360KB | 47KB | 87%↓ |
+| 开发启动时间 | 60秒 | 5秒 | 10倍↑ |
+| 热更新时间 | 2秒 | <100ms | 20倍↑ |
+
+---
+
+## 9. Python算法层设计
+
+### 9.1 模型架构
+- 三层全连接神经网络（DiabetesNet）：fc1(8→64) → fc2(64→32) → fc3(32→1)
+- Dropout正则化（0.2）+ ReLU激活 + Sigmoid输出
+
+### 9.2 训练能力
+- **新建训练**（train.py）：从头训练，输出.pth + scaler + encoder + 指标JSON
+- **增量训练**（incremental_train.py）：加载已有权重、复用预处理器、冻结层级选择（none/fc1/fc1+fc2/all-hidden）
+- **6项评估指标**：accuracy / loss / precision / recall / F1 / AUC + 混淆矩阵
+
+### 9.3 推理能力
+- **单条预测**（predict_single.py）：8项特征 → 概率 + MC Dropout置信区间 + SHAP归因
+- **批量预测**（predict.py）：CSV文件 → 逐行推理 → JSON结果
+- **AI对话**（diabetes_chat.py）：OpenAI兼容SDK，支持4个大模型服务商
+
+### 9.4 后端集成
+- UsePythonUtils工具类：callPythonAndGetOutput / callPython / callPythonWithCallback
+- 30秒超时控制、UTF-8编码环境变量、子进程模式
+
+---
+
+## 10. 测试与性能优化
+
+### 10.1 功能验证（全部通过）
+
+| 模块 | 状态 | 说明 |
+|------|------|------|
+| 单条/批量预测 | ✅ | Python模型调用正常，30秒超时保护 |
+| SHAP可视化 | ✅ | 9种图表正确渲染 |
+| AI多模型对话 | ✅ | 4种模型自由切换 |
+| 在线训练 | ✅ | 异步任务，新建+增量训练 |
+| 群体分析 | ✅ | 4类看板，持久化存储 |
+| RBAC权限 | ✅ | 4种角色，菜单隔离 |
+| 维修工单 | ✅ | 完整闭环，评价统计 |
+| 教育资源 | ✅ | 科普+视频+留言 |
+
+### 10.2 性能数据
+
+| 指标 | 升级前(Vue2) | 升级后(Vue3) | 提升 |
+|------|-------------|-------------|------|
+| 首屏体积(gzip) | 360KB | 47KB | 87%↓ |
+| 开发启动时间 | 60秒 | 5秒 | 10倍↑ |
+| 热更新时间 | 2秒 | <100ms | 20倍↑ |
+| 单次预测响应 | — | <3秒 | — |
+| 并发10请求超时率 | — | <5% | — |
+
+---
+
+## 11. 创新点与难点攻克
+
+### 创新点
+
+| 创新点 | 说明 |
+|--------|------|
+| 可解释AI (XAI) | SHAP值瀑布图 + 特征重要性 + MC Dropout不确定性估计，符合医疗AI监管趋势 |
+| MLOps实践 | 模型版本管理 + 热切换 + 增量训练 + 冻结层级，完整的模型资产化流程 |
+| 多模型编排 | 统一OpenAI接口调用智谱/DeepSeek/Kimi/MiMo，后端配置热切换 |
+| Vue3全量重构 | 15个Composables组合式函数，解决50+兼容性问题，体积减少87% |
+| 数据库驱动路由 | sys_menu表动态生成前端路由，零代码新增页面，RBAC权限隔离 |
+| 子进程隔离 | Python以子进程模式运行，30秒超时保护，避免僵尸进程 |
+| 全周期管理 | 预测→解释→建档→打卡→诊疗→分析 完整健康闭环 |
+
+### 难点攻克
+- Element UI → Element Plus破坏性变更适配（图标系统重构、DOM结构变化、样式类名更新）
+- Python子进程超时控制 + 异步并行调用，避免僵尸进程
+- 动态路由守卫无限重定向修复（引入重试标记防死循环）
+- 大文件分片上传 + 断点续传
+- SHAP可视化在前端9种图表类型的统一渲染方案
+
+---
+
+## 12. 成果展示
+
+- **代码规模**：30个Controller · 169个API · 25张表 · 36,000+行代码 · 8个Python脚本 · 15个Composables
+- **核心页面**：风险仪表盘、SHAP瀑布图、AI问诊界面、群体分析看板、模型训练监控、维修工单管理
+- **技术栈标签**：Spring Boot 3.3.5 · Vue 3.4 · PyTorch 2.11 · MySQL 8.0 · Redis · Docker · ECharts 5.6 · Pinia 2.1 · Vite 5 · SHAP 0.46 · Element Plus 2.4
+- **角色操作矩阵**：管理员/医生/用户/运维四角色功能权限对照表
+- **Mermaid流程图**：13张系统工作流架构图（详见工作流架构流程文件）
+
+---
+
+## 13. 总结与展望
+
+### 已完成
+- 基于深度学习的糖尿病风险预测闭环（单条+批量）
+- 可解释性分析（SHAP）与不确定性量化（MC Dropout）
+- 多模型AI问诊（4个大模型）与全周期健康管理
+- MLOps模型管理（训练→版本→激活→预测完整链路）
+- 生产级前后端架构（Vue3重构 + Spring Boot 3.3.5 + 25张表）
+- 维修工单全流程闭环管理
+- 数据库驱动动态路由 + RBAC权限体系
+
+### 未来规划
+- **短期**：移动端APP/小程序适配
+- **中期**：可穿戴设备数据对接（CGM血糖仪）
+- **长期**：联邦学习 + 多模态数据（眼底影像）+ 知识图谱 + 智能用药推荐
+
+---
+
+## 14. 附录
+
+- 参考文献（IDF糖尿病地图、SHAP论文、Vue3官方文档、PyTorch文档等）
+- API文档地址（Swagger: http://localhost:9090/swagger-ui/index.html）
+- 安装部署手册（详见README.md）
+- 项目仓库地址
+- 数据库初始化脚本（sql/Software-ODA.sql）
+- Python依赖清单（requirements.txt）
+
+---
+
+*本大纲基于代码仓库实际技术栈和功能模块编写，可直接作为文档骨架逐章填充详细内容。*

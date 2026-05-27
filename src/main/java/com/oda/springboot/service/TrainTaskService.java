@@ -14,6 +14,7 @@ import com.oda.springboot.utils.UsePythonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.util.Date;
@@ -375,6 +376,7 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
     /**
      * 删除训练任务（同时删除关联的模型文件和模型版本记录）
      */
+    @Transactional(rollbackFor = Exception.class)
     public boolean deleteTask(Integer taskId) {
         TrainTask task = trainTaskMapper.selectById(taskId);
         if (task == null) {
@@ -383,14 +385,19 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
         }
         
         String modelName = task.getModelName();
+        log.info("开始删除训练任务，ID: {}, 模型名称: {}, 任务名称: {}", taskId, modelName, task.getTaskName());
         
         // 删除关联的模型文件
         if (modelName != null && !modelName.isEmpty()) {
+            log.info("准备删除模型文件，模型名称: {}", modelName);
             deleteModelFiles(modelName);
+        } else {
+            log.warn("训练任务的模型名称为空，跳过文件删除，任务ID: {}", taskId);
         }
         
         // 删除关联的模型版本记录
         if (modelName != null && !modelName.isEmpty()) {
+            log.info("准备删除模型版本记录，模型名称: {}", modelName);
             deleteModelVersionRecords(modelName);
         }
         
@@ -412,6 +419,8 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
         String projectRoot = System.getProperty("user.dir");
         String modelsBasePath = projectRoot + File.separator + "data" + File.separator + "models";
         
+        log.info("模型文件删除基础路径: {}", modelsBasePath);
+        
         // 模型权重文件路径
         String pthPath = modelsBasePath + File.separator + "pth_models" + File.separator + modelName + ".pth";
         // 标准化器文件路径
@@ -420,6 +429,8 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
         String encoderPath = modelsBasePath + File.separator + "pkl_files" + File.separator + modelName + "_encoder.pkl";
         // SHAP背景数据文件路径
         String backgroundPath = modelsBasePath + File.separator + "npy_data" + File.separator + modelName + "_background.npy";
+        
+        log.info("待删除文件列表: pth={}, scaler={}, encoder={}, background={}", pthPath, scalerPath, encoderPath, backgroundPath);
         
         // 删除文件
         deleteFileIfExists(pthPath, "模型权重文件");

@@ -447,7 +447,8 @@ const scanDirectory = (type) => {
   request.post(url).then(res => {
     if (res.code === '200') {
       const data = res.data
-      ElMessage.success(`扫描完成：新增 ${data.newFiles}，更新 ${data.updatedFiles}，共 ${data.totalFiles} 个文件`)
+      const unchanged = data.totalFiles - data.newFiles - data.updatedFiles
+      ElMessage.success(`扫描完成：新增 ${data.newFiles}，更新 ${data.updatedFiles}，未变更 ${unchanged}，共 ${data.totalFiles} 个文件`)
       if (type === 'test') loadTestData()
       else loadTrainData()
       loadStats()

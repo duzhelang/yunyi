@@ -308,6 +308,12 @@ export function useChartTheme() {
       tooltip: {
         ...theme.tooltip,
         textStyle: { ...theme.tooltip.textStyle }
+      },
+      axis: {
+        axisLine: { ...theme.axis.axisLine },
+        axisTick: { ...theme.axis.axisTick },
+        axisLabel: { ...theme.axis.axisLabel },
+        splitLine: { ...theme.axis.splitLine }
       }
     }
   }
