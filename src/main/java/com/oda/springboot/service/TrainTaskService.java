@@ -10,6 +10,9 @@ import com.oda.springboot.entity.TrainTask;
 import com.oda.springboot.mapper.FileMapper;
 import com.oda.springboot.mapper.ModelVersionMapper;
 import com.oda.springboot.mapper.TrainTaskMapper;
+import com.oda.springboot.exception.TrainingServiceException;
+import com.oda.springboot.utils.ModelFileManager;
+import com.oda.springboot.utils.ModelPathManager;
 import com.oda.springboot.utils.UsePythonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -38,6 +41,12 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
 
     @Autowired
     private UsePythonUtils usePythonUtils;
+
+    @Autowired
+    private ModelPathManager pathManager;
+
+    @Autowired
+    private ModelFileManager fileManager;
 
     /**
      * 默认数据集映射（前端传入 default_ 开头的 ID 时使用）
@@ -74,7 +83,7 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
                 try {
                     trainFileId = Integer.parseInt(trainFileIdStr);
                 } catch (NumberFormatException e) {
-                    throw new RuntimeException("无效的训练文件ID: " + trainFileIdStr);
+                    throw new TrainingServiceException("TRAINING_DATA_ERROR", "无效的训练文件ID: " + trainFileIdStr);
                 }
             }
         } else if (trainFileIdObj instanceof Integer) {
@@ -85,13 +94,13 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
         if (trainFileId != null) {
             Files trainFile = fileMapper.selectById(trainFileId);
             if (trainFile == null) {
-                throw new RuntimeException("训练文件不存在");
+                throw new TrainingServiceException("TRAINING_DATA_ERROR", "训练文件不存在, ID: " + trainFileId);
             }
             trainFileName = trainFile.getName();
         }
 
         if (trainFileName == null || trainFileName.isEmpty()) {
-            throw new RuntimeException("请选择训练数据集");
+            throw new TrainingServiceException("TRAINING_DATA_ERROR", "请选择训练数据集");
         }
 
         // 创建训练任务记录
@@ -116,11 +125,11 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
 
         int result = trainTaskMapper.insert(task);
         if (result > 0) {
-            // 异步执行训练
+            log.info("[训练任务] 创建成功, 任务ID: {}, 任务名称: {}", task.getId(), task.getTaskName());
             executeTrainingAsync(task);
             return task;
         } else {
-            throw new RuntimeException("创建训练任务失败");
+            throw new TrainingServiceException("创建训练任务失败");
         }
     }
 
@@ -129,33 +138,29 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
      */
     @Async
     public void executeTrainingAsync(TrainTask task) {
+        long startTime = System.currentTimeMillis();
         try {
-            // 更新任务状态为运行中
             task.setStatus("running");
             task.setStartTime(new Date());
             trainTaskMapper.updateById(task);
-            log.info("训练任务开始执行: {}, 使用脚本: {}", task.getTaskName(), task.getPythonScript());
+            log.info("[训练任务] 开始执行, 任务ID: {}, 任务名称: {}, 脚本: {}", task.getId(), task.getTaskName(), task.getPythonScript());
 
-            // 执行训练脚本并捕获输出
             String processId = UUID.randomUUID().toString();
             String[] arguments = buildTrainingArguments(task);
 
             final StringBuilder outputCapture = new StringBuilder();
             usePythonUtils.callPythonWithCallback(processId, arguments, (line, isError) -> {
                 outputCapture.append(line).append("\n");
-                log.debug("训练日志: {}", line);
+                log.debug("[训练日志] {}", line);
             });
 
-            // 训练完成
             task.setStatus("completed");
             task.setEndTime(new Date());
 
-            // 设置模型输出路径（使用 data/models/pth_models/ 目录）
-            String projectRoot = System.getProperty("user.dir");
-            String modelPath = projectRoot + File.separator + "data" + File.separator + "models" + File.separator + "pth_models" + File.separator + task.getModelName() + ".pth";
+            String modelPath = pathManager.getModelFilePath(task.getModelName());
             task.setModelOutputPath(modelPath);
-            
-            // 解析 Python 输出中的真实训练指标
+
+            // 解析 Python 输出中的训练指标
             boolean metricsParsed = false;
             String output = outputCapture.toString();
             for (String line : output.split("\n")) {
@@ -174,18 +179,17 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
                             task.setConfusionMatrix(metrics.getString("confusionMatrix"));
                         }
                         metricsParsed = true;
-                        log.info("已解析训练指标: acc={}, loss={}, precision={}, recall={}, f1={}, auc={}",
-                                metrics.get("accuracy"), metrics.get("loss"),
-                                metrics.get("precision"), metrics.get("recall"), metrics.get("f1"), metrics.get("auc"));
+                        log.info("[训练任务] 指标解析成功, acc={}, loss={}, f1={}, auc={}",
+                                metrics.get("accuracy"), metrics.get("loss"), metrics.get("f1"), metrics.get("auc"));
                     } catch (Exception e) {
-                        log.warn("解析训练指标JSON失败: {}", e.getMessage());
+                        log.warn("[训练任务] 解析训练指标JSON失败: {}", e.getMessage());
                     }
                     break;
                 }
             }
 
             if (!metricsParsed) {
-                log.warn("未从Python输出中解析到训练指标，使用默认值");
+                log.warn("[训练任务] 未解析到训练指标, 使用默认值, 任务ID: {}", task.getId());
                 task.setAccuracy(java.math.BigDecimal.valueOf(0.0));
                 task.setLoss(java.math.BigDecimal.valueOf(0.0));
                 task.setRecallRate(java.math.BigDecimal.valueOf(0.0));
@@ -194,21 +198,22 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
                 task.setAuc(java.math.BigDecimal.valueOf(0.0));
                 task.setConfusionMatrix("[]");
             }
-            
+
             trainTaskMapper.updateById(task);
-            
-            // 自动注册模型到模型版本表
+
             registerModelToVersionTable(task);
-            
-            log.info("训练任务完成: {}", task.getTaskName());
+
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("[训练任务] 执行成功, 任务ID: {}, 任务名称: {}, 耗时: {}ms",
+                    task.getId(), task.getTaskName(), duration);
 
         } catch (Exception e) {
-            // 训练失败
             task.setStatus("failed");
             task.setEndTime(new Date());
             task.setErrorMessage(e.getMessage());
             trainTaskMapper.updateById(task);
-            log.error("训练任务失败: {}", task.getTaskName(), e);
+            log.error("[训练任务] 执行失败, 任务ID: {}, 任务名称: {}, 原因: {}",
+                    task.getId(), task.getTaskName(), e.getMessage(), e);
         }
     }
 
@@ -216,13 +221,9 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
      * 构建训练参数（train.py 期望: csv_path, model_output_path）
      */
     private String[] buildTrainingArguments(TrainTask task) {
-        String projectRoot = System.getProperty("user.dir");
-        
-        // 获取 Python 脚本路径
-        String pythonScriptPath = projectRoot + File.separator + "python" + File.separator + 
-                                  (task.getPythonScript() != null ? task.getPythonScript() : "train.py");
-        
-        // 获取 CSV 文件完整路径
+        String pythonScriptPath = pathManager.getPythonScriptPath(
+                task.getPythonScript() != null ? task.getPythonScript() : "train.py");
+
         String csvPath;
         Files trainFile = fileMapper.selectById(task.getTrainFileId());
         if (trainFile != null && trainFile.getUrl() != null) {
@@ -230,26 +231,21 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
             if (filePath.startsWith("/") || filePath.startsWith("\\") || filePath.contains(":")) {
                 csvPath = filePath;
             } else {
-                csvPath = projectRoot + File.separator + filePath;
+                csvPath = pathManager.getProjectRoot() + File.separator + filePath;
             }
         } else {
-            // 如果找不到文件记录，尝试直接使用文件名
-            csvPath = projectRoot + File.separator + "data" + File.separator + "train" + File.separator + 
-                      (task.getTrainFileName() != null ? task.getTrainFileName() : "");
+            csvPath = pathManager.getCsvPath(task.getTrainFileName() != null ? task.getTrainFileName() : "");
         }
-        
-        String modelName = task.getModelName() != null ? task.getModelName() : "diabetes_model";
-        String modelOutputPath = projectRoot + File.separator + "data" + File.separator + "models" + File.separator + modelName + ".pth";
 
-        // 构建完整的命令行参数
-        // 格式: [python, script_path, csv_path, model_output_path, --lr, --epochs, --batch-size]
+        String modelName = task.getModelName() != null ? task.getModelName() : "diabetes_model";
+        String modelOutputPath = pathManager.getModelsBasePath() + File.separator + modelName + ".pth";
+
         java.util.List<String> argList = new java.util.ArrayList<>();
         argList.add("python");
         argList.add(pythonScriptPath);
         argList.add(csvPath);
         argList.add(modelOutputPath);
 
-        // 解析超参数并传递给脚本
         if (task.getHyperParams() != null && !task.getHyperParams().isEmpty()) {
             try {
                 com.alibaba.fastjson.JSONObject hyperParams = com.alibaba.fastjson.JSON.parseObject(task.getHyperParams());
@@ -277,9 +273,9 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
                         if (baseModel != null && baseModel.getFilePath() != null) {
                             argList.add("--base-model");
                             argList.add(baseModel.getFilePath());
-                            log.info("增量训练基础模型: {}", baseModel.getFilePath());
+                            log.info("[增量训练] 基础模型: {}", baseModel.getFilePath());
                         } else {
-                            throw new RuntimeException("基础模型不存在或路径为空，ID: " + baseModelId);
+                            throw new TrainingServiceException("TRAINING_DATA_ERROR", "基础模型不存在或路径为空, ID: " + baseModelId);
                         }
                     }
 
@@ -295,20 +291,16 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
                         }
                     }
                 }
-            } catch (RuntimeException e) {
+            } catch (TrainingServiceException e) {
                 throw e;
             } catch (Exception e) {
-                log.warn("解析超参数失败，使用默认值: {}", e.getMessage());
+                log.warn("[训练参数] 解析超参数失败, 使用默认值: {}", e.getMessage());
             }
         }
 
         String[] args = argList.toArray(new String[0]);
-        
-        log.info("构建训练参数:");
-        for (int i = 0; i < args.length; i++) {
-            log.info("  参数[{}]: {}", i, args[i]);
-        }
-        
+        log.debug("[训练参数] 构建完成, 参数数量: {}", args.length);
+
         return args;
     }
 
@@ -317,28 +309,22 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
      */
     private void registerModelToVersionTable(TrainTask task) {
         try {
-            // 检查是否已存在相同版本
             String version = "v" + System.currentTimeMillis() % 10000;
-            
-            String projectRoot = System.getProperty("user.dir");
             String modelName = task.getModelName();
-            String modelsBasePath = projectRoot + File.separator + "data" + File.separator + "models";
-            
-            // 按分类设置路径
-            String modelFilePath = modelsBasePath + File.separator + "pth_models" + File.separator + modelName + ".pth";
-            String scalerPath = modelsBasePath + File.separator + "pkl_files" + File.separator + modelName + "_scaler.pkl";
-            String encoderPath = modelsBasePath + File.separator + "pkl_files" + File.separator + modelName + "_encoder.pkl";
-            
+
+            String modelFilePath = pathManager.getModelFilePath(modelName);
+            String scalerPath = pathManager.getScalerPath(modelName);
+            String encoderPath = pathManager.getEncoderPath(modelName);
+
             ModelVersion modelVersion = new ModelVersion();
-            modelVersion.setModelName(task.getModelName());
+            modelVersion.setModelName(modelName);
             modelVersion.setVersion(version);
             modelVersion.setSource("online_train");
             modelVersion.setFilePath(modelFilePath);
             modelVersion.setScalerPath(scalerPath);
             modelVersion.setEncoderPath(encoderPath);
             modelVersion.setDescription("通过在线训练任务创建: " + task.getTaskName());
-            
-            // 设置性能指标
+
             Map<String, Object> metrics = new HashMap<>();
             if (task.getAccuracy() != null) metrics.put("accuracy", task.getAccuracy());
             if (task.getLoss() != null) metrics.put("loss", task.getLoss());
@@ -348,19 +334,17 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
             if (task.getAuc() != null) metrics.put("auc", task.getAuc());
             if (task.getConfusionMatrix() != null) metrics.put("confusionMatrix", task.getConfusionMatrix());
             modelVersion.setMetrics(JSONUtil.toJsonStr(metrics));
-            
+
             modelVersion.setStatus("inactive");
             modelVersion.setCreateTime(new Date());
-            
+
             modelVersionMapper.insert(modelVersion);
-            
-            log.info("模型已自动注册到版本表: {}", task.getModelName());
-            log.info("  模型路径: {}", modelFilePath);
-            log.info("  缩放器路径: {}", scalerPath);
-            log.info("  编码器路径: {}", encoderPath);
-            
+
+            log.info("[模型注册] 注册成功, 模型名称: {}, 版本: {}", modelName, version);
+
         } catch (Exception e) {
-            log.error("模型注册失败", e);
+            log.warn("[模型注册] 注册失败(不影响训练任务), 模型名称: {}, 错误: {}",
+                    task.getModelName(), e.getMessage(), e);
         }
     }
 
@@ -375,86 +359,38 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
 
     /**
      * 删除训练任务（同时删除关联的模型文件和模型版本记录）
+     * 文件操作在事务外执行，数据库操作在事务内执行
      */
-    @Transactional(rollbackFor = Exception.class)
     public boolean deleteTask(Integer taskId) {
         TrainTask task = trainTaskMapper.selectById(taskId);
         if (task == null) {
-            log.warn("训练任务不存在，ID: {}", taskId);
+            log.warn("[任务删除] 任务不存在, ID: {}", taskId);
             return false;
         }
-        
+
         String modelName = task.getModelName();
-        log.info("开始删除训练任务，ID: {}, 模型名称: {}, 任务名称: {}", taskId, modelName, task.getTaskName());
-        
-        // 删除关联的模型文件
+        log.info("[任务删除] 开始删除, 任务ID: {}, 模型名称: {}, 任务名称: {}",
+                taskId, modelName, task.getTaskName());
+
+        // 文件操作在事务外执行（文件系统不支持事务回滚）
         if (modelName != null && !modelName.isEmpty()) {
-            log.info("准备删除模型文件，模型名称: {}", modelName);
-            deleteModelFiles(modelName);
-        } else {
-            log.warn("训练任务的模型名称为空，跳过文件删除，任务ID: {}", taskId);
+            fileManager.deleteModelFiles(modelName);
         }
-        
-        // 删除关联的模型版本记录
+
+        // 数据库操作在事务内执行
+        deleteTaskRecordsInTransaction(taskId, modelName);
+        log.info("[任务删除] 删除完成, 任务ID: {}, 模型名称: {}", taskId, modelName);
+        return true;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    private void deleteTaskRecordsInTransaction(Integer taskId, String modelName) {
         if (modelName != null && !modelName.isEmpty()) {
-            log.info("准备删除模型版本记录，模型名称: {}", modelName);
             deleteModelVersionRecords(modelName);
         }
-        
-        // 删除训练任务记录
-        int result = trainTaskMapper.deleteById(taskId);
-        if (result > 0) {
-            log.info("训练任务已删除，ID: {}, 模型名称: {}", taskId, modelName);
-            return true;
-        } else {
-            log.error("删除训练任务失败，ID: {}", taskId);
-            return false;
-        }
+        trainTaskMapper.deleteById(taskId);
     }
-    
-    /**
-     * 删除模型文件（.pth、_scaler.pkl、_encoder.pkl、_background.npy）
-     */
-    private void deleteModelFiles(String modelName) {
-        String projectRoot = System.getProperty("user.dir");
-        String modelsBasePath = projectRoot + File.separator + "data" + File.separator + "models";
-        
-        log.info("模型文件删除基础路径: {}", modelsBasePath);
-        
-        // 模型权重文件路径
-        String pthPath = modelsBasePath + File.separator + "pth_models" + File.separator + modelName + ".pth";
-        // 标准化器文件路径
-        String scalerPath = modelsBasePath + File.separator + "pkl_files" + File.separator + modelName + "_scaler.pkl";
-        // 编码器文件路径
-        String encoderPath = modelsBasePath + File.separator + "pkl_files" + File.separator + modelName + "_encoder.pkl";
-        // SHAP背景数据文件路径
-        String backgroundPath = modelsBasePath + File.separator + "npy_data" + File.separator + modelName + "_background.npy";
-        
-        log.info("待删除文件列表: pth={}, scaler={}, encoder={}, background={}", pthPath, scalerPath, encoderPath, backgroundPath);
-        
-        // 删除文件
-        deleteFileIfExists(pthPath, "模型权重文件");
-        deleteFileIfExists(scalerPath, "标准化器文件");
-        deleteFileIfExists(encoderPath, "编码器文件");
-        deleteFileIfExists(backgroundPath, "SHAP背景数据文件");
-    }
-    
-    /**
-     * 删除单个文件（如果存在）
-     */
-    private void deleteFileIfExists(String filePath, String fileType) {
-        File file = new File(filePath);
-        if (file.exists()) {
-            if (file.delete()) {
-                log.info("已删除{}: {}", fileType, filePath);
-            } else {
-                log.error("删除{}失败: {}", fileType, filePath);
-            }
-        } else {
-            log.debug("{}不存在: {}", fileType, filePath);
-        }
-    }
-    
+
     /**
      * 删除模型版本记录（仅删除非激活状态的记录）
      */
@@ -463,26 +399,26 @@ public class TrainTaskService extends ServiceImpl<TrainTaskMapper, TrainTask> {
             LambdaQueryWrapper<ModelVersion> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(ModelVersion::getModelName, modelName)
                        .ne(ModelVersion::getStatus, "active");
-            
+
             java.util.List<ModelVersion> versions = modelVersionMapper.selectList(queryWrapper);
-            
+
             if (versions.isEmpty()) {
-                log.info("未找到可删除的模型版本记录，模型名称: {}", modelName);
+                log.debug("[模型版本] 无待删除记录, 模型名称: {}", modelName);
                 return;
             }
-            
+
             for (ModelVersion version : versions) {
                 try {
                     modelVersionMapper.deleteById(version.getId());
-                    log.info("已删除模型版本记录，ID: {}, 版本: {}", version.getId(), version.getVersion());
+                    log.debug("[模型版本] 已删除, ID: {}, 版本: {}", version.getId(), version.getVersion());
                 } catch (Exception e) {
-                    log.error("删除模型版本记录失败，ID: {}", version.getId(), e);
+                    log.warn("[模型版本] 删除失败, ID: {}", version.getId(), e);
                 }
             }
-            
-            log.info("已删除模型版本记录，模型名称: {}, 删除数量: {}", modelName, versions.size());
+
+            log.info("[模型版本] 删除完成, 模型名称: {}, 删除数量: {}", modelName, versions.size());
         } catch (Exception e) {
-            log.error("查询模型版本记录失败，模型名称: {}", modelName, e);
+            log.warn("[模型版本] 查询失败, 模型名称: {}", modelName, e);
         }
     }
 }
