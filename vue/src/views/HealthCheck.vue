@@ -164,7 +164,7 @@
                 v-for="(chart, index) in chartItems" 
                 :key="index"
                 class="echart-item"
-                v-show="activeChartIndex === index"
+                :class="{ 'chart-active': activeChartIndex === index }"
               >
                 <h4 class="chart-title">{{ chart.title }}</h4>
                 <div :ref="el => setChartRef(el, index)" class="echart-box"></div>
@@ -328,7 +328,7 @@ const chartItems = [
   { title: '风险仪表盘', key: 'gauge' },
   { title: '健康雷达图', key: 'radar' },
   { title: '指标对比', key: 'comparison' },
-  { title: '因素贡献', key: 'waterfall' }
+  { title: '指标偏离分析', key: 'waterfall' }
 ]
 
 const riskLevelClass = computed(() => getRiskClass(store.riskLevel))
@@ -344,17 +344,7 @@ onUnmounted(() => {
 function showResult() {
   activeChartIndex.value = 0
   resultDialogVisible.value = true
-  nextTick(() => {
-    setTimeout(() => initECharts(), 350)
-  })
-}
-
-function ensureChartInit(index) {
-  const el = chartRefs.value[index]
-  if (!el) return null
-  const existing = echarts.getInstanceByDom(el)
-  if (existing) return existing
-  return echarts.init(el)
+  nextTick(() => initECharts())
 }
 
 function renderGaugeChart(chart) {
@@ -562,27 +552,35 @@ function renderComparisonChart(chart) {
 }
 
 function renderWaterfallChart(chart) {
-  if (store.featureImportance.length === 0 || store.featureNames.length === 0) return
-  const importanceLabels = store.featureNames.map(n => {
-    const map = { Pregnancies: '怀孕次数', Glucose: '血糖', BloodPressure: '血压',
-      SkinThickness: '皮褶厚度', Insulin: '胰岛素', BMI: 'BMI',
-      DiabetesPedigreeFunction: '遗传', Age: '年龄' }
-    return map[n] || n
-  })
-  const sortedData = store.featureImportance.map((v, i) => ({ value: v, label: importanceLabels[i] }))
-    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+  const featureMap = { Pregnancies: '怀孕次数', Glucose: '血糖', BloodPressure: '血压',
+    SkinThickness: '皮褶厚度', Insulin: '胰岛素', BMI: 'BMI',
+    DiabetesPedigreeFunction: '遗传', Age: '年龄' }
+
+  let chartData
+  if (store.featureImportance.length > 0 && store.featureNames.length > 0) {
+    const labels = store.featureNames.map(n => featureMap[n] || n)
+    chartData = store.featureImportance.map((v, i) => ({ label: labels[i], value: v }))
+      .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+  } else if (Object.keys(store.percentiles).length > 0) {
+    chartData = Object.entries(store.percentiles).map(([key, val]) => ({
+      label: featureMap[key] || key,
+      value: (val - 50) / 50
+    })).sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+  } else {
+    return
+  }
   chart.setOption({
     grid: { left: '3%', right: '8%', bottom: '15%', top: '10%', containLabel: true },
     xAxis: {
       type: 'category',
-      data: sortedData.map(d => d.label),
+      data: chartData.map(d => d.label),
       axisLabel: { rotate: 35, fontSize: 11, color: '#666' },
       axisLine: { lineStyle: { color: '#E5E7EB' } },
       axisTick: { show: false }
     },
     yAxis: {
       type: 'value',
-      name: '影响程度',
+      name: '偏离程度',
       nameTextStyle: { color: '#999', fontSize: 11 },
       axisLine: { show: false },
       axisTick: { show: false },
@@ -592,12 +590,13 @@ function renderWaterfallChart(chart) {
       trigger: 'axis',
       formatter: function(params) {
         const p = params[0]
-        return `${p.name}<br/>影响值: <b>${p.value.toFixed(4)}</b><br/>${p.value >= 0 ? '升高风险' : '降低风险'}`
+        const direction = p.value >= 0 ? '偏高 ↑' : '偏低 ↓'
+        return `${p.name}<br/>偏离度: <b>${p.value >= 0 ? '+' : ''}${(p.value * 100).toFixed(1)}%</b><br/>${direction}`
       }
     },
     series: [{
       type: 'bar',
-      data: sortedData.map(d => ({
+      data: chartData.map(d => ({
         value: d.value,
         itemStyle: {
           color: d.value >= 0
@@ -612,7 +611,7 @@ function renderWaterfallChart(chart) {
       label: {
         show: true,
         position: 'top',
-        formatter: function(p) { return p.value >= 0 ? '+' + p.value.toFixed(2) : p.value.toFixed(2) },
+        formatter: function(p) { return (p.value >= 0 ? '+' : '') + (p.value * 100).toFixed(0) + '%' },
         fontSize: 10,
         color: '#999'
       }
@@ -623,36 +622,36 @@ function renderWaterfallChart(chart) {
 function initECharts() {
   showECharts.value = true
   nextTick(() => {
-    setTimeout(() => {
-    const gaugeChart = ensureChartInit(0)
-    if (gaugeChart) renderGaugeChart(gaugeChart)
-
-    window.addEventListener('resize', handleResize)
-
-    // 生成缩略图（延迟等待首个图表渲染完成）
-    setTimeout(() => {
-      const allCharts = chartRefs.value.map((el, i) => {
-        if (i === 0) return echarts.getInstanceByDom(el)
-        return null
+    requestAnimationFrame(() => {
+      const renderFns = [renderGaugeChart, renderRadarChart, renderComparisonChart, renderWaterfallChart]
+      chartRefs.value.forEach((el, i) => {
+        if (!el) return
+        let chart = echarts.getInstanceByDom(el)
+        if (!chart) chart = echarts.init(el)
+        if (renderFns[i]) renderFns[i](chart)
       })
-      thumbnails.value = allCharts.map(chart => {
-        if (chart) {
-          try {
-            return chart.getDataURL({
-              type: 'png',
-              pixelRatio: 2,
-              backgroundColor: '#F8FAFC'
-            })
-          } catch (e) {
-            console.warn('生成缩略图失败', e)
-            return null
-          }
-        }
-        return null
+
+      window.removeEventListener('resize', handleResize)
+      window.addEventListener('resize', handleResize)
+
+      requestAnimationFrame(() => {
+        chartRefs.value.forEach((_, i) => generateThumbnail(i))
       })
-    }, 2000)
-    }, 200)
+    })
   })
+}
+
+function generateThumbnail(index) {
+  const el = chartRefs.value[index]
+  if (!el) return
+  const chart = echarts.getInstanceByDom(el)
+  if (!chart) return
+  try {
+    const url = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#F8FAFC' })
+    thumbnails.value[index] = url
+  } catch (e) {
+    // ignore
+  }
 }
 
 function handleResize() {
@@ -671,43 +670,47 @@ function setChartRef(el, index) {
 }
 
 function initLazyChart(index) {
-  let chart = echarts.getInstanceByDom(chartRefs.value[index])
+  const el = chartRefs.value[index]
+  if (!el) return null
+  let chart = echarts.getInstanceByDom(el)
   if (chart) {
     chart.resize()
     return chart
   }
-  chart = echarts.init(chartRefs.value[index])
+  chart = echarts.init(el)
   const key = chartItems[index].key
   if (key === 'gauge') renderGaugeChart(chart)
   else if (key === 'radar') renderRadarChart(chart)
   else if (key === 'comparison') renderComparisonChart(chart)
   else if (key === 'waterfall') renderWaterfallChart(chart)
+  requestAnimationFrame(() => chart.resize())
   return chart
+}
+
+function navigateToChart(index) {
+  activeChartIndex.value = index
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const chart = initLazyChart(index)
+      chart?.resize()
+    })
+  })
 }
 
 function prevChart() {
   if (activeChartIndex.value > 0) {
-    activeChartIndex.value--
-    nextTick(() => {
-      setTimeout(() => initLazyChart(activeChartIndex.value), 50)
-    })
+    navigateToChart(activeChartIndex.value - 1)
   }
 }
 
 function nextChart() {
   if (activeChartIndex.value < chartItems.length - 1) {
-    activeChartIndex.value++
-    nextTick(() => {
-      setTimeout(() => initLazyChart(activeChartIndex.value), 50)
-    })
+    navigateToChart(activeChartIndex.value + 1)
   }
 }
 
 function goToChart(index) {
-  activeChartIndex.value = index
-  nextTick(() => {
-    setTimeout(() => initLazyChart(index), 50)
-  })
+  navigateToChart(index)
 }
 
 function calculateBmi() {
@@ -819,13 +822,23 @@ function resetForm() {
 }
 
 function downloadReport() {
-  const featureData = store.shapData
-    .filter(item => item.feature && item.feature !== 'baseValue')
-    .map(item => {
-      const value = typeof item.value === 'number' ? item.value.toFixed(3) : item.value
-      return `<tr><td>${item.feature}</td><td>${value}</td><td style="color:${item.impact >= 0 ? '#f56c6c' : '#67c23a'}">${item.impact >= 0 ? '↑ 升高风险' : '↓ 降低风险'}</td></tr>`
-    })
-    .join('')
+  const featureMap = { Pregnancies: '怀孕次数', Glucose: '血糖', BloodPressure: '血压',
+    SkinThickness: '皮褶厚度', Insulin: '胰岛素', BMI: 'BMI',
+    DiabetesPedigreeFunction: '遗传', Age: '年龄' }
+  let featureData = ''
+  if (store.featureImportance.length > 0 && store.featureNames.length > 0) {
+    featureData = store.featureNames.map((name, i) => {
+      const label = featureMap[name] || name
+      const impact = store.featureImportance[i]
+      return `<tr><td>${label}</td><td>${impact.toFixed(4)}</td><td style="color:${impact >= 0 ? '#f56c6c' : '#67c23a'}">${impact >= 0 ? '↑ 升高风险' : '↓ 降低风险'}</td></tr>`
+    }).join('')
+  } else if (Object.keys(store.percentiles).length > 0) {
+    featureData = Object.entries(store.percentiles).map(([key, val]) => {
+      const label = featureMap[key] || key
+      const deviation = val - 50
+      return `<tr><td>${label}</td><td>${val}%</td><td style="color:${deviation >= 0 ? '#f56c6c' : '#67c23a'}">${deviation >= 0 ? '偏高' : '偏低'}</td></tr>`
+    }).join('')
+  }
 
   const lifestyleItems = [
     { label: '运动频率', value: getExerciseText(store.exerciseFrequency) },
@@ -878,7 +891,7 @@ function downloadReport() {
   </div>
   <h2>生活方式</h2>
   <div class="info-grid">${lifestyleItems}</div>
-  <h2>特征贡献度（SHAP）</h2>
+  <h2>指标分析</h2>
   <table>
     <thead><tr><th>特征</th><th>值</th><th>影响方向</th></tr></thead>
     <tbody>${featureData || '<tr><td colspan="3">暂无数据</td></tr>'}</tbody>
@@ -1688,10 +1701,24 @@ function downloadReport() {
 }
 
 .echart-item {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.echart-item.chart-active {
+  position: relative;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .chart-title {
@@ -1739,44 +1766,48 @@ function downloadReport() {
 
 .thumbnail {
   flex-shrink: 0;
-  width: 120px;
-  padding: 8px;
+  width: 160px;
+  padding: 10px;
   background: white;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
-  border: 2px solid transparent;
+  border: 2px solid #E5E7EB;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .thumbnail:hover {
-  transform: scale(1.08);
-  box-shadow: 0 6px 16px rgba(64,128,255,0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(64,128,255,0.18);
+  border-color: #79BBFF;
 }
 
 .thumbnail.active {
   border-color: #4080FF;
-  box-shadow: 0 0 0 3px rgba(64,128,255,0.2);
+  box-shadow: 0 0 0 3px rgba(64,128,255,0.25), 0 4px 12px rgba(64,128,255,0.15);
+  background: #F0F5FF;
 }
 
 .thumbnail img {
   width: 100%;
-  height: 60px;
+  height: 80px;
   object-fit: contain;
   display: block;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .thumbnail-placeholder {
   width: 100%;
-  height: 60px;
-  background: #E5E7EB;
-  border-radius: 6px;
+  height: 80px;
+  background: linear-gradient(135deg, #E5E7EB, #F3F4F6);
+  border-radius: 8px;
 }
 
 .thumbnail-label {
   display: block;
-  font-size: 11px;
-  color: #6B7280;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
   text-align: center;
   margin-top: 6px;
   white-space: nowrap;

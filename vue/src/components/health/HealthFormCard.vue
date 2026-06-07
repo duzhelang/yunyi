@@ -168,14 +168,14 @@
                 controls-position="right"
                 @update:model-value="updateDpfField"
               />
-              <div class="dpf-action-btns">
-                <el-button type="primary" plain size="small" class="dpf-calc-btn" @click="$emit('open-dpf-calc')">
-                  <el-icon><Edit /></el-icon> 计算
-                </el-button>
-                <el-button type="info" plain size="small" class="dpf-info-btn" @click="$emit('open-dpf-info')">
-                  <el-icon><InfoFilled /></el-icon> 说明
-                </el-button>
-              </div>
+            </div>
+            <div class="dpf-action-row">
+              <el-button type="primary" plain size="small" class="dpf-calc-btn" @click="$emit('open-dpf-calc')">
+                <el-icon><Edit /></el-icon> 计算
+              </el-button>
+              <el-button type="info" plain size="small" class="dpf-info-btn" @click="$emit('open-dpf-info')">
+                <el-icon><InfoFilled /></el-icon> 说明
+              </el-button>
             </div>
             <div class="helper-text">* 家族遗传系数，点击"计算"自动评估</div>
           </el-form-item>
@@ -237,18 +237,19 @@
       <el-button plain :disabled="saving || submitting || predicting" @click="$emit('reset')">
         <el-icon><RefreshRight /></el-icon> 重置
       </el-button>
-      <el-button type="success" :loading="saving" :disabled="submitting || predicting" @click="$emit('save')">
-        <el-icon><Coin /></el-icon> 保存档案
-      </el-button>
+      <el-tooltip content="保存档案，同时自动发送给诊断员" placement="top" :show-after="300">
+        <el-button type="success" :loading="saving" :disabled="submitting || predicting" @click="$emit('save')">
+          <el-icon><Coin /></el-icon> 保存档案
+        </el-button>
+      </el-tooltip>
       <el-button type="warning" :loading="predicting" :disabled="saving || submitting" @click="$emit('quick-predict')">
         <el-icon><DataBoard /></el-icon> 快速检测
       </el-button>
-      <el-button type="primary" :loading="predicting" :disabled="saving || submitting" @click="$emit('save-and-predict')">
-        <el-icon><DataAnalysis /></el-icon> 保存并检测
-      </el-button>
-      <el-button type="primary" plain :loading="submitting" :disabled="saving || predicting" @click="$emit('submit-doctor')">
-        <el-icon><Promotion /></el-icon> 发送诊断员
-      </el-button>
+      <el-tooltip content="保存档案并完成风险检测，同时自动发送给诊断员" placement="top" :show-after="300">
+        <el-button type="primary" :loading="predicting" :disabled="saving || submitting" @click="$emit('save-and-predict')">
+          <el-icon><DataAnalysis /></el-icon> 保存并检测
+        </el-button>
+      </el-tooltip>
     </div>
   </el-card>
 </template>
@@ -257,7 +258,7 @@
 import { ref } from 'vue'
 import {
   Edit, User, InfoFilled, Upload, RefreshRight, Coin,
-  DataBoard, DataAnalysis, Promotion
+  DataBoard, DataAnalysis
 } from '@element-plus/icons-vue'
 
 const props = defineProps({
@@ -521,19 +522,16 @@ function handleFileChange(uploadFile) {
 }
 
 .dpf-input-group {
-  display: flex;
-  gap: 10px;
-  align-items: center;
   width: 100%;
 }
 .dpf-input-group .el-input-number {
-  flex: 1;
-  min-width: 140px;
+  width: 100%;
 }
-.dpf-action-btns {
+.dpf-action-row {
   display: flex;
+  align-items: center;
   gap: 6px;
-  flex-shrink: 0;
+  margin-top: 8px;
 }
 .dpf-calc-btn, .dpf-info-btn {
   border-radius: 6px;
@@ -576,13 +574,8 @@ function handleFileChange(uploadFile) {
   .action-bar .el-button {
     width: 100%;
   }
-  .dpf-input-group {
-    flex-direction: column;
-    gap: 10px;
-  }
-  .dpf-action-btns {
-    width: 100%;
-    justify-content: flex-end;
+  .dpf-action-row {
+    flex-wrap: wrap;
   }
 }
 @media (min-width: 769px) and (max-width: 1200px) {

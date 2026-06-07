@@ -15,7 +15,7 @@ public class InterceptorConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")// 拦截所有请求,通过判断token是否合法来决定是否需要登?
                 .excludePathPatterns("/api/diabetes/chat")
                 .excludePathPatterns("/user/login","/user/register", "/**/export", "/**/import", "/file/**","/python/**","/DataTest/**","/detailbord/**","/message/**",
-                        "/swagger-resources/**", "/webjars/**", "/v2/**", "/swagger-ui.html/**", "/api", "/api-docs", "/api-docs/**")
+                        "/swagger-resources/**", "/webjars/**", "/v2/**", "/swagger-ui.html/**", "/swagger-ui/**", "/v3/api-docs/**", "/api", "/api-docs", "/api-docs/**")
                 .excludePathPatterns( "/**/*.html", "/**/*.js", "/**/*.css", "/**/*.woff", "/**/*.ttf");
 
 

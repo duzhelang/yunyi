@@ -7,18 +7,18 @@
     
     <div class="chart-container" v-loading="loading">
       <div ref="chartRef" class="chart-element"></div>
-      
-      <!-- 风险信息覆盖层 -->
-      <div class="risk-overlay" v-if="showOverlay">
-        <div class="risk-value" :style="{ color: riskColor }">
-          {{ riskProbability }}%
-        </div>
-        <div class="risk-label" :style="{ color: riskColor }">
-          {{ riskLevelText }}
-        </div>
-        <div class="confidence-interval" v-if="showConfidence">
-          置信区间: {{ confidenceMin }}% - {{ confidenceMax }}%
-        </div>
+    </div>
+    
+    <!-- 风险数值展示（仪表盘下方） -->
+    <div class="risk-info-below" v-if="showOverlay">
+      <div class="risk-value" :style="{ color: riskColor }">
+        {{ riskProbability }}%
+      </div>
+      <div class="risk-label" :style="{ color: riskColor }">
+        {{ riskLevelText }}
+      </div>
+      <div class="confidence-interval" v-if="showConfidence">
+        置信区间: {{ confidenceMin }}% - {{ confidenceMax }}%
       </div>
     </div>
     
@@ -164,8 +164,8 @@ function getOption() {
         min: 0,
         max: 100,
         splitNumber: 10,
-        radius: '90%',
-        center: ['50%', '55%'],
+        radius: '85%',
+        center: ['50%', '50%'],
         itemStyle: {
           color: riskColor.value
         },
@@ -286,34 +286,36 @@ defineExpose({
 
 <style scoped>
 .risk-gauge-chart {
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+  border-radius: 14px;
+  padding: 20px 20px 16px;
+  box-shadow: 0 2px 12px rgba(64, 128, 255, 0.06);
+  border: 1px solid #e8ecf1;
 }
 
 .chart-header {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   text-align: center;
 }
 
 .chart-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  color: #262626;
-  margin: 0 0 4px 0;
+  color: #1D2129;
+  margin: 0 0 2px 0;
+  letter-spacing: 0.5px;
 }
 
 .chart-subtitle {
-  font-size: 14px;
-  color: #8c8c8c;
+  font-size: 12px;
+  color: #909399;
   margin: 0;
 }
 
 .chart-container {
   position: relative;
   height: v-bind(height);
-  min-height: 250px;
+  min-height: 220px;
 }
 
 .chart-element {
@@ -321,51 +323,49 @@ defineExpose({
   height: 100%;
 }
 
-.risk-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -20%);
+.risk-info-below {
   text-align: center;
-  pointer-events: none;
-  z-index: 10;
+  padding: 8px 0 4px;
 }
 
 .risk-value {
-  font-size: 48px;
+  font-size: 40px;
   font-weight: 700;
-  line-height: 1.2;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  line-height: 1.1;
+  letter-spacing: -1px;
 }
 
 .risk-label {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
-  margin-top: 8px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  margin-top: 2px;
+  letter-spacing: 0.5px;
 }
 
 .confidence-interval {
   font-size: 12px;
-  color: #8c8c8c;
+  color: #909399;
   margin-top: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 4px 8px;
-  border-radius: 4px;
+  background: rgba(64, 128, 255, 0.04);
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(64, 128, 255, 0.08);
 }
 
 .risk-description {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f2f5;
 }
 
 .risk-item {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-size: 12px;
-  color: #595959;
+  color: #606266;
+  line-height: 1.5;
 }
 
 .risk-item:last-child {
@@ -373,11 +373,12 @@ defineExpose({
 }
 
 .risk-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   margin-right: 8px;
   flex-shrink: 0;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
 }
 
 .risk-text {
@@ -387,22 +388,7 @@ defineExpose({
 /* 响应式调整 */
 @media (max-width: 768px) {
   .risk-value {
-    font-size: 36px;
-  }
-  
-  .risk-label {
-    font-size: 16px;
-  }
-  
-  .chart-container {
-    height: 250px;
-    min-height: 200px;
-  }
-}
-
-@media (max-width: 480px) {
-  .risk-value {
-    font-size: 28px;
+    font-size: 32px;
   }
   
   .risk-label {
@@ -410,12 +396,27 @@ defineExpose({
   }
   
   .chart-container {
-    height: 200px;
+    height: 220px;
     min-height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .risk-value {
+    font-size: 26px;
+  }
+  
+  .risk-label {
+    font-size: 13px;
+  }
+  
+  .chart-container {
+    height: 180px;
+    min-height: 160px;
   }
   
   .risk-gauge-chart {
-    padding: 12px;
+    padding: 14px;
   }
 }
 </style>

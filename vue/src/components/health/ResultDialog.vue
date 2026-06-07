@@ -2,7 +2,7 @@
   <el-dialog
     :model-value="modelValue"
     @update:model-value="handleVisibleChange"
-    width="1200px"
+    width="1280px"
     :close-on-click-modal="false"
     custom-class="result-dialog"
     :show-close="true"
@@ -88,16 +88,89 @@
               </Transition>
             </div>
 
+            <div class="collapse-panel percentile-panel">
+              <div class="panel-header" @click="showPercentiles = !showPercentiles">
+                <span class="panel-title">指标百分位</span>
+                <span class="panel-arrow" :class="{ expanded: showPercentiles }"><el-icon><ArrowDown /></el-icon></span>
+              </div>
+              <Transition name="panel-slide">
+                <div class="panel-content" v-show="showPercentiles">
+                  <el-select
+                    v-model="selectedPercentileKey"
+                    placeholder="选择指标"
+                    size="default"
+                    class="percentile-select"
+                  >
+                    <el-option
+                      v-for="item in percentileOptions"
+                      :key="item.key"
+                      :label="item.label"
+                      :value="item.key"
+                    />
+                  </el-select>
+                  <div class="percentile-display" v-if="selectedPercentileValue !== null">
+                    <div class="percentile-bar-wrapper">
+                      <div class="percentile-bar-track">
+                        <div class="percentile-bar-fill" :style="{ width: selectedPercentileValue + '%', background: percentileColor }"></div>
+                        <div class="percentile-bar-marker" :style="{ left: selectedPercentileValue + '%', borderColor: percentileColor }"></div>
+                      </div>
+                      <div class="percentile-labels">
+                        <span>0%</span>
+                        <span>50%</span>
+                        <span>100%</span>
+                      </div>
+                    </div>
+                    <div class="percentile-value-text">
+                      <span class="percentile-number" :style="{ color: percentileColor }">{{ selectedPercentileValue }}%</span>
+                      <span class="percentile-desc">{{ percentileDescription }}</span>
+                    </div>
+                  </div>
+                  <div v-else class="percentile-empty">暂无该指标的百分位数据</div>
+                </div>
+              </Transition>
+            </div>
+
             <div class="health-suggestion-card">
               <div class="prescription-header">
                 <el-icon><Document /></el-icon>
                 <span>AI 健康处方</span>
               </div>
-              <div class="suggestion-section health-advice-section">
-                <div class="section-indicator"></div>
-                <div class="section-content">
-                  <h4>健康建议</h4>
-                  <p>{{ storeData.aiAdvice || getHealthAdvice(storeData.riskLevel) }}</p>
+              <div class="prescription-body">
+                <div class="suggestion-section diet-section">
+                  <div class="section-indicator" style="background: linear-gradient(180deg, #52C41A, #95DE64);"></div>
+                  <div class="section-content">
+                    <h4><el-icon class="section-icon"><Food /></el-icon> 饮食建议</h4>
+                    <ul class="advice-list">
+                      <li v-for="(item, idx) in dietAdvice" :key="idx">{{ item }}</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="suggestion-section exercise-section">
+                  <div class="section-indicator" style="background: linear-gradient(180deg, #FA8C16, #FFA940);"></div>
+                  <div class="section-content">
+                    <h4><el-icon class="section-icon"><Bicycle /></el-icon> 运动建议</h4>
+                    <ul class="advice-list">
+                      <li v-for="(item, idx) in exerciseAdvice" :key="idx">{{ item }}</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="suggestion-section checkup-section">
+                  <div class="section-indicator" style="background: linear-gradient(180deg, #722ED1, #B37FEB);"></div>
+                  <div class="section-content">
+                    <h4><el-icon class="section-icon"><Timer /></el-icon> 定期检查</h4>
+                    <ul class="advice-list">
+                      <li v-for="(item, idx) in checkupAdvice" :key="idx">{{ item }}</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="suggestion-section lifestyle-section">
+                  <div class="section-indicator" style="background: linear-gradient(180deg, #13C2C2, #5CDBD3);"></div>
+                  <div class="section-content">
+                    <h4><el-icon class="section-icon"><Sunny /></el-icon> 生活习惯</h4>
+                    <ul class="advice-list">
+                      <li v-for="(item, idx) in lifestyleAdvice" :key="idx">{{ item }}</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
@@ -125,7 +198,11 @@ import {
   Warning,
   InfoFilled,
   CircleCheck,
-  RefreshRight
+  RefreshRight,
+  Food,
+  Bicycle,
+  Timer,
+  Sunny
 } from '@element-plus/icons-vue'
 import { useChartStore } from '@/store/chartStore'
 import { usePrediction } from '@/composables/usePrediction'
@@ -170,7 +247,130 @@ const { getRiskText, getRiskClass, getHealthAdvice } = usePrediction()
 
 const currentChartIndex = ref(0)
 const showDataDetails = ref(false)
+const showPercentiles = ref(false)
+const selectedPercentileKey = ref('')
 const loading = ref(false)
+
+const percentileNameMap = {
+  glucose: '空腹血糖',
+  bmi: 'BMI',
+  blood_pressure: '血压',
+  insulin: '胰岛素',
+  age: '年龄',
+  dpf: '遗传系数',
+  pregnancies: '怀孕次数',
+  skin_thickness: '皮肤厚度'
+}
+
+const percentileOptions = computed(() => {
+  const data = chartStore.percentilesData
+  if (!data || Object.keys(data).length === 0) return []
+  return Object.keys(data).map(key => ({
+    key,
+    label: percentileNameMap[key] || key
+  }))
+})
+
+const selectedPercentileValue = computed(() => {
+  if (!selectedPercentileKey.value) return null
+  const data = chartStore.percentilesData
+  if (!data) return null
+  return data[selectedPercentileKey.value] ?? null
+})
+
+const percentileColor = computed(() => {
+  const val = selectedPercentileValue.value
+  if (val === null) return '#909399'
+  if (val <= 30) return '#52C41A'
+  if (val <= 70) return '#FA8C16'
+  return '#F5222D'
+})
+
+const percentileDescription = computed(() => {
+  const val = selectedPercentileValue.value
+  if (val === null) return ''
+  if (val <= 25) return '处于较低水平'
+  if (val <= 50) return '处于中等偏低水平'
+  if (val <= 75) return '处于中等偏高水平'
+  return '处于较高水平'
+})
+
+const dietAdviceMap = {
+  low: [
+    '保持均衡饮食，每日三餐定时定量',
+    '多摄入蔬菜、全谷物和优质蛋白',
+    '控制精制糖和高脂食物的摄入'
+  ],
+  medium: [
+    '减少精制碳水化合物，选择低GI食物',
+    '每餐蔬菜占一半，控制主食份量',
+    '避免含糖饮料，选择白水或无糖茶'
+  ],
+  high: [
+    '严格控制碳水化合物摄入量',
+    '咨询营养师制定个性化饮食方案',
+    '记录每日饮食，监控餐后血糖变化'
+  ]
+}
+
+const exerciseAdviceMap = {
+  low: [
+    '每周至少150分钟中等强度有氧运动',
+    '选择步行、游泳、骑车等适合自己的运动',
+    '保持日常活动量，减少久坐时间'
+  ],
+  medium: [
+    '每周运动不少于5天，每次30分钟以上',
+    '结合有氧运动和适量力量训练',
+    '运动前后监测血糖，随身携带糖果'
+  ],
+  high: [
+    '在医生指导下制定运动计划',
+    '从低强度开始，循序渐进增加运动量',
+    '避免空腹运动，运动中注意身体反应'
+  ]
+}
+
+const checkupAdviceMap = {
+  low: [
+    '每年进行一次空腹血糖和糖化血红蛋白检查',
+    '定期监测血压、血脂等基础指标',
+    '保持健康体检的良好习惯'
+  ],
+  medium: [
+    '每3-6个月检查一次血糖相关指标',
+    '关注眼底、肾功能等并发症筛查',
+    '定期复查并记录指标变化趋势'
+  ],
+  high: [
+    '立即就医进行全面糖尿病评估',
+    '每1-3个月复查糖化血红蛋白',
+    '定期进行眼底、足部、肾功能筛查'
+  ]
+}
+
+const lifestyleAdviceMap = {
+  low: [
+    '保持规律作息，每晚7-8小时充足睡眠',
+    '学会管理压力，保持积极乐观心态',
+    '戒烟限酒，远离不良生活习惯'
+  ],
+  medium: [
+    '保证充足睡眠，避免熬夜',
+    '学习压力管理技巧，如冥想或深呼吸',
+    '戒烟并严格限制酒精摄入'
+  ],
+  high: [
+    '建立严格的作息规律，保证睡眠质量',
+    '寻求心理支持，积极应对疾病压力',
+    '彻底戒烟戒酒，配合治疗方案'
+  ]
+}
+
+const dietAdvice = computed(() => dietAdviceMap[props.storeData.riskLevel] || dietAdviceMap.low)
+const exerciseAdvice = computed(() => exerciseAdviceMap[props.storeData.riskLevel] || exerciseAdviceMap.low)
+const checkupAdvice = computed(() => checkupAdviceMap[props.storeData.riskLevel] || checkupAdviceMap.low)
+const lifestyleAdvice = computed(() => lifestyleAdviceMap[props.storeData.riskLevel] || lifestyleAdviceMap.low)
 
 const chartComponentMap = {
   riskGauge: RiskGaugeChart,
@@ -203,6 +403,8 @@ watch(() => props.modelValue, (visible) => {
     loading.value = true
     currentChartIndex.value = 0
     showDataDetails.value = false
+    showPercentiles.value = false
+    selectedPercentileKey.value = ''
     setTimeout(() => {
       loading.value = false
     }, 600)
@@ -385,8 +587,9 @@ function handleReEvaluate() {
 
 .result-body-two-col {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr 420px;
   gap: 24px;
+  align-items: start;
 }
 
 .result-left-col {
@@ -396,7 +599,7 @@ function handleReEvaluate() {
 .result-right-col {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .charts-carousel {
@@ -638,11 +841,98 @@ function handleReEvaluate() {
   padding-bottom: 0;
 }
 
+.percentile-select {
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.percentile-bar-wrapper {
+  margin-bottom: 10px;
+}
+
+.percentile-bar-track {
+  position: relative;
+  height: 8px;
+  background: #f0f2f5;
+  border-radius: 4px;
+  overflow: visible;
+}
+
+.percentile-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.percentile-bar-marker {
+  position: absolute;
+  top: -4px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.percentile-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #909399;
+}
+
+.percentile-value-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.percentile-number {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.percentile-desc {
+  font-size: 13px;
+  color: #606266;
+}
+
+.percentile-empty {
+  font-size: 13px;
+  color: #909399;
+  text-align: center;
+  padding: 12px 0;
+}
+
 .health-suggestion-card {
   background: linear-gradient(135deg, #f0f5ff, #e8f4fd);
   border-radius: 14px;
   border: 1px solid #bae0ff;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.prescription-body {
+  overflow-y: auto;
+  max-height: 420px;
+  scrollbar-width: thin;
+  scrollbar-color: #d4d7dc transparent;
+}
+.prescription-body::-webkit-scrollbar {
+  width: 5px;
+}
+.prescription-body::-webkit-scrollbar-thumb {
+  background: #c0d0e0;
+  border-radius: 3px;
+}
+.prescription-body::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .prescription-header {
@@ -663,10 +953,23 @@ function handleReEvaluate() {
 }
 
 .suggestion-section {
-  padding: 18px 20px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f0f4ff;
+}
+
+.suggestion-section:last-child {
+  border-bottom: none;
 }
 
 .health-advice-section {
+  display: flex;
+  gap: 14px;
+}
+
+.diet-section,
+.exercise-section,
+.checkup-section,
+.lifestyle-section {
   display: flex;
   gap: 14px;
 }
@@ -694,6 +997,58 @@ function handleReEvaluate() {
   font-size: 13px;
   color: #4e5969;
   line-height: 1.8;
+}
+
+.section-icon {
+  font-size: 15px;
+  vertical-align: -2px;
+  margin-right: 2px;
+}
+
+.advice-list {
+  margin: 0;
+  padding: 0 0 0 16px;
+  list-style: none;
+}
+
+.advice-list li {
+  position: relative;
+  font-size: 13px;
+  color: #4e5969;
+  line-height: 1.7;
+  padding-left: 12px;
+  margin-bottom: 6px;
+}
+
+.advice-list li:last-child {
+  margin-bottom: 0;
+}
+
+.advice-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #c0c4cc;
+}
+
+.diet-section .advice-list li::before {
+  background: #52C41A;
+}
+
+.exercise-section .advice-list li::before {
+  background: #FA8C16;
+}
+
+.checkup-section .advice-list li::before {
+  background: #722ED1;
+}
+
+.lifestyle-section .advice-list li::before {
+  background: #13C2C2;
 }
 
 :deep(.el-descriptions__title) {
@@ -726,7 +1081,7 @@ function handleReEvaluate() {
   height: 36px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1000px) {
   .result-body-two-col {
     grid-template-columns: 1fr;
   }
@@ -766,26 +1121,27 @@ function handleReEvaluate() {
   background: transparent !important;
   box-shadow: none !important;
   border-radius: 0 !important;
-  padding: 4px 0 !important;
+  border: none !important;
+  padding: 0 !important;
 }
 
 .carousel-display .chart-header {
-  margin-bottom: 4px !important;
+  margin-bottom: 2px !important;
 }
 
 .carousel-display .chart-title {
-  font-size: 15px !important;
+  font-size: 14px !important;
   margin-bottom: 0 !important;
 }
 
 .carousel-display .chart-subtitle {
-  font-size: 12px !important;
+  font-size: 11px !important;
   margin: 0 !important;
 }
 
 .carousel-display .chart-container {
   min-height: unset !important;
-  height: 280px !important;
+  height: 260px !important;
 }
 
 .carousel-display .risk-description {
@@ -816,16 +1172,24 @@ function handleReEvaluate() {
   display: none !important;
 }
 
-.carousel-display .risk-overlay {
-  transform: translate(-50%, -30%) !important;
+.carousel-display .risk-info-below {
+  padding: 4px 0 0 !important;
 }
 
 .carousel-display .risk-value {
-  font-size: 36px !important;
+  font-size: 26px !important;
+  line-height: 1.1 !important;
 }
 
 .carousel-display .risk-label {
-  font-size: 16px !important;
+  font-size: 12px !important;
+  margin-top: 1px !important;
+}
+
+.carousel-display .confidence-interval {
+  font-size: 10px !important;
+  margin-top: 4px !important;
+  padding: 2px 10px !important;
 }
 
 .carousel-display .progress-mode {
@@ -858,9 +1222,10 @@ function handleReEvaluate() {
 .carousel-display .indicator-compare-chart,
 .carousel-display .risk-distribution-chart,
 .carousel-display .factor-waterfall-chart {
-  padding: 8px !important;
+  padding: 8px 12px !important;
   box-shadow: none !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, #fafbfd 0%, #f5f8ff 100%) !important;
+  border: 1px solid #eef2f8 !important;
 }
 </style>

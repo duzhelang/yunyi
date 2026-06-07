@@ -16,10 +16,9 @@
           :predicting="predicting"
           :submitting="submitting"
           :file-list="fileList"
-          @save="saveOnly"
-          @save-and-predict="saveAndPredict"
+          @save="handleSave"
+          @save-and-predict="handleSaveAndPredict"
           @quick-predict="quickPredict"
-          @submit-doctor="submitToDoctor(null)"
           @reset="resetForm"
           @calc-bmi="calcBMI"
           @evaluate-glucose="evaluateGlucose"
@@ -228,6 +227,32 @@ async function submitToDoctor(existingId) {
   } finally {
     submitting.value = false
     submittingId.value = null
+  }
+}
+
+async function handleSave() {
+  const id = await saveOnly()
+  if (!id) return
+  try {
+    await request.post(`/api/health-profile/send-to-doctor/${id}`, {})
+    ElMessage.success('保存成功，已同步发送给诊断员')
+  } catch {
+    ElMessage.success('保存成功')
+  }
+}
+
+async function handleSaveAndPredict() {
+  await saveAndPredict()
+  const predictionId = store.predictionId
+  if (!predictionId) return
+  try {
+    const res = await request.post(`/api/health-profile/send-to-doctor/${predictionId}`, {})
+    const ok = !res || res.code === 200 || res.success === true
+    if (ok) {
+      ElMessage.success('检测完成，已同步发送给诊断员')
+    }
+  } catch {
+    // 发送诊断员失败不阻断主流程
   }
 }
 
